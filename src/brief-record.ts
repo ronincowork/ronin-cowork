@@ -7,7 +7,7 @@ import type { LaunchMode } from './agent-defaults.js';
 import type { Depth } from './catalog.js';
 
 export type SessionType = 'cowork' | 'bare' | 'mika' | 'irasshai';
-export type AgentRole = 'coworker' | 'lead' | 'epic_lead' | 'coordinator';
+export type AgentRole = 'coworker' | 'lead' | 'epic_lead' | 'coordinator' | 'appliance';
 
 /** One layer's brief settings (docs/architecture/brief.md, Layers and brief settings): what it adds (at a depth), blocks and screens to. */
 export interface BriefSettings {

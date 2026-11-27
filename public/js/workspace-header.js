@@ -1,6 +1,7 @@
 /* part of the ronin-cowork client — see js/README.md */
 import { t } from './lexicon.js';
 import { workbenchLink } from './workspace.js';
+import { shownWorkbenches } from './folder-workbenches.js';
 
 /** The one navigation header shared by every Ronin workspace. */
 /** The active Workbench declares its appearance; routes and surfaces never infer it. */
@@ -44,7 +45,9 @@ export function installWorkspaceHeader(workspace) {
     const landing = !active || active.id === 'home';
     const placed = active?.view?.place ? active.view.place() : '';
     const underTeams = !landing && (!placed || active.id === 'team');
-    if (home) { home.textContent = t('bar.home', 'Home'); home.hidden = landing; }
+    // A member shown one workbench (KAN-955) is offered no Home: the workbench is the whole office.
+    const one = shownWorkbenches()?.length === 1;
+    if (home) { home.textContent = t('bar.home', 'Home'); home.hidden = landing || one; }
     if (separator) separator.hidden = !underTeams;
     if (coworkers) {
       coworkers.hidden = !underTeams;

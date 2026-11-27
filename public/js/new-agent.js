@@ -241,7 +241,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
       { key: 'provider', label: t('forms.provider', 'Harness'), blank: defaultWord, options: harnessRows, fixed: !!configure },
       { key: 'model', shape: 'rect', label: t('forms.model', 'Model'), blank: () => draft.provider ? t('new_agent.choose_model', 'Choose model') : defaultWord(), after: 'provider', empty: () => draft.provider ? 'No model entries selected for this harness.' : '', options: modelRows, fixed: !!configure },
       { key: 'role', label: t('agent_composition.role', 'Role'), options: [
-        { v: 'coworker', l: 'Coworker' }, { v: 'lead', l: 'Lead' }, { v: 'epic_lead', l: 'Epic Lead' }, { v: 'coordinator', l: 'Coordinator' },
+        { v: 'coworker', l: 'Coworker' }, { v: 'lead', l: 'Lead' }, { v: 'epic_lead', l: 'Epic Lead' }, { v: 'coordinator', l: 'Coordinator' }, { v: 'appliance', l: 'Appliance' },
       ] },
     ] },
     { group: t('mandate', 'Mandate'), fields: [

@@ -6,9 +6,10 @@
  *  dragging a row onto a workspace opens the Agent there (owner, 2026-10-20). The foot
  *  opens New Agent. */
 import { WorkspaceKit } from './workspace-kit.js';
-import { membersOfTeam, setTeamLead, setTeamMembership, teamByName } from './team-controller.js';
+import { membersOfTeam, setTeamMembership, teamByName } from './team-controller.js';
 import { setSessionTitle } from './api.js';
 import { request } from './request.js';
+import { ask } from './ask.js';
 import { createItemPhalanx } from './work-items-surface.js';
 import { createAgentCompositionReader } from './agent-composition.js';
 import { createStep } from './form-steps.js';
@@ -37,6 +38,17 @@ export const configSignature = (name) => {
 const itemsHeld = async (member) => {
   const result = await request(`/api/work-items?session=${encodeURIComponent(member.name)}`, { cache: 'no-store' });
   return result.ok && Array.isArray(result.data.items) ? result.data.items : [];
+};
+
+/** Agent Type is the configuration's role key, not the separate list of Teams this session leads. */
+const setAgentRole = async (member, team, role) => {
+  const found = await request(`/api/sessions/${encodeURIComponent(member)}/composition`, { cache: 'no-store' });
+  if (!found.ok) return found;
+  const current = found.data?.current;
+  if (!current) return { ok: false, message: 'This Agent has no readable configuration.' };
+  return request(`/api/sessions/${encodeURIComponent(member)}/configuration`, {
+    method: 'PUT', json: { ...current, team, role },
+  });
 };
 
 // ONE AGENT MOVES, ONE ROW CHANGES (w451). A push lands in update(): each row compares what it
@@ -87,8 +99,6 @@ export const buildTeamMembers = (name, options = {}) => {
       row.classList.toggle('flagged', !!reading.flagged);
       title.textContent = agentTitle(member);
       status.replaceChildren(...spans.map(([className, value]) => el('span', className, value)));
-      lead.el.textContent = member.team_lead ? t('league.team_lead', 'Team Lead') : t('league.make_team_lead', 'Make Lead');
-      lead.el.setAttribute('aria-pressed', String(!!member.team_lead));
       if (!detail.hidden) toggle.setAttribute('aria-label', t('league.collapse_agent', 'Collapse {name}', { name: agentTitle(member) }));
     };
     const disclosure = el('span', 'league-team-member-disclosure'); disclosure.setAttribute('aria-hidden', 'true');
@@ -112,10 +122,26 @@ export const buildTeamMembers = (name, options = {}) => {
       try { await setSessionTitle(member.name, wanted.trim()); options.onChanged?.(); }
       catch (error) { options.onFailed?.(t('head.rename_failed', 'Could not rename session: {reason}', { reason: error.message })); }
     } });
-    const lead = createAction({ label: member.team_lead ? t('league.team_lead', 'Team Lead') : t('league.make_team_lead', 'Make Lead'), selected: member.team_lead, action: async () => { const result = await setTeamLead(member.name, name, !member.team_lead); if (!result.ok) return options.onFailed?.(result.message); options.onChanged?.(); } });
+    const typeBox = el('div', 'league-team-member-type'); typeBox.hidden = true;
+    let typeQuestion = null;
+    const agentType = createAction({ label: t('agent_composition.agent_type', 'Agent Type'), action: () => {
+      typeBox.hidden = !typeBox.hidden;
+      if (typeBox.hidden) return;
+      typeQuestion?.destroy?.();
+      typeQuestion = ask([{ fields: [{ key: 'role', label: t('agent_composition.agent_type', 'Agent Type'), options: [
+        { v: 'coworker', l: t('agent_composition.coworker', 'Coworker') },
+        { v: 'lead', l: t('agent_composition.team_lead', 'Team lead') },
+      ] }] }], { value: { role: member.team_lead ? 'lead' : 'coworker' }, exposed: true, density: 'tight', onChange: async (value) => {
+        const result = await setAgentRole(member.name, name, value.role);
+        if (!result.ok) return options.onFailed?.(result.message);
+        typeBox.hidden = true;
+        options.onChanged?.();
+      } });
+      typeBox.replaceChildren(typeQuestion.el);
+    } });
     const eject = createAction({ label: t('league.remove_member', 'Remove'), title: t('league.remove_named_member', 'Remove {name} from this team', { name: member.name }), action: async () => { const result = await setTeamMembership(member.name, name, false); if (!result.ok) return options.onFailed?.(result.message); options.onChanged?.(); } });
     const close = options.onClose ? createAction({ label: t('league.close_agent', 'Close'), title: t('league.close_named_agent', 'Close {name}', { name: member.name }), action: () => options.onClose(member) }) : null;
-    detail.append(el('p', 'ac-line', `${agentName(member)} · @${member.name}`), work.el, composition.el, word, createActionBar({ className: 'league-team-member-actions', actions: [composition.action, rename, lead, eject, close] }).el);
+    detail.append(el('p', 'ac-line', `${agentName(member)} · @${member.name}`), work.el, composition.el, word, typeBox, createActionBar({ className: 'league-team-member-actions', actions: [composition.action, rename, agentType, eject, close] }).el);
     // An unsent draft is the kit's edit hold (editHold, KAN-414): typed in and not yet Sent.
     const draft = WorkspaceKit.primitives.editHold();
     draft.watch([detail]);
@@ -135,7 +161,7 @@ export const buildTeamMembers = (name, options = {}) => {
     open(false);
     paintHead();
     row.append(toggle, detail);
-    return { el: row, update: (now) => { member = now; paintHead(); }, destroy: composition.destroy };
+    return { el: row, update: (now) => { member = now; paintHead(); }, destroy: () => { typeQuestion?.destroy?.(); composition.destroy(); } };
   };
 
   // The kit's keyed list (KAN-412, KAN-413): one row per member, kept between pushes.

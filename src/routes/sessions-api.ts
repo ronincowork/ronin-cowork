@@ -365,7 +365,7 @@ export function registerSessions(app: express.Express): void {
     const { name } = req.params;
     if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
     if (!(await sessionExists(name))) return res.status(404).json({ error: 'No such session.' });
-    const role = ['coworker', 'lead', 'epic_lead', 'coordinator'].includes(req.body?.role) ? req.body.role : 'coworker';
+    const role = ['coworker', 'lead', 'epic_lead', 'coordinator', 'appliance'].includes(req.body?.role) ? req.body.role : 'coworker';
     const team = String(req.body?.team ?? '').trim();
     const validTeams = new Set((await listTeamRosters()).filter((row) => row.state !== 'archived').map((row) => row.name));
     if (team && !validTeams.has(team)) return res.status(400).json({ error: `Unknown Team: ${team}.` });

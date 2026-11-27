@@ -10,7 +10,8 @@
  * The roster is a READ whose rows are doors: tap a row and that session fills the
  * tile. Anything you want to DO to a session you do inside it (the phone rule), with
  * the one desktop exception of 🏷 on a row, which opens the same group editor the
- * tile's own 🏷 opens.
+ * tile's own 🏷 opens. Given `options.detail(name, team)` ({ el, destroy }), a tapped
+ * row opens that under itself instead, and tapped again closes it (KAN-964).
  */
 import { request } from './request.js';
 import { homeData, homeFault, stanceLabel } from './home.js';
@@ -87,7 +88,7 @@ export function buildRoster(tile, host, options = {}) {
   // each cell is placed by its class, so an ABSENT element leaves its track standing.
   // Nothing here builds a placeholder: a missing reading is a gap, which is the honest
   // drawing of "nobody has said", and a gap in a fixed column reads as one.
-  const rowFor = (s) => {
+  const rowFor = (s, where = '', group = null) => {
     const r = document.createElement('button');
     r.type = 'button';
     r.className = 'home-row';
@@ -205,8 +206,22 @@ export function buildRoster(tile, host, options = {}) {
     // header (tilehead.js). A verb that already has a home does not need a second one on
     // a board whose whole job is to be READ, and the rows are already filed under the
     // very headings the button was there to edit.
-    r.addEventListener('click', () => tile.connect(s.name));
+    // AN AGENT OPENS, IT DOES NOT LAUNCH (owner, 2026-11-27, KAN-964): with `options.detail`, a
+    // pressed row opens what it gives under the row (its configuration) and pressed again closes;
+    // without it the row opens the session.
+    if (options.detail) {
+      r.setAttribute('aria-expanded', String(opened.has(`${where}:${s.name}`)));
+      r.addEventListener('click', () => toggle(s, where));
+    } else r.addEventListener('click', () => tile.connect(s.name));
     return r;
+  };
+  // What an opened row shows, one per row, built the first time it opens and kept while it is open.
+  const opened = new Set();
+  const details = new Map();
+  const toggle = (s, where) => {
+    const id = `${where}:${s.name}`;
+    if (!opened.delete(id)) opened.add(id);
+    render();
   };
 
   // ONE SESSION MOVES, ONE ROW REPAINTS (owner, 2026-11-12, KAN-414): the kit's keyed list
@@ -223,7 +238,16 @@ export function buildRoster(tile, host, options = {}) {
     return JSON.stringify([s.name, s.leads, s.tegami?.chip && s.tegami.items?.length ? [s.tegami.chip.text, s.tegami.chip.gate, s.tegami.objective, quiet >= 60000 ? humanAge(quiet) : ''] : null,
       s.stance, s.ctx, dk?.desks?.length ? [deskLabel(dk), deskReadout(dk), deskTip(dk), dk.rollup] : null, s.model]);
   };
-  const rowCell = (s, where) => ({ key: `row:${where}:${s.name}`, shows: rowShows(s), draw: () => rowFor(s) });
+  const rowCell = (s, where, group = null) => ({ key: `row:${where}:${s.name}`, shows: rowShows(s) + opened.has(`${where}:${s.name}`), draw: () => rowFor(s, where, group) });
+  /** The row's cells: the row, and under it what it opens while it is open. */
+  const rowCells = (s, where, group = null) => {
+    const id = `${where}:${s.name}`;
+    if (!opened.has(id)) return [rowCell(s, where, group)];
+    return [rowCell(s, where, group), { key: `detail:${id}`, shows: '', draw: () => {
+      if (!details.has(id)) details.set(id, options.detail(s.name, group));
+      return details.get(id).el;
+    } }];
+  };
   const groupLabelOf = (text) => String(options.groupLabel?.(text) ?? '').trim() || text;
   const headCell = (text, n, acceptsDrop) => ({ key: `head:${text}`, shows: JSON.stringify([groupLabelOf(text), n, acceptsDrop]), draw: () => {
     const label = groupLabelOf(text);
@@ -322,12 +346,12 @@ export function buildRoster(tile, host, options = {}) {
     const top = [];
     const blocks = [];
     if (!groups.length) {
-      top.push(...data.map((s) => rowCell(s, '')));
+      top.push(...data.flatMap((s) => rowCells(s, '')));
     } else {
       const appendGroup = (g, mem, acceptsDrop = true) => {
         const block = blockCell(g, acceptsDrop);
         top.push(block);
-        blocks.push([block.key, [headCell(g, mem.length, acceptsDrop), ...mem.map((s) => rowCell(s, block.key))]]);
+        blocks.push([block.key, [headCell(g, mem.length, acceptsDrop), ...mem.flatMap((s) => rowCells(s, block.key, acceptsDrop ? g : null))]]);
       };
       const members = (g) => data.filter((s) => (s.tags || []).map(teamTag).includes(teamTag(g)));
       const ordered = partitionRosterGroups(groups);
@@ -340,6 +364,8 @@ export function buildRoster(tile, host, options = {}) {
     cells.place(list, top);
     for (const [key, inside] of blocks) cells.place(cells.get(key).nodes()[0], inside);
     cells.sweep();
+    // A closed row, or one gone from the roster, lets go of what it opened.
+    for (const [id, one] of details) if (!opened.has(id) || !list.contains(one.el)) { one.destroy?.(); details.delete(id); opened.delete(id); }
   };
 
   return { render };

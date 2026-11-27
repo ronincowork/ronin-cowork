@@ -18,7 +18,7 @@ import { paintCanvas } from './canvas-view.js';
 import { teamPageHandlers } from './events.js';
 import { createArranger, parseDraft, reportView as sendView } from './team-arrange.js';
 import { t } from './lexicon.js';
-import { openWorkbenchTab, openWorkspaceTab, reserveWorkspaceTab } from './workspace.js';
+import { openWorkbenchTab, openWorkspaceTab } from './workspace.js';
 import { subscribe as subscribeStore } from './store.js';
 import { acceptDrops as acceptSessionDrops } from './team-drag.js';
 import { S, isCoarse } from './state.js';
@@ -224,7 +224,7 @@ export function createCoworkView(options = {}) {
       teamDetail: (name) => leagueTeamDetail(name, id),
     })])) : {};
   const sessionRosterBySeat = campaign ? Object.fromEntries(Object.keys(seats)
-    .map((id) => [id, createRosterSurface({ onOpen: openAgentWorkbench })])) : {};
+    .map((id) => [id, createRosterSurface()])) : {};
   const cronBySeat = campaign ? Object.fromEntries(Object.keys(seats).map((id) => { const surface = createSurface({ label: t('workspace.tab_cron_jobs', 'Cron jobs'), className: 'tw-cron' }); const room = createTeamJikan({ universal: true, teams: () => teamsFromState().filter((item) => !item.holding).map((item) => item.name) }); surface.content.append(room.el); return [id, { el: surface.el, room }]; })) : {};
   // seated in a workspace, grouped by Team of record, each row's act a labelled button.
   // A rehydrated session lands in the workspace whose surface woke it, like a birth.
@@ -349,7 +349,6 @@ export function createCoworkView(options = {}) {
         mark: member.team_lead ? '人' : null,
         title: situationTitle(label, reading.situation),
         summary: reading.step, metadata: reading.lines,
-        ...(campaign ? { action: () => openAgentWorkbench(member.name) } : {}),
         ...(mika ? { action: () => placeMikaWorkspaceTwo() } : {}),
         onPointerEnter: () => armPrewarm(member.name), onPointerLeave: disarmPrewarm };
     }),
@@ -678,15 +677,6 @@ export function createCoworkView(options = {}) {
     bench.refreshSelector();
   }
 
-  // Agent activation leaves seating to drag. Reserve the tab while the click is still
-  // the active user gesture; if the browser refuses it, use the ViewHost transition so
-  // the action cannot silently do nothing.
-  function openAgentWorkbench(name) {
-    const tab = reserveWorkspaceTab();
-    if (tab) return openWorkspaceTab('agent', name, tab);
-    return ctx?.navigate?.('agent', { param: name }) ?? false;
-  }
-
   // CONFIGURATION IS DRAWN ONLY WHEN IT MOVED. Every publish and every pushed row lands
   // here; the panel is torn down only when configSignature says something it draws moved.
   // Two signatures, because the two panels move for different reasons: the member rows
@@ -808,7 +798,8 @@ export function createCoworkView(options = {}) {
       team = campaign ? '' : context.param;
       const { state: entry } = context.workbenchEntry({ count: 2, selected: 'workspace1',
         arrangement: normalizeWorkbenchState(null, bench.declaration).arrangement,
-        seats: campaign ? { workspace1: WB_TYPES.roster, workspace2: WB_TYPES.newTeamForm } : {} });
+        // The Teams workbench opens on the Team roster in 1 and the Teams stones in 2 (owner, 2026-11-27, KAN-964).
+        seats: campaign ? { workspace1: WB_TYPES.sessionRoster, workspace2: WB_TYPES.roster } : {} });
       setBarLabel();
       const typed = normalizeWorkbenchState(entry, bench.declaration);
       remembered = { ...typed.seats };

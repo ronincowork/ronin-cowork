@@ -1,8 +1,8 @@
 /* part of the ronin-cowork client — see js/README.md */
 /**
  * ONE TEAM'S OPEN VIEW (owner, 2026-11-23; KAN-801): its bar (an Epic's bar on its page; pressed,
- * its Configuration under it), its Agents as stones and its Epics as stones, each a line that
- * expands and collapses. One module so every surface that opens a Team shows the same thing: the
+ * its Configuration under it), its Agents and its Epics as stones, a pressed Agent stone
+ * opening the Agent's bar with its panel under it (KAN-964), each a line that expands and collapses. One module so every surface that opens a Team shows the same thing: the
  * Teams page (cowork-view.js), a Team placed in a tilespace, and a Workspace's own Teams
  * (workspaces-surface.js, through createTeamOne).
  */
@@ -17,9 +17,9 @@ import { renderTeamConfiguration } from './team-configuration.js';
 import { agentTitle, configSignature } from './team-members.js';
 import { createAgentCompositionReader } from './agent-composition.js';
 import { teamEpicIds } from './team-epics.js';
-import { createPhalanx } from './phalanx.js';
 import { createEpicStones, createEpicsRead, createItemBoard } from './epics-surface.js';
-import { counted, createLifecycle, statusKey } from './item-lifecycle.js';
+import { createPhalanx } from './phalanx.js';
+import { counted, createLifecycle, createStoneMarks, statusKey } from './item-lifecycle.js';
 
 const el = (tag, cls, text) => {
   const out = document.createElement(tag);
@@ -38,6 +38,24 @@ export const readableTeam = (name) => (name === UNASSIGNED ? t('teams_surface.no
 // Epic stones) and Configuration (the Team's form, Delete team at its foot). Painted into a host: a Teams stone's detail
 // (leagueTeamDetail) or a whole tilespace (createLeagueTeamSurface). No Team has Agents only.
 const teamFoldsOpen = new Map(); // `${team}\0${fold}` -> open, for this page
+/** A BAR THAT OPENS (owner, 2026-11-23; the Epic's own bar on its page): pressed, `under` shows
+ * beneath it, the bar staying as its title; pressed again it closes. Remembered under `key` for
+ * this page; `onOpen` runs each time it opens. The Team's bar and each Agent's. */
+const pressable = (bar, under, key, title, onOpen = () => {}) => {
+  bar.classList.add('team-bar-pressable');
+  bar.setAttribute('role', 'button');
+  bar.tabIndex = 0;
+  bar.title = title;
+  const set = (open) => {
+    under.hidden = !open;
+    teamFoldsOpen.set(key, open);
+    bar.setAttribute('aria-expanded', String(open));
+    if (open) onOpen();
+  };
+  set(teamFoldsOpen.get(key) === true);
+  bar.addEventListener('click', (event) => { if (!event.target.closest('button, a, .lifecycle')) set(under.hidden); });
+  bar.addEventListener('keydown', (event) => { if (event.target === bar && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); set(under.hidden); } });
+};
 export function createTeamBody(name, { say = () => {}, rows: rowsOf = () => new Map(), openTeam = (team) => openWorkspaceTab('team', team), onDeleted = () => {} } = {}) {
   const rows = { get: (agent) => rowsOf().get(agent) };
   const holding = name === UNASSIGNED;
@@ -80,7 +98,6 @@ export function createTeamBody(name, { say = () => {}, rows: rowsOf = () => new 
   // THE TEAM'S CONFIGURATION (owner, 2026-11-23): pressing the Team's bar opens it under the bar,
   // as an Epic's bar opens its reading; pressing again closes it. Agents and Epics stay below.
   const config = el('div', 'league-team-view league-team-view-config team-config-open');
-  config.hidden = teamFoldsOpen.get(`${name}\0config`) !== true;
   const main = el('div', 'league-team-edit-content');
   const actions = el('span', 'item-bar-state team-bar-actions');
   actions.append(launch.el);
@@ -89,94 +106,94 @@ export function createTeamBody(name, { say = () => {}, rows: rowsOf = () => new 
   const top = el('div', 'epic-detail team-detail'); top.append(bar);
   if (!holding) {
     top.append(config);
-    bar.classList.add('team-bar-pressable');
-    bar.setAttribute('role', 'button');
-    bar.tabIndex = 0;
-    const press = () => {
-      config.hidden = !config.hidden;
-      teamFoldsOpen.set(`${name}\0config`, !config.hidden);
-      bar.setAttribute('aria-expanded', String(!config.hidden));
-    };
-    bar.setAttribute('aria-expanded', String(!config.hidden));
-    bar.title = t('league.team_config_toggle', 'Open or close this Team\'s configuration');
-    bar.addEventListener('click', (event) => { if (!event.target.closest('button, a, .lifecycle')) press(); });
-    bar.addEventListener('keydown', (event) => { if (event.target === bar && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); press(); } });
+    pressable(bar, config, `${name}\0config`, t('league.team_config_toggle', 'Open or close this Team\'s configuration'));
   }
   main.append(top, agentsFold.node);
   if (!holding) main.append(epicsFold.node);
   let held = new Map(); // agent name -> the items it holds, from the Team reading
-  const lines = new Map(); // agent name -> its progress line, kept so a stone compares the same node
+  const lines = new Map(); // agent name -> its progress line, kept so a bar compares the same node
   const lineOf = (agent) => { if (!lines.has(agent)) lines.set(agent, createLifecycle('line')); return lines.get(agent); };
   // No New Agent here (owner, 2026-11-23): an Agent is added to a Team where Agents are made.
-  // AN AGENT OPENED (owner, 2026-11-23), under its stones: lines that expand
-  // and collapse: Objective (its work record's, read only), then Work items (the Epics board's bars over what it holds,
-  // epics-surface.js createItemBoard) and Configuration (the Agent's own: name, mandate and the
-  // rest, agent-composition.js). Kept per Agent, so it keeps what is open in it.
+  // AN AGENT OPENED (owner, 2026-11-23), under its bar: lines that expand and collapse: Work items
+  // (the Epics board's bars over what it holds, epics-surface.js createItemBoard) and Configuration
+  // (the Agent's own: name, mandate and the rest, agent-composition.js). Its objective is on its bar.
+  // Kept per Agent, so it keeps what is open in it.
   const panels = new Map();
   const panelOf = (agent) => {
     if (panels.has(agent)) return panels.get(agent);
-    const box = el('div', 'team-agent-open');
-    // Objective first (owner, 2026-11-23): what its work record states, to read, not edit.
-    const aim = fold('agent-objective', t('league.objective', 'Objective'), () => {}, `${name}\0${agent}\0objective`);
-    if (!teamFoldsOpen.has(`${name}\0${agent}\0objective`)) aim.node.open = true;
-    const aimText = el('p', 'team-agent-objective');
-    aim.body.append(aimText);
-    const paintAim = () => {
-      const words = String(rows.get(agent)?.tegami?.objective || '').trim() || t('work_record.task_unstated', 'No task stated in this work record.');
-      if (aimText.textContent !== words) aimText.textContent = words;
-    };
-    paintAim();
+    const box = el('div', 'team-config-open team-agent-open');
     const board = createItemBoard({ every: () => (held.get(agent) || []).map((item) => ({ ...item })), empty: t('island.none', 'This Agent holds no open work items.') });
     const work = fold('agent-items', t('island.items', 'Work items held'), () => board.paint(), `${name}\0${agent}\0items`);
-    if (!teamFoldsOpen.has(`${name}\0${agent}\0items`)) work.node.open = true;
     work.body.append(board.el);
     let reader = null;
+    const configKey = `${name}\0${agent}\0config`;
+    if (!teamFoldsOpen.has(configKey)) teamFoldsOpen.set(configKey, true);
     const config = fold('agent-config', t('workspace.tab_team_configuration', 'Configuration'), () => {
       if (reader) return;
       // Its Save, as the tile's Configuration has it (tilehead.js openConfiguration): nothing saves on its own.
       reader = createAgentCompositionReader(agent);
       config.body.append(reader.el, createActionBar({ actions: [reader.action] }).el);
       reader.show?.();
-    }, `${name}\0${agent}\0config`);
-    box.append(aim.node, work.node, config.node);
-    const one = { box, board, paintAim, destroy: () => { board.destroy(); reader?.destroy?.(); } };
+    }, configKey);
+    box.append(work.node, config.node);
+    const one = { box, board, destroy: () => { board.destroy(); reader?.destroy?.(); } };
     panels.set(agent, one);
     return one;
   };
-  // THE AGENTS AS STONES (owner, 2026-11-23), the Epic stones' grammar (createEpicStones): the
-  // name (人 for the lead); one mark top right
-  // — ⚑ when flagged, else the pill's dot (solid working, hollow just finished), else none; bottom
-  // right, small and grey, how many open items it holds; the lifecycle line along its foot. A
-  // pressed stone opens in place of the stones, with the − back (phalanx.js): its Objective, Work items and Configuration.
-  const stoneMarks = new Map(); // agent -> { node, mark, size }, kept: the phalanx compares a marker by identity
-  const marksOf = (agent, row) => {
-    if (!stoneMarks.has(agent)) {
-      const node = el('span', 'stone-marks');
-      const mark = el('span', 'team-agent-mark');
-      const size = el('small', 'stone-size');
-      node.append(lineOf(agent).el, mark, size);
-      stoneMarks.set(agent, { node, mark, size });
-    }
-    const one = stoneMarks.get(agent);
-    one.mark.className = `team-agent-mark${row.mark ? ` is-${row.mark}` : ''}`;
-    one.mark.textContent = row.mark === 'flagged' ? '⚑' : '';
-    one.mark.title = row.markTitle;
-    one.mark.hidden = !row.mark;
-    if (one.size.textContent !== String(row.size)) one.size.textContent = String(row.size);
-    return one.node;
+  // AGENTS FOLLOW EPICS (owner, 2026-11-27): stones are the Team's collection; pressing one replaces
+  // them with the Agent's existing bar and Configuration-first detail. One visual grammar, without
+  // throwing away the useful Agent view below it.
+  const details = new Map();
+  const marks = new Map();
+  const marksOf = (agent) => {
+    if (!marks.has(agent)) { const line = createLifecycle('line'); marks.set(agent, { line, marks: createStoneMarks(line) }); }
+    return marks.get(agent);
   };
-  const agentHost = el('div', 'team-agent-stones-host wk-surface-content');
-  const stonesOfAgents = createPhalanx({
-    className: 'epic-record-stones team-agent-stones',
-    renderDetail: (item, host) => {
-      const panel = panelOf(item.id);
-      host.append(panel.box);
-      panel.board.paint();
-      return () => {};
-    },
-  });
-  stonesOfAgents.mount(agentHost);
-  agents.append(agentHost);
+  const detailOf = (agent) => {
+    if (details.has(agent)) return details.get(agent);
+    const title = el('span', 'item-bar-title team-bar-title');
+    const size = el('small', 'team-agent-size');
+    const mark = el('span', 'team-agent-mark');
+    const state = el('span', 'item-bar-state team-bar-actions'); state.append(size, mark);
+    const head = el('span', 'item-bar-head team-bar-head'); head.append(title, state);
+    const objective = el('span', 'item-bar-objective team-bar-objective');
+    const bar = el('div', 'item-bar item-bar-lean team-bar team-agent-bar'); bar.append(head, objective, lineOf(agent).el);
+    const box = el('div', 'epic-detail team-detail team-agent'); box.dataset.session = agent;
+    const panel = panelOf(agent);
+    box.append(bar, panel.box);
+    const openKey = `${name}\0${agent}\0open`;
+    if (!teamFoldsOpen.has(openKey)) teamFoldsOpen.set(openKey, true);
+    pressable(bar, panel.box, openKey, t('league.agent_toggle', 'Open or close this Agent'), () => panel.board.paint());
+    let shown = '';
+    const update = (row) => {
+      const words = String(rows.get(agent)?.tegami?.objective || '').trim();
+      const now = JSON.stringify([row.title, row.team_lead, row.mark, row.markTitle, row.size, words]);
+      if (now === shown) return;
+      shown = now;
+      title.textContent = row.team_lead ? `人 ${row.title}` : row.title;
+      size.textContent = String(row.size);
+      mark.className = `team-agent-mark${row.mark ? ` is-${row.mark}` : ''}`;
+      mark.textContent = row.mark === 'flagged' ? '⚑' : '';
+      mark.title = row.markTitle;
+      mark.hidden = !row.mark;
+      bar.classList.toggle('is-flagged', row.mark === 'flagged');
+      objective.textContent = words;
+      objective.hidden = !words;
+    };
+    const one = { box, update };
+    details.set(agent, one);
+    return one;
+  };
+  const agentStones = createPhalanx({ className: 'epic-record-stones team-agent-stones', renderDetail: (item, host) => {
+    const detail = detailOf(item.id);
+    detail.update(item);
+    host.append(detail.box);
+  } });
+  // Their own bare seat in the fold, as a Team's Epic stones take (createEpicStones bare): the
+  // phalanx mounts only in a work-surface content seat, never straight into a fold's body.
+  const agentSeat = el('div', 'epics-records epics-records-bare wk-surface-content team-agent-records');
+  agents.append(agentSeat);
+  agentStones.mount(agentSeat);
   const paintAgents = () => {
     const list = membersOfTeam(name).map((member) => {
       const card = rows.get(member.name) || {};
@@ -188,15 +205,18 @@ export function createTeamBody(name, { say = () => {}, rows: rowsOf = () => new 
       lineOf(member.name).update(mine);
       const situation = mine.some((item) => item.flagged && statusKey(item.status) !== 'done') ? 'flagged' : agentSituation(card);
       const mark = ['flagged', 'working', 'ready'].includes(situation) ? situation : '';
-      return { name: member.name, team_lead: member.team_lead, title: agentTitle(member),
+      const stone = marksOf(member.name); stone.line.update(mine);
+      return { id: member.name, name: member.name, team_lead: member.team_lead, label: agentTitle(member), title: agentTitle(member),
+        state: member.team_lead ? t('agent_composition.team_lead', 'Team lead') : t('agent_composition.coworker', 'Coworker'),
+        marker: stone.marks.update(mine), className: 'team-agent-stone',
         mark, markTitle: mark ? situationTitle(agentTitle(member), mark) : '', size: open.length };
     }).sort((a, b) => Number(b.team_lead) - Number(a.team_lead) || Number(b.mark === 'flagged') - Number(a.mark === 'flagged') || a.title.localeCompare(b.title));
-    for (const [agent, panel] of panels) if (!list.some((row) => row.name === agent)) { panel.destroy(); panels.delete(agent); stoneMarks.delete(agent); }
+    for (const [agent, panel] of panels) if (!list.some((row) => row.name === agent)) { panel.destroy(); panels.delete(agent); }
+    for (const agent of [...details.keys()]) if (!list.some((row) => row.name === agent)) details.delete(agent);
+    for (const agent of [...marks.keys()]) if (!list.some((row) => row.name === agent)) marks.delete(agent);
     agentsFold.count(list.length);
-    stonesOfAgents.setItems(list.map((row) => ({ id: row.name, label: row.team_lead ? `人 ${row.title}` : row.title,
-      marker: marksOf(row.name, row),
-      className: `team-agent-stone${row.mark === 'flagged' ? ' is-flagged' : ''}` })));
-    for (const panel of panels.values()) if (panel.box.isConnected) { panel.paintAim(); panel.board.paint(); }
+    agentStones.setItems(list);
+    for (const panel of panels.values()) if (panel.box.isConnected && !panel.box.hidden) panel.board.paint();
   };
   const readWork = async () => {
     if (holding) return;
@@ -239,12 +259,14 @@ export function createTeamBody(name, { say = () => {}, rows: rowsOf = () => new 
     }
   };
   render();
-  // Let go (owner via lead, 2026-11-23): its Epic stones if built, its Agent stones, each Agent's panel.
+  // Let go (owner via lead, 2026-11-23): its Epic stones if built, its Agent bars, each Agent's panel.
   const destroy = () => {
     epicStones?.destroy?.();
-    stonesOfAgents.destroy();
+    agentStones.destroy();
     for (const panel of panels.values()) panel.destroy();
     panels.clear();
+    details.clear();
+    marks.clear();
   };
   return { main, render, destroy };
 }

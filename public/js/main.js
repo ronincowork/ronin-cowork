@@ -20,6 +20,7 @@ import { createEpicsView, createHelpView, createWorkspacesView } from './door-wo
 import { createWorkspaceRoute } from './workspaces-surface.js';
 import { createSettingsV2View } from './settings-v2-view.js';
 import { createSetupView } from './setup-view.js';
+import { loadFolderWorkbenches, shownWorkbenches } from './folder-workbenches.js';
 import { createLaunchView } from './launch-view.js';
 import { installWorkspaceHeader } from './workspace-header.js';
 import { WorkspaceKit } from './workspace-kit.js';
@@ -126,8 +127,15 @@ async function init() {
   // Setup opens at #/setup on every office; only hosted Home has its stone (KAN-856, w997).
   guard('register the Setup destination', () => workspace.register('setup', createSetupView()));
   guard('register the Launch destination', () => workspace.register('launch', createLaunchView()));
-  // A bare address goes Home.
-  workspace.start('');
+  // Workbenches from the office's custom/workbenches/ folder (KAN-954), each at #/<name>; known
+  // before the first route is read, so a link to one opens it.
+  await loadFolderWorkbenches(workspace).catch((e) => console.warn('folder workbenches', e));
+  // A bare address goes Home; a member shown a list of workbenches (KAN-955) lands on its first,
+  // from any address not on the list.
+  const shown = shownWorkbenches();
+  const asked = location.hash.replace(/^#\/?/, '').split('/')[0];
+  if (shown && !shown.includes(asked)) history.replaceState(null, '', `${location.pathname}${location.search}#/${encodeURIComponent(shown[0])}`);
+  workspace.start(shown ? shown[0] : '');
 
   // THE DESKTOP FIRST PAINT ends here: the route's real workspace is mounted and the
   // header now belongs to it. Session discovery, event wiring and home catalogs below

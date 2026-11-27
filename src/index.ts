@@ -58,6 +58,7 @@ import { registerMachineRestart } from './routes/machine-restart-api.js';
 import { registerJikan, startHouseJikan } from './routes/jikan-api.js';
 import { registerInstalled } from './routes/installed-api.js';
 import { registerOffice } from './routes/office-api.js';
+import { registerWorkbenches, shownTo } from './routes/workbenches-api.js';
 import { registerVersion } from './routes/version.js';
 import { registerWipeboards, wipeboardAnswer } from './routes/wipeboards-api.js';
 import { registerTerminalControls } from './terminal-controls.js';
@@ -258,9 +259,11 @@ const sendDocument = (html: string) => (req: express.Request, res: express.Respo
 };
 const sendIndex = sendDocument(indexHtml);
 const sendMobile = sendDocument(mobileHtml);
-app.get('/', (req, res) => {
+app.get('/', async (req, res) => {
   res.setHeader('Vary', 'User-Agent'); // one address, two documents: a cache must never hand a phone the desktop
-  (isPhone(req) ? sendMobile : sendIndex)(req, res);
+  // A member shown a list of workbenches (KAN-955) gets the workbench document on a phone too: the
+  // phone document has no workbenches, and the workbench lays itself out at phone width.
+  (isPhone(req) && !(await shownTo(req)) ? sendMobile : sendIndex)(req, res);
 });
 app.get('/index.html', sendIndex);
 app.get('/cowork-setup', (_req, res) => res.redirect(302, '/'));
@@ -317,6 +320,7 @@ registerUpdate(app); // /api/update/* — the ⚙ gear's check + run, press-only
 registerMachineRestart(app); // /api/machine/restart — the Setup Services Restart press; answers, then runs ronin-host restart — src/routes/machine-restart-api.ts
 registerMachineSettings(app); // /api/machine-settings — the install record, and writes BY NAME only — src/routes/machine-settings-api.ts
 registerCampaigns(app); // /api/campaigns* — the durable record of each body of work — src/routes/campaigns-api.ts
+registerWorkbenches(app); // /api/workbenches and /custom/workbenches/<name>/ — a workbench from a folder (KAN-954)
 registerOffice(app); // /api/office — the office record: self-hosted, or an office on an office_park — src/office-record.ts
 registerInstalled(app); // /api/installed — what is on this machine: installed · activated · switched, one answer — src/routes/installed-api.ts
 registerSetupRuntime(app); // /api/setup/runtime and provider login completion — explicit readiness facts for Ronin Setup

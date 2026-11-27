@@ -20,6 +20,7 @@ import { request } from './request.js';
 import { createReleaseUpdateController, packageReading } from './release-update-controller.js';
 import { createSenmaida } from './senmaida.js';
 import { workbenchLink } from './workspace.js';
+import { folderWorkbenches, isShown } from './folder-workbenches.js';
 import { BUSINESS_LOUNGE, HOSTED } from './hosted.js';
 
 const el = (tag, cls, text) => {
@@ -44,6 +45,8 @@ function SIDE() {
   return [
     { key: 'setup', route: 'setup', glyph: '人', name: t('campaign_home.setup', 'Setup'), is: t('campaign_home.setup_is', 'Harness, Workspace, Team'), gated: false },
     // Help's stone is off Home until Mika is ready for a live office; its page stays at #/help (owner, 26 Nov; w1069).
+    // A stone per workbench from the office's custom/workbenches/ folder (KAN-954).
+    ...folderWorkbenches().map((one) => ({ key: `workbench:${one.name}`, route: one.name, glyph: '▦', name: one.title, is: t('campaign_home.workbench_is', 'A workbench of this office'), gated: false })),
     // One Settings (owner, 26 Nov): what was Settings v2; the old one is gone.
     { key: 'settings', route: 'settings2', glyph: '⚙', name: t('campaign_home.settings', 'Settings'), is: t('campaign_home.settings_is', 'This office’s settings'), gated: false },
     ...(HOSTED ? [{ key: 'lounge', href: BUSINESS_LOUNGE, glyph: '◎', name: t('campaign_home.business_lounge', 'Business Lounge'), is: t('campaign_home.business_lounge_is', 'Your account, office and subscription, at Ronin HQ'), gated: false }] : []),
@@ -127,8 +130,9 @@ export function createCampaignHome() {
     return card;
   }
   function paintDoors() {
-    doors.replaceChildren(...OFFICE().map((one) => stone(one, false)));
-    side.replaceChildren(...SIDE().map((one) => stone(one, true)));
+    // A member is offered only the workbenches the office lists for members (KAN-955); a link out stays.
+    doors.replaceChildren(...OFFICE().filter((one) => isShown(one.route)).map((one) => stone(one, false)));
+    side.replaceChildren(...SIDE().filter((one) => one.href || isShown(one.route)).map((one) => stone(one, true)));
   }
 
   const updates = createReleaseUpdateController({ onChange: state => {

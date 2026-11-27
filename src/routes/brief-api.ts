@@ -83,7 +83,7 @@ async function writeLayer(layer: SettingLayer, id: string, campaignId: string, b
 /** A draft Agent as the New Agent form has it; the server fills in what it knows itself. */
 function draftForm(body: Record<string, unknown>): SpawnForm {
   const type = String(body.type ?? body.session_type ?? 'cowork_agent');
-  const role = ['coworker', 'lead', 'epic_lead', 'coordinator'].includes(String(body.role)) ? String(body.role) as SpawnForm['role'] : 'coworker';
+  const role = ['coworker', 'lead', 'epic_lead', 'coordinator', 'appliance'].includes(String(body.role)) ? String(body.role) as SpawnForm['role'] : 'coworker';
   return {
     session_type: type === 'bare_metal_agent' ? 'bare_metal_agent' : 'cowork_agent',
     name: String(body.name ?? '').trim() || 'new_agent',

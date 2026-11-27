@@ -142,7 +142,7 @@ Settings first opens with **Defaults** in tilespace 1 and **Workspace folders** 
 tilespace 2. That is only its first-open floor; once rearranged, refresh restores the
 remembered arrangement instead of applying the floor again.
 
-Teams first opens with the Team roster in tilespace 1 and New Team in tilespace 2.
+Teams first opens with the **Team roster** in tilespace 1 and the **Teams** stones in tilespace 2.
 
 The **Teams** surface is the one list of Teams, its stones read like the Epic stones, every one
 the same height: the Team's name; its lead (人); ⚑ top right, in amber, while anything open the
@@ -156,13 +156,15 @@ more stone, **No Team**, last and plain, while there are any.
 Press a stone and the Team opens in place of the stones, a kaki **−** at its top right to go back to them, in the bar an
 Epic has on its own page: its name with **Launch** (the Team's own workbench; No Team's opens one
 workbench for those Agents), its concept in full and its item lifecycle along its foot. Press the Team's bar and its **Configuration** opens under it (the Team's configuration form, **Delete team** at its foot); press it again to close it. Under it, two lines that expand and collapse, each with its count in brackets: **Agents**, open on arrival (one stone per
-Agent, as the Epic stones: the lead's first with 人, then flagged ones, then by name; each stone
-its name; one mark top right, ⚑ in amber
-when flagged (the stone takes the pill's amber), otherwise the pill's dot, solid while working and
-hollow just finished, otherwise nothing; bottom right, small and grey, how many open items it
-holds; a progress line along its foot, hollow while it holds nothing. Press a stone and it opens in their place, with its own **−** back to them, with three lines that expand and collapse: **Objective** (what its work record states, to
-read, not edit), **Work items held** (the Epic page's bars over
-what it holds) and **Configuration** (the Agent's own: name, mandate and the rest, with Save).
+Agent, as the Epics are: the lead's first, then flagged ones, then by name; each stone its name,
+Team lead or Coworker, its ⚑ and open count, its progress line). Press a stone and the Agent opens
+in place of the stones, a **−** to go back to them: the same bar as the Team's, its name (人 for the
+lead), at the right how many open items it holds and one mark, ⚑ in amber when flagged (the bar
+takes the pill's amber), otherwise the pill's dot, solid while working and hollow just finished;
+its objective (what its work record states); its progress line along its foot. Under the bar, two
+lines that expand and collapse: **Work items held** (the Epic page's bars over what it holds),
+closed until pressed, and **Configuration** (the Agent's own: name, mandate and the rest, with
+Save), open on arrival.
 An Agent is added to a Team where Agents are made, not here), then, closed until you press it, **Epics** (the
 Team's open Epics as Epic stones, each with its progress line; press one to read it in their place,
 with **Launch** to its own page). No Team has its Agents only. The **−** or Escape goes back one step. The
@@ -171,8 +173,10 @@ dragged into another tilespace does the same.
 
 **Team roster** is the plain list of every Team and every Agent: one heading per Team with its
 Launch and delete, one row per Agent with 人 when it leads, its work position, status, context
-and model. Drag a row onto a Team's heading to add that Agent to the Team; press a row to
-open the Agent in its own tab.
+and model. Drag a row onto a Team's heading to add that Agent to the Team. A Team launches
+from its heading; an Agent does not launch from here: press its row and the Agent opens under
+it, press again to close. Open, it shows **Team Lead**, its Team's lead, where you pick another
+of the Team's Agents to make lead, then its **Configuration** (name, mandate and the rest, with Save).
 
 If a remembered surface is no longer available at the current scope, its tilespace comes
 back empty. Check the discovery column: it is the current answer to what can be opened

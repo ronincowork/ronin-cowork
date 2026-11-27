@@ -31,6 +31,7 @@ Each file's `when:` picks its readers; an Agent is told only its own.
 | `behaviours/pm-coworker.md` | coworkers: take, start, side work, hand in, hand over at the end, end when accepted | `pm, team, role:coworker` |
 | `behaviours/pm-lead.md` | Team leads: the kinds of ask, when to offer a plan (`ronin-help planning`), giving out work, deciding what an ending handed over or flagged, promote in batches | `pm, lead` |
 | `behaviours/pm-epic-lead.md` | an epic_lead | `pm, role:epic_lead` |
+| `behaviours/pm-appliance.md` | an appliance's standing Agent: takes each order handed to her, waits on the person who placed it, stays when her orders are done | `pm, role:appliance` |
 | `behaviours/pm-traffic-control.md` | a coordinator: placing the items nobody holds | `pm, role:coordinator` |
 | `tools/work-item.md` | the `item` tool, told under Project management (`serves: project-management`) | (with its behaviour) |
 
@@ -46,7 +47,7 @@ Each file's `when:` picks its readers; an Agent is told only its own.
 | `worktree-desk hand-in <repo> --item <id> --note "<what they can try>"` | the hand-in signal: In Review, the Agent keeping the hold, recorded in `hand_ins`, the note posted as the **Handed in** comment, the review line an opened item shows as Look at, after its Objective. Missing or long, never refused: the reply prompts for it (`reviewPrompt`, `src/work-items.ts`; `src/commands/desk.ts`, `src/desks/hand-in.ts`) |
 | `bin/ronin-promote <team>` | the promotion signal: marks each carried item `on_dev`, no status change (`src/promotion/promote.ts`) |
 | `session_end` | settles To Do back to the Team, then refuses while the Agent holds anything In Progress or In Review; NEXT is `item handover` (`src/routes/sessions-api.ts`, `settleToDo`, `unfinishedHolds`). The end archives the Agent ([session archive](session-archive.md#an-agents-own-end)) |
-| `team-roster-write --select / --deselect` | turns project management on or off for a Team (`libexec/team-roster-write`) |
+| `team roster write --select / --deselect` | adds or takes off behaviours in a Team's brief settings (`brief.add`), `<behaviour>:full` or `:seed` its depth; `project-management` turns project management on or off for the Team (`pm`) (`libexec/team-roster-write`) |
 
 ## The code
 

@@ -46,7 +46,7 @@ Usage:
                         [--mode manual|assisted] [--cmd <cli>]
                         [--mcp on|off] [--tags a,b] [--seed p1,p2]
                         [--reach <reach>] [--recruit <recruit>] [--output a,b]
-                        [--role coworker|lead|epic_lead|coordinator]
+                        [--role coworker|lead|epic_lead|coordinator|appliance]
 
 Creation is always explicit. An existing name is refused rather than read or updated.
 With no --team, the new Agent joins the caller's first Team when there is one.
@@ -68,6 +68,7 @@ PY
 Naming any of the three sets the whole mandate: an axis left out is reach plan, recruit
 propose agents, output open. Naming none inherits the Team's defaults.
 --role sets the Agent's role, as the New Agent form does; coworker when not named.
+appliance is the standing Agent behind an appliance (a counter): she stays when her orders are done.
 Choose a current pair in one call: session_create <name> --provider <provider> --model <model>.
 The model ids below come from each CLI's refreshed inventory and are sent unchanged.
 A CLI-supported alias is also passed through unchanged, including saved preferences.

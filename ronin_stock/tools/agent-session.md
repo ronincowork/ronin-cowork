@@ -11,7 +11,7 @@ The session tools are about an Agent's existence, not its work.
   conversation, so the prompt carries its whole purpose. `--provider`/`--model` take the ids
   `session_create --help` lists. `--reach`/`--recruit`/`--output` set its mandate at birth
   (an axis left out: reach plan, recruit propose agents, output open; none named: the Team's
-  defaults). `--role coworker|lead|epic_lead|coordinator`, coworker by default. Answers
+  defaults). `--role coworker|lead|epic_lead|coordinator|appliance`, coworker by default. Answers
   `BORN` or `REFUSED: <why>`; an existing name is refused.
 - `session_check` `<name>`: read one live session; `NO-SESSION` if the name is unused.
 - `session_set` `<name>`: change its Team, lead, or Workspace (`--root <workspace>`,

@@ -102,7 +102,7 @@ export function acceptedLaunchBody(input: unknown): { body: Record<string, unkno
 
   if (body.tags !== undefined && !Array.isArray(body.tags)) drop('tags');
   if (body.seed !== undefined && !Array.isArray(body.seed)) drop('seed');
-  if (body.role !== undefined && !['coworker', 'lead', 'epic_lead', 'coordinator'].includes(String(body.role))) drop('role');
+  if (body.role !== undefined && !['coworker', 'lead', 'epic_lead', 'coordinator', 'appliance'].includes(String(body.role))) drop('role');
 
   const inapplicable = sessionType === 'terminal'
       ? ['provider', 'model', 'instructions', 'prompt', 'mandate', 'brief', 'integrations', 'pm', 'cmd', 'seed', 'inject', 'reference', 'role']
@@ -117,7 +117,7 @@ export function acceptedLaunchBody(input: unknown): { body: Record<string, unkno
 export function spawnFormFromLaunchBody(body: Record<string, unknown>, houseSeat?: HouseSeat): SpawnForm {
   const sessionType = String(body.session_type);
   const team = String(body.team ?? '').trim();
-  const role = body.team_lead === true ? 'lead' : ['coworker', 'lead', 'epic_lead', 'coordinator'].includes(String(body.role)) ? String(body.role) as SpawnForm['role'] : 'coworker';
+  const role = body.team_lead === true ? 'lead' : ['coworker', 'lead', 'epic_lead', 'coordinator', 'appliance'].includes(String(body.role)) ? String(body.role) as SpawnForm['role'] : 'coworker';
   return {
     session_type: sessionType as SpawnForm['session_type'],
     house_seat: houseSeat,
