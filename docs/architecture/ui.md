@@ -619,8 +619,8 @@ surface. Names break at their joints (`_` `-` `.`), never mid-word.
 import { ask } from './ask.js';
 const form = ask([
   { group: t('new_agent.model_package', 'Model'), fields: [
-    { key: 'provider', label: t('forms.provider', 'model provider'), blank: t('forms.default', 'default'), options: () => harnessRows() },
-    { key: 'model', label: t('forms.model', 'model'), blank: t('forms.default', 'default'), after: 'provider', options: (v) => modelRows(v.provider) },
+    { key: 'provider', label: t('forms.provider', 'Harness'), blank: t('forms.default', 'Default'), options: () => harnessRows() },
+    { key: 'model', label: t('forms.model', 'Model'), blank: t('forms.default', 'Default'), after: 'provider', options: (v) => modelRows(v.provider) },
   ] },
   { group: t('mandate', 'Mandate'), fields: [
     { key: 'reach', label: t('reach', 'Reach'), shape: 'square', options: REACH_ROWS },

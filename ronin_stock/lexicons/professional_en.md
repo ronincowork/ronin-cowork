@@ -439,7 +439,7 @@ nothing paints exactly this.
 - **new_team.raising:** Raising the team…
 
 ## forms — form-steps.js (the drawn form idiom shared by New Team and New Agent)
-- **forms.default:** default
+- **forms.default:** Default
 - **ask.answer:** Answer
 - **setup_surface.identity_short:** Register as
 - **setup_surface.kind_short:** You use Ronin for
@@ -463,8 +463,8 @@ nothing paints exactly this.
 - **forms.tier_standard:** standard
 - **forms.tier_frontier:** frontier
 - **forms.tier_unrated:** unrated
-- **forms.provider:** harness
-- **forms.model:** model
+- **forms.provider:** Harness
+- **forms.model:** Model
 - **forms.none:** —
 - **forms.on:** On
 - **forms.off:** Off
