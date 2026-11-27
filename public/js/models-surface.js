@@ -1,14 +1,12 @@
 /* part of the ronin-cowork client — see js/README.md */
 /**
- * THE MODELS WORKBENCH'S SURFACES (owner, 2026-10-19; PATTERNS.md Home). Home's Models door
- * opens the Models workbench; its surfaces are its own, apart from Settings' Model Providers
- * surface, and draw with the same drawing (harnesses-surface.js: createHarnessDrawing, the
- * provider's page; harnessStones, the stones) over the same reads.
- *   WS1 `createModelStones`: Phalanx A/B stones of providers. A stone pressed opens the
- *   provider's page in place of the stones, with the − back; a stone dragged into a workspace
- *   places the provider there whole (`createModelHarness`), the whole workspace to its page.
- *   The selector lists one card per provider (`harnessOffers`), each placing that surface.
- *   `createModelDefaults`: the model a new Agent, a new Team lead and Mika start on.
+ * SETTINGS' HARNESS SURFACES, drawn with harnesses-surface.js (createHarnessDrawing, a harness's
+ * page; harnessStones, the stones) over the same reads.
+ *   `createModelStones`: the stones of harnesses; a stone pressed opens its page in place of the stones; a
+ *   stone dragged into a workspace places that harness there whole (`createModelHarness`).
+ *   The selector lists one card per harness (`harnessOffers`).
+ *   `createModelRefresh`: Refresh all, step by step.
+ *   `createModelDefaults`: the model a new Agent, a new Team lead and Mika start on (Office defaults).
  */
 import { WorkspaceKit } from './workspace-kit.js';
 import { dayTime, el } from './form-steps.js';
@@ -178,7 +176,7 @@ function accountsStep(accounts, state) {
   return made.item;
 }
 
-/** A workspace of its own for one provider: its page, the whole workspace, no rail. */
+/** A workspace of its own for one provider: its page, the whole workspace. */
 export function createModelHarness(key, context) {
   const { createSurface } = WorkspaceKit.primitives;
   const out = createSurface({ label: key, className: 'setup-surface models-provider' });

@@ -19,7 +19,6 @@ import { briefFacts } from './facts.js';
 import type { LaunchFacts, SpawnForm } from './spawn.js';
 import { mandate } from './agent-defaults.js';
 import { listDeskRecords } from './desks/registry.js';
-import type { WorkRecordBrief } from './tegami.js';
 
 /** The Agent's own layer, as a launch body or a Configuration carries it. */
 export interface AgentBrief { brief: BriefSettings; integrations: string[]; pm?: boolean }

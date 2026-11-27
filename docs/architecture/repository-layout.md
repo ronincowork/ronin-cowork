@@ -41,7 +41,7 @@ ronin-cowork/
 │   └── services/            Ronin Services, Ronin's own switchable contribution
 ├── scripts/                 repository verification, diagnostics, and maintenance
 ├── src/                     TypeScript server, contracts, adapters, and runtime
-│   ├── activation/          registration and optional-Service activation state
+│   ├── activation/          the HQ transport, feedback (kansou) and the house token
 │   ├── commands/            implementations behind command dispatchers
 │   ├── desks/               managed-worktree lifecycle and custody
 │   ├── promotion/           coordinated Team-line promotion machinery

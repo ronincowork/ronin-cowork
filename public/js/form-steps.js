@@ -81,8 +81,8 @@ export const mandateWord = (value) => mandateTitle(value);
  * names — `model`, the id every launch uses, and `name`, the CLI's own display name with the
  * version in it — its `use_for` line and facts, plus `operational`,
  * `off` and `selectable` for this machine. `GET /api/setup/runtime` answers the machine
- * facts the Model providers surface paints (installed, signed in, steps). Nothing here
- * probes; only Refresh all on that surface reads a model list. A surface calls
+ * facts a harness's page paints (installed, signed in, steps). Nothing here
+ * probes; only Refresh all reads a model list. A surface calls
  * `loadHarnessCatalog()` when it is shown and paints from `harnessCatalog()`; a picker
  * built before the first read paints again when it lands.
  */
@@ -130,7 +130,7 @@ export function dayTime(iso) {
 /**
  * One model as an option reads: its name and its tier, and stops there. A picker is for
  * choosing, not for reading: the model's description belongs to the
- * Campaign's Model providers surface, where there is room for the whole table. In an
+ * harness's page in Settings, where there is room for the whole table. In an
  * option it is a sentence squeezed into a line that cannot show it.
  */
 export const modelLabel = (row) => {
@@ -149,7 +149,7 @@ export const rowTierWord = (row) => {
   const line = row?.model === NATIVE_MODEL ? '' : String(row?.use_for || '');
   return [word, line].filter(Boolean).join(' · ');
 };
-export const modelWord = (row) => rowTierWord(row)
+const modelWord = (row) => rowTierWord(row)
   ? t('forms.model_word', '{model} · {tier}', { model: modelLabel(row), tier: rowTierWord(row) })
   : modelLabel(row);
 
@@ -169,13 +169,13 @@ export const modelWord = (row) => rowTierWord(row)
 export function harnessModelPair(read, write, field, { fixed = '', classes = '', blank = {}, labels = {} } = {}) {
   const harnessSelect = el('select', classes);
   const modelSelect = el('select', classes);
-  harnessSelect.setAttribute('aria-label', labels.provider ?? t('forms.provider', 'harness'));
-  modelSelect.setAttribute('aria-label', labels.model ?? t('forms.model', 'model'));
+  harnessSelect.setAttribute('aria-label', labels.provider ?? t('forms.provider', 'Harness'));
+  modelSelect.setAttribute('aria-label', labels.model ?? t('forms.model', 'Model'));
   const option = (label, value, disabled = false) => { const out = el('option', null, label); out.value = value; out.disabled = disabled; return out; };
   const paint = () => {
     const current = read() || {};
     const providers = harnessCatalog().harnesses;
-    harnessSelect.replaceChildren(option(blank.provider ?? t('forms.default', 'default'), ''));
+    harnessSelect.replaceChildren(option(blank.provider ?? t('forms.default', 'Default'), ''));
     for (const entry of providers) {
       const name = entry.cli_label || entry.label;
       const label = entry.operational ? name : entry.off ? t('forms.provider_turned_off', '{name} — turned off', { name }) : entry.cli === 'hermes' ? `${name} — add a setup in Models` : t('forms.provider_off', '{name} — not on this machine', { name });
@@ -184,7 +184,7 @@ export function harnessModelPair(read, write, field, { fixed = '', classes = '',
     harnessSelect.value = current.provider || '';
     const chosen = fixed || harnessSelect.value;
     const rows = harnessCatalog().rows.filter(row => row.provider === chosen);
-    modelSelect.replaceChildren(option(blank.model ?? t('forms.default', 'default'), ''));
+    modelSelect.replaceChildren(option(blank.model ?? t('forms.default', 'Default'), ''));
     for (const row of rows) {
       const label = fixed && !row.operational ? (row.off ? t('forms.model_turned_off', '{model} — turned off', { model: modelWord(row) }) : t('forms.model_off', '{model} — not on this machine', { model: modelWord(row) })) : modelWord(row);
       modelSelect.add(option(label, row.model, !row.selectable));
@@ -195,8 +195,8 @@ export function harnessModelPair(read, write, field, { fixed = '', classes = '',
   harnessSelect.addEventListener('change', () => { write(harnessSelect.value, ''); paint(); });
   modelSelect.addEventListener('change', () => write(fixed || harnessSelect.value, modelSelect.value));
   const wrap = el('div', 'fs-pair');
-  if (!fixed) wrap.append(field(labels.provider ?? t('forms.provider', 'harness'), harnessSelect));
-  wrap.append(field(labels.model ?? t('forms.model', 'model'), modelSelect));
+  if (!fixed) wrap.append(field(labels.provider ?? t('forms.provider', 'Harness'), harnessSelect));
+  wrap.append(field(labels.model ?? t('forms.model', 'Model'), modelSelect));
   paint();
   if (!harnessCatalog().loaded) void loadHarnessCatalog().then(paint);
   return { el: wrap, paint, harnessSelect, modelSelect };

@@ -14,7 +14,7 @@ A heading over the first card of each, with a section's space between them.
 
 | Section | What someone came to do | Cards |
 |---|---|---|
-| Harnesses and models | sign in to a harness, connect a model service, choose the models a harness offers | **Harness** stones (install, sign in, ready; a harness's page has its Models section). **Model services**: one card, three tabs: Ronin Gateway (comes configured, its model list only), API key and OpenRouter (each a Configure section and a Model options section). See [model_services_README.md](model_services_README.md) |
+| Harnesses and models | sign in to a harness, connect a model service, choose the models a harness offers | **Harness** stones (install, sign in, ready; a harness's page has its Models section). **Model services**: one card, three tabs: Ronin Gateway (comes configured, its model list only), API key and OpenRouter (each a Configure section and a Model entries section). See [model_services_README.md](model_services_README.md) |
 | Office defaults | change what new Agents and Teams start with | **Agent defaults**: the starting models (Agent, Team lead), then mandate, launch mode and included behaviors |
 | Workspaces and integrations | change where a project lives, or set up an outside service | **Workspaces**: the Workspace stones; each opens its Configuration, **+ New Workspace** opens the four ways. **Integrations**: every outside service, one record each, Jira among them ([integrations.md](integrations.md)) |
 | Advanced | edit the actual instructions, or read what is on this machine | **Behavior files** (read and edit behavior, fact and tool files), **Machine status** (the generated report), **Machine stats** (tool-call activity, with its collection period), **Explorer** (the home folder, where it runs) |
@@ -49,5 +49,5 @@ defaults) is a separate task from changing a behavior file's text (Behavior file
   ([installations.md](installations.md)).
 
 Retired with the old Settings: the Machine card (Themes, Desk, Account, Archived, Messages, Help
-desk, Keypad), Cloud Account, Password, Register, Installations, Launch your own, the Desk card and
+desk, Keypad), Cloud Account, Password, Installations, Launch your own, the Desk card and
 New Desk, and the separate Jira card.

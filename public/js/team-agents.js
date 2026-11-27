@@ -9,15 +9,16 @@ let rowId = 0;
 
 export const agentRow = () => ({
   name: '', assignment: '', provider: '', model: '',
-  reach: 'open', recruit: 'open', output: ['open'],
+  reach: '', recruit: '', output: [],
   team_lead: false,
 });
-const copyRow = (row) => ({ ...agentRow(), ...row, output: [...(row.output || ['open'])] });
+const copyRow = (row) => ({ ...agentRow(), ...row, output: [...(row.output || [])] });
 
 export function agentPicks(rows) {
   return rows.filter((row) => finalizeTeamName(row.name)).map((row) => ({
     name: finalizeTeamName(row.name), instructions: row.assignment.trim(),
-    mandate: { reach: row.reach, recruit: row.recruit, output: [...row.output] },
+    // NO MANDATE PICKED: the Agent takes the Team's own, copied from its Workspace.
+    ...(row.reach || row.recruit || row.output.length ? { mandate: { ...(row.reach ? { reach: row.reach } : {}), ...(row.recruit ? { recruit: row.recruit } : {}), ...(row.output.length ? { output: [...row.output] } : {}) } } : {}),
     team_lead: row.team_lead === true,
     ...(row.provider ? { provider: row.provider } : {}),
     ...(row.model ? { model: row.model } : {}),
@@ -67,9 +68,9 @@ export function createAgentRows({ n, key, rows, changed, onToggle, createAction,
         { key: 'teamLead', label: t('new_agent.make_team_lead', 'Make team lead'), switch: [t('forms.on', 'On'), t('forms.off', 'Off')] },
       ] },
       { group: t('mandate', 'Mandate'), fields: [
-        { key: 'reach', label: t('reach', 'Reach'), options: () => mandateRows('reach', screen()) },
-        { key: 'recruit', label: t('recruit', 'Recruit'), options: () => mandateRows('recruit', screen()) },
-        { key: 'output', label: t('output', 'Output'), many: true, options: () => mandateRows('output', screen()) },
+        { key: 'reach', label: t('reach', 'Reach'), blank: t('new_team.team_default', "The Team's"), options: () => mandateRows('reach', screen()) },
+        { key: 'recruit', label: t('recruit', 'Recruit'), blank: t('new_team.team_default', "The Team's"), options: () => mandateRows('recruit', screen()) },
+        { key: 'output', label: t('output', 'Output'), many: true, blank: t('new_team.team_default', "The Team's"), options: () => mandateRows('output', screen()) },
       ] },
     ], {
       value: { ...row, teamLead: row.team_lead === true },
@@ -97,7 +98,7 @@ export function createAgentRows({ n, key, rows, changed, onToggle, createAction,
     rows().forEach((row, index) => {
       const card = el('div', 'ntf-agent-row'); const words = el('div', 'ntf-agent-row-words');
       words.append(el('b', null, row.name || t('new_team.unnamed_agent', 'unnamed Agent')));
-      const details = [row.assignment, row.team_lead ? t('new_agent.team_lead', 'Team lead') : '', `${mandateWord(row.reach)} · ${mandateWord(row.recruit)} · ${row.output.map(mandateWord).join(', ')}`, [row.provider, row.model ? modelLabel(row) : ''].filter(Boolean).join(' · ')].filter(Boolean);
+      const details = [row.assignment, row.team_lead ? t('new_agent.team_lead', 'Team lead') : '', [row.reach && mandateWord(row.reach), row.recruit && mandateWord(row.recruit), row.output.map(mandateWord).join(', ')].filter(Boolean).join(' · '), [row.provider, row.model ? modelLabel(row) : ''].filter(Boolean).join(' · ')].filter(Boolean);
       words.append(el('small', null, details.join(' — ')));
       const edit = createAction({ label: t('edit', 'Edit'), size: 'compact', action: () => openEditor(row, index) });
       const drop = createAction({

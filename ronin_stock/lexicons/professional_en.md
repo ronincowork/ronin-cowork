@@ -271,15 +271,12 @@ nothing paints exactly this.
 - **campaign_home.launch:** New Project
 - **campaign_home.settings:** Settings
 - **campaign_home.check_updates:** Check for updates
-- **campaign_home.harnesses:** Harnesses
-- **campaign_home.harnesses_is:** The harnesses on this machine, the accounts they launch on, and the models
 - **campaign_home.get_started:** Get started
 - **campaign_home.get_started_is:** Harness, Workspace, Team
 - **campaign_home.settings_is_hosted:** This Desk’s settings
 - **campaign_home.business_lounge:** Business Lounge
 - **campaign_home.business_lounge_is:** Your account, office and subscription, at Ronin HQ
-- **campaign_home.side_hosted:** Models, Help, Settings and the Business Lounge
-- **setup.provider_gate_hosted:** Activate a harness in Harnesses to use this.
+- **campaign_home.side_hosted:** Setup, Settings and the Business Lounge
 - **setup.open_settings:** Open Ronin Settings
 - **setup.open_setup:** Open Ronin Setup
 - **setup.irasshai_open:** Ask Ronin
@@ -288,7 +285,7 @@ nothing paints exactly this.
 - **setup.irasshai_opening:** Opening…
 - **setup.irasshai_failed:** Couldn’t open the Helpful Assistant
 
-## harness — models-surface.js, workbench-catalog.js (the Harnesses workbench's stones and Refresh; KAN-236)
+## harness — models-surface.js, workbench-catalog.js (Settings' harness stones and Refresh; KAN-236)
 
 - **harness.stones:** Harness
 - **harness.stones_summary:** The CLIs: install, sign in, ready
@@ -323,7 +320,7 @@ nothing paints exactly this.
 - **accounts.preset_reasoning:** Reasoning effort
 - **accounts.preset_approvals:** Approvals
 
-## models — models-surface.js (the Harnesses workbench: stones, Refresh, Defaults)
+## models — models-surface.js (Settings' harness stones, Refresh, and the model defaults)
 
 
 ## launch — launch-view.js (the Workbench where Teams and Agents begin)
@@ -363,9 +360,8 @@ nothing paints exactly this.
 - **help.loadout:** Behaviors
 - **help.kit:** Shared toolkit
 - **help.kit_body:** What every Agent raised on this Team starts with. All of it lands in the next Agent form as an ordinary editable value — none of it is a constraint, and changing it here never touches a session already running.
-- **new_team.who_where:** Who and where
 - **new_team.agents:** Agents
-- **new_team.agent_name:** name
+- **new_team.agent_name:** Name
 - **new_team.agent_name_taken:** Nothing was created. Choose another name for: {names}.
 - **new_team.agent_add:** ＋ Add an Agent
 - **new_team.readable:** Title
@@ -424,24 +420,41 @@ nothing paints exactly this.
 - **team.project_root:** Workspace folder
 - **team.team:** Team
 - **new_team.name_invalid:** Lowercase letters, digits, _ and - only.
-- **new_team.root_default:** — the box’s default —
 - **new_team.title:** New Team
 
 ## new_team — new-team-form.js (the drawn raise form, staged beside the card above)
-- **new_team.card_summary:** Kind · kit · lead — the drawn form.
-- **new_team.kind_summary:** Optional — Kind
+- **new_team.card_summary:** Name, Workspace, Agents and Epic.
 - **new_team.name_placeholder:** lowercase, digits, - _
-- **new_team.objective_placeholder:** what this team is for
-- **new_team.members:** members
-- **new_team.members_note:** derived from live tags — never stored here
-- **new_team.inherits:** an agent born here inherits
+- **new_team.objective_placeholder:** what the lead picks up and starts on
 - **new_team.staffing_failed:** Team created, but {failed} of {total} Agents could not be launched: {names}. Open the Team and add them there.
 - **new_team.raising:** Raising the team…
+- **new_team.agent_add_confirm:** Add
+- **new_team.agent_add_title:** Add Agent
+- **new_team.agent_assignment_label:** Instructions
+- **new_team.agent_drop_named:** Remove {name}
+- **new_team.agent_edit_title:** Edit Agent
+- **new_team.agent_editor_actions:** Agent actions
+- **new_team.agent_row_actions:** Agent row actions
+- **new_team.epic:** Epic
+- **new_team.epic_failed:** Team created; its epic was not: {why}.
+- **new_team.epic_new:** A new epic
+- **new_team.epic_title:** New epic
+- **new_team.epic_title_placeholder:** what done looks like
+- **new_team.instructions:** Team instructions
+- **new_team.instructions_placeholder:** standing directions every Agent in the Team reads
+- **new_team.lead_epic:** Your epic
+- **new_team.lead_objective:** Team objective
+- **new_team.name_objective:** Name & objective
+- **new_team.objective:** Team objective
+- **new_team.team_default:** The Team's
+- **new_team.unnamed_agent:** unnamed Agent
+- **new_team.workspace:** Workspace
+- **new_team.workspace_blank:** Choose a Workspace
+- **new_team.workspace_none:** None
 
 ## forms — form-steps.js (the drawn form idiom shared by New Team and New Agent)
-- **forms.default:** default
+- **forms.default:** Default
 - **ask.answer:** Answer
-- **setup_surface.identity_short:** Register as
 - **setup_surface.kind_short:** You use Ronin for
 - **setup_surface.preferred_feature_short:** Capability
 - **setup_surface.reasons_short:** Describes you
@@ -463,8 +476,8 @@ nothing paints exactly this.
 - **forms.tier_standard:** standard
 - **forms.tier_frontier:** frontier
 - **forms.tier_unrated:** unrated
-- **forms.provider:** harness
-- **forms.model:** model
+- **forms.provider:** Harness
+- **forms.model:** Model
 - **forms.none:** —
 - **forms.on:** On
 - **forms.off:** Off
@@ -472,10 +485,10 @@ nothing paints exactly this.
 ## new_agent — new-agent.js (the drawn launch form, staged beside the ＋ New board)
 - **new_agent.title:** New Agent
 - **new_agent.model_package:** Model
-- **new_agent.defaults_cascade_team:** Defaults cascade from Desk → Workspace → Team → this Agent. Changes on this form apply only to this Agent.
-- **new_agent.defaults_cascade_desk:** Defaults cascade from Desk → this Agent. Changes on this form apply only to this Agent.
+- **new_agent.defaults_cascade_team:** Defaults cascade from office → Workspace → Team → this Agent. Changes on this form apply only to this Agent.
+- **new_agent.defaults_cascade_desk:** Defaults cascade from office → this Agent. Changes on this form apply only to this Agent.
 - **new_agent.team_defaults:** Team defaults
-- **new_agent.desk_defaults:** Desk defaults
+- **new_agent.desk_defaults:** Office defaults
 - **new_agent.card_summary:** Session type first — the drawn launch form.
 - **new_agent.type_cowork:** Cowork Agent
 - **new_agent.type_cowork_sub:** Born with Ronin capabilities, behaviors, and assigned Team.
@@ -1226,17 +1239,12 @@ The pad's current config downloads as a backup first.
 - **team_config.loading:** Loading Team Configuration…
 - **team_config.cowork_id:** Team ID
 - **team_config.title:** Title
-- **team_config.kind:** Kind
-- **team_config.objective:** Purpose
 - **where.born_in:** Born in
 - **where.additional:** Additional workspaces
 - **where.col_branch:** Branch
 - **where.label:** Where it works
 - **where.summary:** born in {root} · {repos}
 - **where.none:** no auto worktree
-- **team_config.default:** Default
-- **team_config.provider:** Provider
-- **team_config.model:** Model
 - **team_config.reach:** Reach
 - **team_config.recruit:** Recruit
 - **team_config.output:** Output
@@ -1335,13 +1343,6 @@ The pad's current config downloads as a backup first.
 - **feedback.sending:** Sending…
 - **feedback.sent:** Sent — thank you
 - **feedback.thank_you:** Thank you for helping us make Ronin better.
-- **setup_surface.providers:** Harnesses
-- **setup_surface.authenticate_mika:** Let Mika authenticate
-- **setup_surface.authenticate_guided:** Use the CLI with Mika
-- **setup_surface.authenticate_irasshai:** Let the Helpful Assistant authenticate
-- **setup_surface.authenticate_guided_irasshai:** Use the CLI with the Helpful Assistant
-- **setup_surface.providers_summary_unread:** Every harness and model Ronin offers, and what this machine has.
-- **setup_surface.providers_summary:** {providers} harnesses · {models} models · {activated} activated here
 - **setup_surface.section_yours:** Yours
 - **setup_surface.no_cli:** No CLI in Ronin’s registry serves this harness, so it cannot be installed or signed in here.
 - **setup_surface.no_cli_state:** No CLI
@@ -1352,6 +1353,7 @@ The pad's current config downloads as a backup first.
 - **setup_surface.never_ran:** Never run — every harness offers Native only until it runs.
 - **setup_surface.models_read:** Model list read {date} by {cli} {version}
 - **setup_surface.models_not_read:** Model list not read yet — press Refresh all harnesses.
+- **setup_surface.provider_models_1:** {vendor} · 1 model
 - **setup_surface.provider_models_n:** {vendor} · {n} models
 - **setup_surface.part_models_n:** {n} models
 - **setup_surface.fact_installed:** Installed

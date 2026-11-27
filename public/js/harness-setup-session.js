@@ -1,7 +1,7 @@
 /* part of the ronin-cowork client — see js/README.md */
 /**
- * THE NATIVE SIGN-IN TILE — one mount, handed to every workbench environment that seats
- * the Model providers surface (Ronin Setup and Ronin Settings). The surface asks its
+ * THE NATIVE SIGN-IN TILE: one mount, handed to every workbench environment that shows a
+ * harness's terminal sign-in (Setup's Harness step, Settings' harness pages). The surface asks its
  * environment for `mountHarnessSetupSession` (setup-harness-state.js
  * `mountHarnessAttachment`); this is the one implementation of it: a headerless
  * full-mode terminal tile attached to the provider's temporary setup session, parked by

@@ -73,8 +73,8 @@ not start her; an office starts her when none of the three steps is ticked. Movi
 steps tells her nothing; she sees the step (Setup reports its view) and opens what it needs with
 `show`. A button on a step's surface may message her, named on the button.
 
-Registration, Installations (Ronin Services), Password and Launch are not Setup steps: their cards
-stay in Settings. Install makes no Workspace and no folder; Ronin Lab is made in the Workspace step
+Ronin Services, Password and launching your own are not Setup steps (see "Not in
+Setup or Settings" below). Install makes no Workspace and no folder; Ronin Lab is made in the Workspace step
 (its "Not sure yet" door), as any Workspace is. Plans make their folder on their first
 write.
 
@@ -84,30 +84,11 @@ actions, and from the `setup-progress` push; it does not poll.
 Every stone surface in Setup shares one shape: square stones; press one and its page opens in
 their place with the kaki − top right; the − or Escape closes it back to the stones.
 
-### The header zone
-
-Every step opens with a band across the top of its surface, above a hairline: one line
-saying what is true on this machine right now, and the choices that act on it. It states a
-fact and never explains — the guidance in Workspace 1 is where the reasoning lives — and it
-carries no title, because the surface already has one.
-
-A choice does the thing, and the mark fills when the facts say the step is done. Nothing is
-chosen for you: a choice shows as taken only once its setting is on.
-
-The zone says what the step needs decided, never what one stone is doing. A stone's own
-condition — *Coming soon*, *Needs sign-in*, *Activated* — stays on the stone.
-
-Once a step is settled the band goes blank, and its space stays. That space is what holds
-the stones at the same height as you move between steps, so nothing jumps. While a stone is
-open the band is gone entirely: that is the step's own page, not its question.
-
-**Password** (in Settings) never goes blank, because how you reach this machine is an arrangement you may
-want to revisit rather than a one-time fact: it keeps its choices for good.
-
 ## Harnesses
 
-One surface on two seats: Setup's Harness step (`setup-harness-surface.js`) and the Harness pages in
-Settings (`harnesses-surface.js`). Both read the same measured runtime, so a change shows on both.
+Two surfaces over one measured runtime: Setup's Harness step (`setup-harness-surface.js`) and the
+harness pages in Settings (`harnesses-surface.js`, seated by `harnessKit` in `door-workbenches.js`),
+so a change shows on both. Setup's line under the bars links to Settings.
 The CLI's own credential file is the record of a sign-in; Ronin keeps nothing beside it.
 
 ### Setup's Harness step
@@ -140,8 +121,8 @@ exiting, reaches her from the run itself: `Codex is signed in.` or `Codex sign-i
 <last line>`.
 
 **Her hands.** She never presses the page. Her `harness` tool (`ronin_bin/harness`) calls the same
-routes the bar calls (`sign-in`, `cancel`, `state`, `open`, `close`, and the Hermes `options` and
-`option add|remove`); the route changes the record and the page redraws from its push
+routes the bar calls (`sign-in`, `cancel`, `state`, `open`, `close`, and the Hermes `entries` and
+`entry add|remove`, over `/api/model-services`); the route changes the record and the page redraws from its push
 (`harness-sign-in`, setup progress, `model-services-changed`). A change she made sends her no press
 line: the tool's answer is her confirmation. Keys are never hers to enter.
 
@@ -187,7 +168,7 @@ next Agent finds it.
 
 **Her hands.** She never presses the page. Her tools call the same routes its buttons do, and the
 page redraws from the record: `harness` (sign-ins, `open`/`close` a harness's terminal, Hermes model
-options), `workspace` (create, repositories, sources, `starter ronin_lab`), `team`, `item`, `office
+entries), `workspace` (create, repositories, sources, `starter ronin_lab`), `team`, `item`, `office
 read`, `show`. Keys and codes are pasted on the page, never into her chat. She never starts a
 sign-in on a harness already signed in unless the person asks: it signs out every Agent on it until
 it finishes, and she says so first.
@@ -294,7 +275,7 @@ when there is no Workspace, and a card per running Team (lead, Agents, items hel
 
 ## Not in Setup or Settings
 
-There is no Register, Password, Launch your own or Ronin Services card (owner, 25–26 Nov): the
+There is no Password, Launch your own or Ronin Services card (owner, 25–26 Nov): the
 account and any password are the Business Lounge's, a self-hosted machine is reached over the
 tailnet, New Team and New Agent are on Teams, and Ronin Services ships with Cowork with every part
 running ([installations.md](installations.md)). Settings itself: [settings.md](settings.md).

@@ -323,7 +323,7 @@ registerSetupRuntime(app); // /api/setup/runtime and provider login completion �
 registerSetupProgress(app); // Setup's ticks, read from the facts
 registerJikan(app); // /api/teams/:team/jikan* — JIKAN, the Cron jobs tab: a team's scheduled requests — src/routes/jikan-api.ts
 startHouseJikan(); // JIKAN's clock: every minute, deliver what is due through the message door — src/jikan.ts
-registerServicesActivation(app); // /api/setup/registration, /api/feedback — src/routes/services-activation-api.ts
+registerServicesActivation(app); // /api/feedback — src/routes/services-activation-api.ts
 
 // The Campaign's dated provider facts are measured once at start, after the record exists
 // and has migrated: the summary and the migration both read-modify-write the campaigns
