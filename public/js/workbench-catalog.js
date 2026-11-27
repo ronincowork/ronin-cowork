@@ -118,7 +118,7 @@ export function registerWorkbenchCatalog() {
   // door's; the surfaces under them are today's, reused. A harness's own card is placed by its stone, not offered.
   // Model services (KAN-870): one record per connection; tabs Ronin Gateway, API key and OpenRouter.
   campaign(WORKBENCH_TYPES.settings2ModelServices, 'surface', () => t('settings2.model_services', 'Model services'), 'settings2ModelServices', () => t('settings2.model_services_summary', 'Ronin Gateway, OpenRouter and your API keys, and the model entries each offers.'));
-  // Office defaults (KAN-871): the starting models live with mandate, launch mode and behaviors.
+  // Agent defaults (KAN-871), under Advanced beside Behavior files (owner, 27 Nov; KAN-973): the starting models live with mandate, launch mode and behaviors.
   campaign(WORKBENCH_TYPES.settings2AgentDefaults, 'surface', () => t('settings2.agent_defaults', 'Agent defaults'), 'settings2AgentDefaults', () => t('settings2.agent_defaults_summary', 'Model, mandate, launch mode and behaviors new Agents and Teams start with.'));
   // Appliance Access (KAN-955, KAN-973): which workbenches the people invited from the Business Lounge are shown
   // (members-see-surface.js). Offered only when an appliance (a folder workbench) is set up.
@@ -127,10 +127,10 @@ export function registerWorkbenchCatalog() {
   campaign(WORKBENCH_TYPES.settings2Stats, 'surface', () => t('settings2.stats', 'Machine stats'), 'settings2Stats', () => t('settings2.stats_summary', 'Tool-call activity on this machine.'));
   profiles.define(WORKBENCH_PROFILES.settings2, [
     WORKBENCH_TYPES.modelStones, WORKBENCH_TYPES.settings2ModelServices,
-    WORKBENCH_TYPES.settings2AgentDefaults, WORKBENCH_TYPES.settings2MembersSee,
+    WORKBENCH_TYPES.settings2MembersSee,
     // Jira has no card of its own: it is set up under Integrations (owner, 26 Nov).
     WORKBENCH_TYPES.campaignRoots, WORKBENCH_TYPES.campaignIntegrations,
-    WORKBENCH_TYPES.settings2BehaviorFiles, WORKBENCH_TYPES.campaignMachineStatus, WORKBENCH_TYPES.settings2Stats, FILES_TYPE,
+    WORKBENCH_TYPES.settings2BehaviorFiles, WORKBENCH_TYPES.settings2AgentDefaults, WORKBENCH_TYPES.campaignMachineStatus, WORKBENCH_TYPES.settings2Stats, FILES_TYPE,
     FEEDBACK_TYPE,
     WORKBENCH_TYPES.modelHarness, WORKBENCH_TYPES.campaignJiraItems, WORKBENCH_TYPES.campaignJiraPairs, WORKBENCH_TYPES.document,
   ]);

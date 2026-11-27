@@ -5,7 +5,7 @@
  *   stone dragged into a workspace places that harness there whole (`createModelHarness`).
  *   Here the Helpful Assistant opens in a window on the surface, put away with − (`createAgentWindow`).
  *   The selector lists one card per harness (`harnessOffers`).
- *   `createModelDefaults`: the model a new Agent, a new Team lead and Mika start on (Office defaults).
+ *   `createModelDefaults`: the model a new Agent, a new Team lead and Mika start on (Agent defaults, under Advanced).
  */
 import { WorkspaceKit } from './workspace-kit.js';
 import { el } from './form-steps.js';
