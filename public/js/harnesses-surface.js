@@ -280,12 +280,18 @@ export function mountHarnessPanel(host, id, { drawing, context = {}, openAgent =
     const said = el('p', 'setup-fine'); said.hidden = true;
     let seen = { code: '', link: '', show: false, back: '' };
     const copy = (value) => { void navigator.clipboard?.writeText(value).then(() => { said.textContent = t('setup_harness.copied', 'Copied.'); said.hidden = false; }, () => {}); };
-    /** A click where the screen draws its own "show full URL" (SGR mouse, as the CLI's mouse mode reads it). */
+    /** A click on the screen's own "Click here" for its full URL: the "here" before "show full URL", on that
+     *  line or, wrapped, the line above (SGR mouse, as the CLI's mouse mode reads it; 1-based cells). */
     const showUrl = () => {
-      const at = mounted?.locate?.(SHOW_URL);
-      if (!at) return;
-      const col = at.col + 6;
-      mounted?.send?.(`\x1b[<0;${col};${at.row}M\x1b[<0;${col};${at.row}m`);
+      const lines = mounted?.screenLines?.() || [];
+      const row = lines.findIndex((line) => SHOW_URL.test(line));
+      if (row < 0) return;
+      const before = lines[row].slice(0, lines[row].search(SHOW_URL));
+      const at = /here/i.test(before) ? { row, col: before.toLowerCase().lastIndexOf('here') }
+        : row > 0 && /here/i.test(lines[row - 1]) ? { row: row - 1, col: lines[row - 1].toLowerCase().lastIndexOf('here') }
+          : { row, col: lines[row].search(SHOW_URL) };
+      const x = at.col + 2; const y = at.row + 1;
+      mounted?.send?.(`\x1b[<0;${x};${y}M\x1b[<0;${x};${y}m`);
     };
     const paintCopy = () => {
       const code = stone(t('harness.copy_code', 'Copy code'), () => { if (seen.code) copy(seen.code); }, seen.code || t('harness.no_code', 'No code yet'));

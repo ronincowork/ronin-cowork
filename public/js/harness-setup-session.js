@@ -32,8 +32,8 @@ export function createHarnessSetupSessionMount() {
       const onOutput = (fn) => (tile && tile.term?.onOutput?.(fn)) || (() => {});
       /** Keys or a click the screen offers, pressed for the person (the panel's Show URL and Go Back). */
       const send = (keys) => Boolean(tile?.sendRaw?.(keys));
-      const locate = (pattern) => (tile && tile.term?.locate?.(pattern)) || null;
-      return { el: terminal.el, fit: terminal.fit, park: terminal.park, destroy, screenText, onOutput, send, locate };
+      const screenLines = () => (tile && tile.term?.screenLines?.()) || [];
+      return { el: terminal.el, fit: terminal.fit, park: terminal.park, destroy, screenText, onOutput, send, screenLines };
     },
     /** Tear down every tile still mounted — a view's destroy. */
     destroyAll: () => { for (const host of hosts) host.destroy(); hosts.clear(); },
