@@ -860,7 +860,6 @@ body {
 .tile-secret-card[data-state='saved'] .tile-secret-notice::before { content: '✓ '; }
 .tile-secret-card:is([data-state='saved'], [data-state='cancelled']) .tile-secret-entry { display: none; }
 .tile-doc-close {
-  align-self: flex-end;
   border: var(--edge) solid var(--line);
   border-radius: var(--radius-large);
   background: var(--surface);
@@ -868,6 +867,7 @@ body {
   padding: var(--space-row) var(--space-inline);
   cursor: pointer;
 }
+.dc-pills .tile-doc-close { margin-left: auto; }
 
 .pad-card {
   display: flex;
