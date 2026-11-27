@@ -8,13 +8,22 @@
 .setup-tour-foot { display: flex; align-items: center; justify-content: center; gap: var(--space-subsection); }
 .setup-tour-count { min-width: 6ch; text-align: center; font-size: var(--text-body); color: var(--muted); font-variant-numeric: tabular-nums; }
 
+/* The drawings' type sizes are in the picture's own units (its viewBox scales them), so they are the
+   drawing's measurements, not type roles. */
+.setup-tour-picture {
+  --tour-title-size: 22px;
+  --tour-label-size: 18px;
+  --tour-accent-size: 17px;
+  --tour-note-size: 16px;
+  --tour-small-size: 15px;
+}
 .setup-tour-picture text { font-family: var(--font-ui); }
-.setup-tour-picture .tour-title { fill: var(--fg-strong); font-size: 22px; font-weight: var(--weight-strong); }
-.setup-tour-picture .tour-label { fill: var(--fg-strong); font-size: 18px; }
-.setup-tour-picture .tour-note { fill: var(--muted); font-size: 16px; }
-.setup-tour-picture .tour-note-on { fill: var(--kaki-lift); font-size: 15px; }
-.setup-tour-picture .tour-accent { fill: var(--kaki-lift); font-size: 17px; font-weight: var(--weight-strong); }
-.setup-tour-picture .tour-chip-text { fill: var(--fg-strong); font-size: 15px; }
+.setup-tour-picture .tour-title { fill: var(--fg-strong); font-size: var(--tour-title-size); font-weight: var(--weight-strong); }
+.setup-tour-picture .tour-label { fill: var(--fg-strong); font-size: var(--tour-label-size); }
+.setup-tour-picture .tour-note { fill: var(--muted); font-size: var(--tour-note-size); }
+.setup-tour-picture .tour-note-on { fill: var(--kaki-lift); font-size: var(--tour-small-size); }
+.setup-tour-picture .tour-accent { fill: var(--kaki-lift); font-size: var(--tour-accent-size); font-weight: var(--weight-strong); }
+.setup-tour-picture .tour-chip-text { fill: var(--fg-strong); font-size: var(--tour-small-size); }
 .setup-tour-picture .tour-box { fill: var(--surface); stroke: var(--line-2); stroke-width: 1.5; }
 .setup-tour-picture .tour-on { fill: var(--selected); stroke: var(--kaki); stroke-width: 2; }
 .setup-tour-picture .tour-harness { fill: var(--inset, var(--surface)); }

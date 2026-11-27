@@ -24,7 +24,7 @@ convergence: consumers must use the actual shared contracts.
 | Routing/state contract | `public/js/workspace-contract.js` | Workbench appearances and headers, `DISMISSED_WORKSPACE`, `workspaceMaySeedDefault` and workspace-state normalization |
 | ViewHost/state | `public/js/workspace.js` | Registration, navigation, titles, history, per-tab state and lifecycle |
 | Team projection | `public/js/team-controller.js` | Durable roster refresh and live session-derived membership selectors |
-| Foundation CSS | `public/style.css`, `public/workspace-kit.css` | Tokens, primitives, named geometry and responsive machinery |
+| Foundation CSS | `public/tokens.css`, `public/style.css`, `public/workspace-kit.css` | Tokens, primitives, named geometry and responsive machinery |
 | Feature CSS | `public/css/*.css` | Namespaced feature composition only |
 
 Consume the facade where possible:
@@ -107,7 +107,7 @@ beneath that contract.
 ## CSS and skin governance
 
 There is no Tailwind or PostCSS pipeline. Ronin uses the design tokens in
-`public/style.css` and cascade order `vendor, base, ui, app`.
+`public/tokens.css` and cascade order `vendor, base, ui, app`.
 
 Mandatory rules:
 

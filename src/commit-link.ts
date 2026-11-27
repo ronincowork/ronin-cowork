@@ -38,7 +38,8 @@ export async function commitPage(ref: string, bases: string[], dir: string): Pro
   const { stdout } = await execFile(git, ['-C', found.repo, 'show', '--stat', '-p', '--no-color', found.sha], { timeout: 10000, maxBuffer: 16 * 1024 * 1024 });
   await mkdir(dir, { recursive: true });
   await writeFile(file, `<!doctype html><meta charset="utf-8"><title>${found.sha.slice(0, 7)} · ${escape(path.basename(found.repo))}</title>`
-    + `<style>body{margin:0;padding:12px;font:13px/1.45 ui-monospace,monospace;white-space:pre-wrap;word-break:break-word}</style>`
+    + `<link rel="stylesheet" href="/tokens.css">`
+    + `<style>body{margin:0;padding:var(--space-inset);font:var(--term-size)/var(--leading-body) var(--font-mono);white-space:pre-wrap;word-break:break-word}</style>`
     + `<body>${escape(`${found.repo}\n\n${stdout}`)}</body>`, 'utf8');
   return file;
 }
