@@ -13,7 +13,6 @@ const heads = (part) => ['admin', 'teams', 'team'].map((scope) => `--head-${scop
 const RENAMED = {
   '--muted-3': ['--muted'],
   '--kanban-green': ['--ok-2'],
-  '--kanban-yellow': ['--status-yellow'],
   '--kanban-red': ['--status-red'],
   '--setup-mark': ['--kaki-fill'],
   '--gc-cta-bg': ['--kaki-fill'],

@@ -25,12 +25,13 @@ interaction, transport, and failure rules those surfaces use.
 
 ## The cascade
 
-`public/style.css` is one file in four `@layer`s — `vendor, base, ui, app` —
-declared first:
+`public/tokens.css` and `public/style.css` share four `@layer`s — `vendor, base, ui, app` —
+declared first in each:
 
 - **vendor** — xterm.css, imported into the lowest layer.
-- **base** — the design tokens (both themes), reset, page chrome, and the one
-  universal `:focus-visible` ring.
+- **base** — the design tokens, both themes, in `public/tokens.css` (linked first): Ronin's
+  one palette, which the website and the Business Lounge copy. Then, in style.css, the reset,
+  page chrome, and the one universal `:focus-visible` ring.
 - **ui** — the shared primitives: `.ui-sheet`/`.ui-card`, `#toast`, the central
   `#attention-flash`, and the help box.
 - **ui** also owns the app-bar navigation set: `.ui-bar-nav` is a clickable label,
@@ -170,7 +171,7 @@ holds only tokens a designer may change. `0` is always legal: the absence of a v
 
 Colour is spelled once, in tokens: no raw colour anywhere but a `--token:` definition.
 The named role pairs keep readable contrast in both themes. The roles, defined in
-`public/style.css`:
+`public/tokens.css`:
 
 - surfaces: **two, and nothing else neutral paints a background** (owner, cut 13: "if we
   can't explain why a colour is there, don't do it"). `--surface` is the one base: the top
@@ -196,7 +197,7 @@ The named role pairs keep readable contrast in both themes. The roles, defined i
 - text: `--fg-strong` · `--fg` · `--muted` (one grey: `--muted-2` and `--dim` merged into it) · `--link` (aiiro, lifted on the dark shell)
 - meaning: `--accent` (attention/identity) · `--accent-2` (reference) · `--ok`/`--ok-2` ·
   `--warn` (needs you) · the `--bad-*` family (wrong, in grades) · `--info` · work-item status
-  `--ok-2` / `--status-yellow` / `--status-red`
+  `--ok-2` / `--status-red`
 - house: `--kaki` (the Ronin identity mark; this session; heightened access/visibility) ·
   `--aiiro` (Ronin navigation and selection) · `--graphite` (the admin header) — Kojin's fixed palette, borrowed. The kaki
   identity ruling is the open hexagonal **hito** mark, drawn in `--kaki` (`ninMark()`), so a
@@ -546,8 +547,8 @@ agent is behind a pane.
 ## Login
 
 `/login` (`public/login.html`) is the one pre-auth page: self-contained on purpose,
-same visual language, same theme switch. It links `/style.css`, the one file served before
-auth (it holds no secret), so it wears the same token values and keeps no copy. A skin does
+same visual language, same theme switch. It links `/tokens.css` and `/style.css`, the two files
+served before auth (they hold no secret), so it wears the same token values and keeps no copy. A skin does
 not reach it. The shared Password work surface in Setup and
 Settings enables, changes and disables the saved browser password; changing it replaces
 the current browser's session while ending every other browser session. The host-side

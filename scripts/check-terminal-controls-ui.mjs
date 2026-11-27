@@ -18,7 +18,7 @@ app.put('/api/terminal-controls', (req, res) => { bindings = req.body.bindings; 
 app.post('/api/sessions/:name/control-action', (req, res) => { calls.push(req.body); res.json({ ok: true }); });
 app.get('/', (_req, res) => res.type('html').send(`<!doctype html><html><head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="stylesheet" href="/vendor/xterm.css"><link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/workspace-kit.css">
+<link rel="stylesheet" href="/vendor/xterm.css"><link rel="stylesheet" href="/tokens.css"><link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/workspace-kit.css">
 <style>body{display:block;padding:12px}#target{height:380px;display:flex;flex-direction:column}.body{flex:1;min-height:0}.selector{height:350px;width:320px}.tile{height:380px}</style>
 </head><body ${_req.query.mobile ? 'id="phone"' : ''}><div id="target" class="tile keys-on"><div class="body tile-body"></div></div><div class="selector wk-workbench-selector"><div class="wk-workbench-selector-cards"></div></div>
 <script src="/vendor/xterm.js"></script><script src="/vendor/addon-fit.js"></script>
