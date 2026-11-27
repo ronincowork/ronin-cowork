@@ -395,7 +395,7 @@ is "Coming soon": a service is offered where it shares a format, or not shown.
   `auth login --claudeai` or `--console`, Codex `login --device-auth` or `--with-api-key`); the panel
   shows the link and the code, or the box for the code or key, with **Send** and **Cancel**
   (`src/harness-sign-in.ts`, unchanged). The one it is on is filled (`readWays`).
-- **Outside services** with no key yet read **Not signed in**; the press opens Model services on its
+- **Outside services** with no key yet read **No key in vault**; the press opens Model services on its
   tab to add the key. One signed in is filled when New Agent offers it; a press turns it off or on.
   The Ronin Gateway needs no key.
 - **Terminal**: the CLI's own login in its terminal tile, its own menu, **Done** and **Cancel**,

@@ -44,7 +44,7 @@ export function shownInNewAgent(catalog, entry, row) {
  * A HARNESS'S MODEL SERVICES, TWO PARTS (owner, 27 Nov 2026; docs/architecture/harness-catalog.md, One harness
  * panel). `stones`: a stone per outside service the harness can use (Ronin Gateway, an API key in the Ronin key
  * vault, OpenRouter: src/model-services.ts, by request format), filled when New Agent offers it; one with no key
- * yet says Not signed in and opens Model services on its tab. They sit in the panel's service row beside the in-harness ways. `entries`: under the row, a table per
+ * yet says No key in vault and opens Model services on its tab. They sit in the panel's service row beside the in-harness ways. `entries`: under the row, a table per
  * service that is on (In harness first, when the CLI lists its own), in the table pattern (data-table.js): a row
  * per model, muted when hidden, Hide or Show. Every press saves. A service on with nothing hidden is null, so
  * models it adds later show by themselves; a service off is [].
@@ -103,8 +103,9 @@ export function harnessModelEditor(catalog, entry, openServices, { skip = [] } =
     // A key's own name says which key; the small word says what it is.
     if (group.id && group.type === 'private_api') out.append(el('small', 'ask-word', word('private_api')));
     if (!group.id) {
-      // An outside service with no key yet is not signed in; the press opens Model services to add it.
-      out.append(el('small', 'ask-word', t('harness.not_signed_in', 'Not signed in')));
+      // A key service with no key yet says so (owner, 27 Nov 2026); the Ronin Gateway needs none, so it is not set
+      // up. The press opens Model services to add it.
+      out.append(el('small', 'ask-word', group.type === 'gateway' ? t('harness.not_set_up', 'Not set up') : t('harness.no_key', 'No key in vault')));
       out.setAttribute('aria-selected', 'false');
       out.addEventListener('click', () => openServices(group.tab));
       return out;
