@@ -264,6 +264,9 @@ export function mountHarnessPanel(host, id, { drawing, context = {}, openAgent =
    * typed into. A link the CLI hides behind its own "show full URL" is not on screen: Copy link waits for it. */
   // A device code as sign-ins print it: two groups of four or five letters and digits (9Q3Z-9V69).
   const CODE = /\b[A-Z0-9]{4,5}-[A-Z0-9]{4,5}\b/g;
+  // A ctrl key the screen offers with its word ("ctrl+q  quit"): pressed for the person from the panel.
+  const KEY = /\bctrl\+([a-z])\s+([a-z]+)/gi;
+  const lastKey = (text) => { const all = [...text.matchAll(KEY)]; const one = all.pop(); return one ? { letter: one[1].toLowerCase(), word: one[2].toLowerCase() } : null; };
   const LINK = /https:\/\/[^\s<>"'│]+/g;
   const last = (text, pattern) => (text.match(pattern) || []).pop() || '';
   let copyRow = null;
@@ -272,19 +275,26 @@ export function mountHarnessPanel(host, id, { drawing, context = {}, openAgent =
     if (copyRow) return copyRow;
     copyRow = el('div', 'ask setup-harness-row setup-harness-ways'); copyRow.dataset.density = 'tight';
     const said = el('p', 'setup-fine'); said.hidden = true;
-    let seen = { code: '', link: '' };
+    let seen = { code: '', link: '', key: '' };
     const copy = (value) => { void navigator.clipboard?.writeText(value).then(() => { said.textContent = t('setup_harness.copied', 'Copied.'); said.hidden = false; }, () => {}); };
     const paintCopy = () => {
       const code = stone(t('harness.copy_code', 'Copy code'), () => { if (seen.code) copy(seen.code); }, seen.code || t('harness.no_code', 'No code yet'));
       code.disabled = !seen.code;
       const link = stone(t('harness.copy_link', 'Copy link'), () => { if (seen.link) copy(seen.link); }, seen.link ? '' : t('harness.expose_url', 'Expose full URL'));
       link.disabled = !seen.link;
-      copyRow.replaceChildren(code, link, said);
+      const stones = [code, link];
+      if (seen.key) {
+        const [letter, word] = seen.key.split(' ');
+        // ctrl+<letter> is that letter's control character: q is 0x11.
+        stones.push(stone(word[0].toUpperCase() + word.slice(1), () => { mounted?.send?.(String.fromCharCode(letter.charCodeAt(0) - 96)); }, `ctrl+${letter}`));
+      }
+      copyRow.replaceChildren(...stones, said);
     };
     const scan = () => {
       const text = mounted?.screenText?.() || '';
-      const next = { code: last(text, CODE), link: last(text, LINK) };
-      if (next.code === seen.code && next.link === seen.link) return;
+      const key = lastKey(text);
+      const next = { code: last(text, CODE), link: last(text, LINK), key: key ? `${key.letter} ${key.word}` : '' };
+      if (next.code === seen.code && next.link === seen.link && next.key === seen.key) return;
       seen = next;
       paintCopy();
     };
@@ -330,11 +340,15 @@ export function mountHarnessPanel(host, id, { drawing, context = {}, openAgent =
     const box = el('div', 'setup-harness-window');
     if (line) box.append(el('p', 'setup-harness-line', line));
     box.append(terminalFor(provider));
-    if (copy && mounted) box.append(copyStones());
-    const row = el('div', 'ask setup-harness-row'); row.dataset.density = 'tight';
-    if (done) row.append(stone(t('setup_surface.done', 'Done'), async () => { const r = await press(`${base}/done`); if (r.ok) mounted?.park?.(); }));
-    row.append(stone(t('setup_surface.cancel', 'Cancel'), async () => { const r = await press(`${base}/close`); if (r.ok) tellHer(`${shortName(provider)} · Close sign-in`); }));
-    box.append(row);
+    // One line under the terminal: what the screen offers (Copy code, Copy link, its key) at the start, and
+    // what ends it (Done, Cancel) at the end.
+    const foot = el('div', 'harness-terminal-foot');
+    if (copy && mounted) foot.append(copyStones());
+    const ends = el('div', 'harness-terminal-ends');
+    if (done) ends.append(action(t('setup_surface.done', 'Done'), 'primary', async () => { const r = await press(`${base}/done`); if (r.ok) mounted?.park?.(); }));
+    ends.append(action(t('setup_surface.cancel', 'Cancel'), '', async () => { const r = await press(`${base}/close`); if (r.ok) tellHer(`${shortName(provider)} · Close sign-in`); }));
+    foot.append(ends);
+    box.append(foot);
     return box;
   };
 
@@ -458,6 +472,9 @@ export function mountHarnessPanel(host, id, { drawing, context = {}, openAgent =
     if (problem) parts.push(el('p', 'setup-harness-line bad', problem));
     if (!provider.login_open && !provider.install_open && !provider.update_open && mounted) dropTerminal();
     card.replaceChildren(...parts);
+    // The terminal was made before the panel was on the page: fit it to its box once it is, so the CLI draws
+    // at the size it is shown, not at whatever it guessed.
+    if (mounted) requestAnimationFrame(() => { if (!disposed) mounted?.fit?.(); });
   };
 
   newEditor();
