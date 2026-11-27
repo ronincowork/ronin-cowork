@@ -963,11 +963,11 @@ body {
 .item-pill[data-status='progress'] .item-pill-status { background: var(--info); }
 .item-pill[data-status='review'] .item-pill-status { background: var(--accent); }
 .item-pill[data-status='done'] .item-pill-status { background: var(--ok); }
-.item-pill .item-pill-subtasks { display: inline-flex; align-items: center; gap: var(--space-row); color: var(--muted); font-size: var(--text-small); line-height: 1; font-variant-numeric: tabular-nums; }
+.item-pill .item-pill-subtasks { display: inline-flex; align-items: center; gap: var(--space-row); color: var(--muted); font-size: var(--text-small); line-height: var(--leading-none); font-variant-numeric: tabular-nums; }
 .item-pill .item-pill-subtasks .item-kind { width: 10px; height: 10px; }
-.item-pill .item-pill-flag { color: var(--warn); font-size: var(--text-small); line-height: 1; }
+.item-pill .item-pill-flag { color: var(--warn); font-size: var(--text-small); line-height: var(--leading-none); }
 /* The hand-in mark (6a): the flag's size, In Review's accent when handed in, ok once on dev; its words only down. */
-.item-pill .item-pill-handin { color: var(--accent); font-size: var(--text-small); line-height: 1; white-space: nowrap; }
+.item-pill .item-pill-handin { color: var(--accent); font-size: var(--text-small); line-height: var(--leading-none); white-space: nowrap; }
 .item-pill[data-handin='dev'] .item-pill-handin { color: var(--ok); }
 .item-pill .item-pill-handin-words { display: none; }
 .item-island[data-state='down'] .item-pill-handin-words { display: inline; color: var(--muted); }
@@ -1047,7 +1047,7 @@ body {
 .item-bar .item-pill-status { width: 8px; height: 8px; border-radius: var(--radius-round); background: var(--muted); }
 .item-bar[data-status='progress'] .item-pill-status { background: var(--info); }
 .item-bar[data-status='review'] .item-pill-status { background: var(--accent); }
-.item-bar .item-pill-flag { color: var(--warn); line-height: 1; }
+.item-bar .item-pill-flag { color: var(--warn); line-height: var(--leading-none); }
 .item-bar .item-bar-handin { color: var(--accent); }
 .item-bar[data-handin='dev'] .item-bar-handin { color: var(--ok); }
 .item-bar .item-bar-objective, .item-bar .item-bar-comment {
@@ -1894,7 +1894,7 @@ body {
   gap: var(--space-row);
 }
 .sys-release {
-  font-size: 1.25em;
+  font-size: var(--text-label);
   font-weight: var(--weight-strong);
   font-variant-numeric: tabular-nums;
 }
@@ -3282,7 +3282,7 @@ body {
   border-radius: var(--radius-small);
   background: var(--inset);
   color: var(--term-input-fg);
-  font: var(--text-small)/1 var(--font-ui);
+  font: var(--text-small)/var(--leading-none) var(--font-ui);
   cursor: pointer;
 }
 
@@ -3634,8 +3634,9 @@ body {
 }
 
 .prov {
-  margin-left: 0.35em;
-  font-size: 0.85em;
+  --prov-gap: 0.35em; /* from the word it qualifies, at its size */
+  margin-left: var(--prov-gap);
+  font-size: var(--text-small);
   color: var(--info);
   opacity: 0.85;
   cursor: help;
@@ -3733,10 +3734,10 @@ body {
 }
 
 .ramrpm { border: var(--edge) solid var(--line-2); border-radius: var(--radius-pill); background: var(--surface); color: var(--muted); padding: var(--space-row) var(--space-inline); font: var(--text-small) var(--font-mono); cursor: pointer; user-select: none; }
-.ramrpm { display: inline-flex; align-items: center; gap: 2px; }
+.ramrpm { display: inline-flex; align-items: center; gap: var(--meter-gap); }
 .ramrpm[hidden] { display: none; }
 /* The five segments: the face, and each popup row's own bar (.ramrpm-bar). */
-.ramrpm-bar { display: inline-flex; gap: 2px; }
+.ramrpm-bar { display: inline-flex; gap: var(--meter-gap); }
 :is(.ramrpm, .ramrpm-bar) i { display: block; width: 6px; height: 10px; border-radius: 1px; background: var(--line-2); }
 :is(.ramrpm, .ramrpm-bar) i.on { background: currentColor; }
 :is(.ramrpm, .ramrpm-bar)[data-band='ok'] { color: var(--ok); }
@@ -3786,7 +3787,7 @@ body {
 .setup-github-terminal-actions[hidden] { display: none; }
 .wk-workbench-host [data-workbench-offer-type][data-scene-relevant='false'] { opacity: .48; }
 .wk-workbench-host [data-workbench-offer-type][data-scene-relevant='true'] .wk-card-heading { font-weight: var(--weight-bold); }
-.wk-workbench-host [data-registration-locked='true'] .wk-card-heading::after { content: '  🔒'; font-size: .8em; }
+.wk-workbench-host [data-registration-locked='true'] .wk-card-heading::after { content: '  🔒'; font-size: var(--text-small); }
 .wk-workbench-host[data-workbench-profile='setup'] [data-complete='true'] { opacity: 1; }
 /* THE WALKTHROUGH (owner, 24 Nov; w926): Setup's steps down the selector as the prototype's run across
    the page. A numbered disc per step, joined to the next by a line; the step on screen kaki-edged on the
@@ -3807,7 +3808,7 @@ body {
 .setup-next-note { color: var(--current-head-fg); opacity: .7; white-space: nowrap; }
 .setup-next-note:empty { display: none; }
 /* Discreet: the header's own ink, no box; an arrow says where it goes. */
-.wk-surface-header .setup-next-go { min-height: 0; padding: 2px 6px; border: var(--edge) solid transparent; background: none; color: var(--current-head-fg); }
+.wk-surface-header .setup-next-go { min-height: 0; padding: var(--space-row); border: var(--edge) solid transparent; background: none; color: var(--current-head-fg); }
 .wk-surface-header .setup-next-go::after { content: ' →'; }
 .wk-surface-header .setup-next-go:hover, .wk-surface-header .setup-next-go:focus-visible { border-color: currentColor; }
 @media (max-width: 700px) { .setup-next-note { display: none; } }
@@ -3853,7 +3854,7 @@ body {
 .setup-provider-use-for { display: block; color: var(--muted); }
 .setup-provider-models td b { color: var(--fg-strong); font-weight: var(--weight-strong); }
 /* Two names per model: the CLI's own name in bold, the id every launch uses beneath it. */
-.setup-provider-model-id { display: block; margin-top: var(--space-row); color: var(--muted); font-family: var(--mono, monospace); font-size: var(--text-small); overflow-wrap: anywhere; }
+.setup-provider-model-id { display: block; margin-top: var(--space-row); color: var(--muted); font-family: var(--font-mono); font-size: var(--text-small); overflow-wrap: anywhere; }
 .setup-provider-default { display: block; margin-top: var(--space-row); color: var(--muted); font-size: var(--text-small); }
 .setup-provider-tier { color: var(--muted); font-size: var(--text-small); letter-spacing: var(--tracking-wide); text-transform: uppercase; }
 /* The selected provider: a flat detail on the shared stone seat, on the Setup type baseline
@@ -4411,7 +4412,7 @@ button.wk-card { cursor: pointer; }
   background: var(--inset);
   color: var(--fg);
   padding: var(--space-row) var(--space-control);
-  font: 16px/var(--leading-body) var(--font-ui);
+  font: var(--ios-no-zoom)/var(--leading-body) var(--font-ui);
   resize: none;
 }
 #phone .ph-launch-note {
@@ -4665,27 +4666,27 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 .hermes-card-summary { display: flex; flex: 1 1 16rem; flex-wrap: wrap; align-items: baseline; gap: var(--space-row) var(--space-inline); min-width: 0; }
 .hermes-card-summary span { color: var(--muted); overflow-wrap: anywhere; }
 /* ERABI stones, one size (ask.css's 140-wide rectangle), one row per card or form. */
-.hermes-stones { display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; }
+.hermes-stones { display: flex; flex-wrap: wrap; align-items: stretch; gap: var(--space-inline); }
 .hermes-settings h3 { margin: 0; font-size: var(--text-label); color: var(--fg-strong); }
 
 /* THE AGENT HARNESS WORKBENCH'S ACCOUNTS AND MODELS TILESPACES (KAN-236): account cards in the Hermes card's
    shape, their two tick lists side by side, and the Models tilespace's sections. */
 
 /* THE HARNESS STEP (setup-harness-surface.js): the prototype's thin bars, one per harness. */
-.setup-harness-body { display: flex; flex-direction: column; gap: 16px; padding: 4px 0; }
-.setup-harness-stack { display: flex; flex-direction: column; gap: 8px; max-width: 560px; }
-.setup-harness-bar { display: flex; flex-direction: column; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); }
+.setup-harness-body { display: flex; flex-direction: column; gap: var(--space-subsection); padding: var(--space-row) 0; }
+.setup-harness-stack { display: flex; flex-direction: column; gap: var(--space-paragraph); max-width: 560px; }
+.setup-harness-bar { display: flex; flex-direction: column; gap: var(--space-control); padding: var(--space-control) var(--space-inset); border: 1px solid var(--line); border-radius: 4px; background: var(--surface); }
 .setup-harness-bar.selected { border-color: var(--kaki); box-shadow: inset 3px 0 var(--kaki); }
 .setup-harness-bar.signed:not(.selected) { box-shadow: inset 3px 0 var(--ok-2); }
-.setup-harness-top { display: flex; align-items: center; gap: 10px; width: 100%; border: 0; background: none; padding: 0; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.setup-harness-top { display: flex; align-items: center; gap: var(--space-control); width: 100%; border: 0; background: none; padding: 0; font: inherit; color: inherit; text-align: left; cursor: pointer; }
 .setup-harness-top:disabled { cursor: default; }
-.setup-harness-name b { display: block; font-size: 14px; font-weight: 600; color: var(--fg-strong); }
-.setup-harness-name small { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; }
+.setup-harness-name b { display: block; font-size: var(--text-label); font-weight: 600; color: var(--fg-strong); }
+.setup-harness-name small { display: block; font-size: var(--text-small); color: var(--muted); margin-top: var(--space-row); }
 .setup-harness-go { margin-left: auto; font-weight: 600; color: var(--link); }
 .setup-harness-bar.signed .setup-harness-go { color: var(--ok-2); }
 .setup-harness-top:disabled .setup-harness-go { color: var(--kaki); }
-.setup-harness-window { display: flex; flex-direction: column; gap: 10px; }
-.setup-harness-line { margin: 0; line-height: 1.5; }
+.setup-harness-window { display: flex; flex-direction: column; gap: var(--space-control); }
+.setup-harness-line { margin: 0; line-height: var(--leading-body); }
 .setup-harness-line.bad { color: var(--kaki); }
 /* The Workspace step (setup-workspace-kickoff.js, KAN-809): the four doors; under them what a Workspace
    is, or the open door's blanks with the form's rule beside them; what was made; the Workspaces line. */
@@ -4708,7 +4709,7 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 .ws-diagram small, .ws-diagram figcaption { color: var(--muted); font-size: var(--text-small); }
 .ws-diagram-office { display: flex; flex-direction: column; gap: var(--space-control); padding: var(--space-control); border: var(--edge) dashed var(--line-2); border-radius: var(--radius-small); background: var(--inset); }
 .ws-diagram-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-inline); color: var(--fg-strong); }
-.ws-diagram-example { padding: 2px var(--space-inline); border-radius: var(--radius-small); background: var(--kaki-fill); color: var(--kaki-fill-ink); font-size: var(--text-small); font-weight: var(--weight-strong); text-transform: uppercase; letter-spacing: var(--tracking-wide); }
+.ws-diagram-example { padding: var(--space-row) var(--space-inline); border-radius: var(--radius-small); background: var(--kaki-fill); color: var(--kaki-fill-ink); font-size: var(--text-small); font-weight: var(--weight-strong); text-transform: uppercase; letter-spacing: var(--tracking-wide); }
 .ws-diagram-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-inline); }
 .ws-diagram-ws { padding: var(--space-row) var(--space-inline); border: var(--edge) solid var(--line-2); border-radius: var(--radius-small); background: var(--surface); }
 .ws-diagram-ws.open { border-color: var(--kaki); background: var(--selected); }
@@ -4733,20 +4734,20 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 .setup-workspace-done:empty, .setup-workspace-foot:empty { display: none; }
 .setup-workspace-link { background: none; border: 0; padding: 0; color: var(--link); text-decoration: underline; cursor: pointer; font: inherit; }
 .setup-harness-link { color: var(--link); word-break: break-all; }
-.setup-harness-row { display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; }
+.setup-harness-row { display: flex; flex-wrap: wrap; align-items: stretch; gap: var(--space-inline); }
 /* ERABI stones of one size: each 140 wide (ask.css), a long name on two lines, every stone in a row the same height. */
-.setup-harness-code { font-family: var(--font-mono); font-size: 18px; font-weight: 600; letter-spacing: .08em; color: var(--fg-strong); }
+.setup-harness-code { --harness-code-size: 18px; /* a sign-in code read off the screen and typed elsewhere */ font-family: var(--font-mono); font-size: var(--harness-code-size); font-weight: 600; letter-spacing: .08em; color: var(--fg-strong); }
 .setup-harness-input { flex: 1 1 180px; min-width: 0; }
 .setup-harness-terminal { min-height: 320px; }
-.setup-harness-note { margin: 0; font-size: 12px; line-height: 1.5; color: var(--muted); }
+.setup-harness-note { margin: 0; font-size: var(--text-body); line-height: var(--leading-body); color: var(--muted); }
 /* Hermes's two steps (form-steps.js) span the bar; the adding row is dashed, the same shape as a row it adds. */
 .hermes-settings .fs-step > .fs-step-body, .hermes-settings .fs-step:has(> .fs-step-head.fs-togglable) > .fs-step-body { grid-column: 1 / -1; }
 .hermes-settings .fs-step { grid-template-columns: minmax(0, 1fr); }
-.hermes-fine { font-size: 12px; }
+.hermes-fine { font-size: var(--text-body); }
 /* Hermes's lists are tables (owner, 25 Nov 2026): one row each, icons on the right, one Add line. */
 .hermes-table { width: 100%; border-collapse: collapse; }
-.hermes-table :is(th, td) { padding: 6px 8px; text-align: left; vertical-align: middle; overflow-wrap: break-word; }
-.hermes-options { display: grid; gap: 8px; }
+.hermes-table :is(th, td) { padding: var(--space-row) var(--space-inline); text-align: left; vertical-align: middle; overflow-wrap: break-word; }
+.hermes-options { display: grid; gap: var(--space-paragraph); }
 .hermes-table :is(th, td):first-child { padding-left: 0; }
 .hermes-table thead th { color: var(--muted); font-weight: normal; border-bottom: var(--edge) solid var(--line-2); }
 .hermes-table tbody th { color: var(--fg-strong); font-weight: var(--weight-strong); }
@@ -4759,7 +4760,7 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 .hermes-add-line { padding: 0; border: 0; background: none; color: var(--link); font: inherit; cursor: pointer; }
 .hermes-add-line:hover { text-decoration: underline; }
 .hermes-add-line:disabled { color: var(--muted); cursor: default; text-decoration: none; }
-.hermes-add-note { margin-left: 8px; color: var(--muted); }
+.hermes-add-note { margin-left: var(--space-inline); color: var(--muted); }
 /* Settings v2 Model services (KAN-870): the intro, the pick row, the form and the table are sections
    spaced alike; every field is one height; headings sit on their content. */
 .model-services-body { display: grid; gap: var(--space-subsection); padding: var(--space-inset) 0; min-width: 0; }
@@ -4808,5 +4809,5 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 .setup-hermes-sources .ask-opt[aria-selected='true'] { background: var(--kaki-fill); border-color: var(--kaki-fill); color: var(--kaki-fill-ink); }
 .setup-hermes-sources .ask-opt[aria-selected='true'] .hermes-tick { color: var(--kaki-fill-ink); }
 /* Available, not selected: a tick in the stone, never the kaki selected mark (owner, 25 Nov 2026). */
-.ask-opt .hermes-tick { color: var(--ok); font-weight: var(--weight-strong); margin-right: 6px; }
+.ask-opt .hermes-tick { color: var(--ok); font-weight: var(--weight-strong); margin-right: var(--space-row); }
 .ask-opt:has(> .hermes-tick) { flex-direction: row; align-items: center; justify-content: flex-start; }

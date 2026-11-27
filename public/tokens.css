@@ -40,13 +40,11 @@
   --ok: #b5bd68;
   --ok-2: #7fd4a8;
   --warn: #f0c674;
-  --status-yellow: #e0c060;
   --status-red: #e0705f;
 
   --bad: #cc6666;
   --bad-soft: #e6a1a1;
   --bad-deep: #a33c33;
-  --bad-line: #5a3535;
   --bad-ground: #3a1416;
   --bad-fg: #f2d6d6;
   --info: #6ea8fe;
@@ -234,12 +232,10 @@
   --ok: #5c7a1d;
   --ok-2: #1e7a4c;
   --warn: #9a7b00;
-  --status-yellow: #c9a227;
   --status-red: var(--bad);
   --bad: #b02a3c; /* crimson: wrong never reads as brand */
   --bad-soft: #8c2f3b;
   --bad-deep: #952335;
-  --bad-line: #e0b4ba;
   --bad-ground: #f8e4e6;
   --bad-fg: #5e1a24;
   --info: #1f5fc9;

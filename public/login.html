@@ -33,23 +33,23 @@
       form {
         display: flex;
         flex-direction: column;
-        gap: 12px;
+        gap: var(--space-inset);
         width: min(340px, 92vw);
-        padding: 22px;
+        padding: var(--space-section);
         background: var(--surface);
         border: 1px solid var(--line);
         border-radius: 12px;
       }
-      h1 { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: 0.3px; }
-      label { font-size: 11px; letter-spacing: 0.4px; text-transform: uppercase; color: var(--muted); }
+      h1 { margin: 0; font-size: var(--text-heading); font-weight: 600; letter-spacing: 0.3px; }
+      label { font-size: var(--text-small); letter-spacing: 0.4px; text-transform: uppercase; color: var(--muted); }
       input {
         height: 40px;
-        padding: 0 10px;
+        padding: 0 var(--space-control);
         background: var(--inset);
         color: var(--fg);
         border: 1px solid var(--line);
         border-radius: 8px;
-        font-size: 16px; /* 16px stops iOS Safari zooming the page on focus */
+        font-size: var(--ios-no-zoom); /* 16px stops iOS Safari zooming the page on focus */
       }
       input:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
       button {
@@ -58,7 +58,7 @@
         color: var(--accent);
         border: 1px solid var(--accent);
         border-radius: 8px;
-        font-size: 14px;
+        font-size: var(--text-label);
         cursor: pointer;
       }
       button:disabled { opacity: 0.5; cursor: default; }
@@ -67,7 +67,7 @@
          fallback the owner may always take. */
       button.primary { background: var(--kaki); color: var(--on-strong); font-weight: 600; border-color: var(--kaki); }
       /* ---- the ui/status grammar, copied — see the head comment ---- */
-      .ui-status { margin: 0; font-size: 12px; line-height: 1.4; color: var(--muted); }
+      .ui-status { margin: 0; font-size: var(--text-body); line-height: var(--leading-body); color: var(--muted); }
       .ui-status:empty { display: none; }
       .ui-status[data-kind='bad'] { color: var(--bad-soft); }
       .ui-status[data-kind='ok'] { color: var(--ok); }
@@ -85,14 +85,14 @@
       /* "or" between the two doors, as a rule with a word in it. aria-hidden: it is
          decoration, and a screen reader reading "or" between two labelled buttons adds
          nothing it cannot already tell. */
-      .sep { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 11px; }
+      .sep { display: flex; align-items: center; gap: var(--space-inline); color: var(--muted); font-size: var(--text-small); }
       .sep::before, .sep::after { content: ''; flex: 1; height: 1px; background: var(--line); }
-      details { border-top: 1px solid var(--line); padding-top: 10px; }
-      summary { font-size: 12px; color: var(--muted); cursor: pointer; }
-      details[open] > summary { margin-bottom: 10px; }
-      .rc-row { display: flex; flex-direction: column; gap: 8px; }
-      #rc { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 1px; }
-      small { color: var(--muted); font-size: 11px; line-height: 1.5; }
+      details { border-top: 1px solid var(--line); padding-top: var(--space-control); }
+      summary { font-size: var(--text-body); color: var(--muted); cursor: pointer; }
+      details[open] > summary { margin-bottom: var(--space-control); }
+      .rc-row { display: flex; flex-direction: column; gap: var(--space-paragraph); }
+      #rc { font-family: var(--font-mono); letter-spacing: 1px; }
+      small { color: var(--muted); font-size: var(--text-small); line-height: var(--leading-body); }
       a { color: var(--accent); }
     </style>
   </head>

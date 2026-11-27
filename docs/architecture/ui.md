@@ -197,7 +197,7 @@ The named role pairs keep readable contrast in both themes. The roles, defined i
 - text: `--fg-strong` · `--fg` · `--muted` (one grey: `--muted-2` and `--dim` merged into it) · `--link` (aiiro, lifted on the dark shell)
 - meaning: `--accent` (attention/identity) · `--accent-2` (reference) · `--ok`/`--ok-2` ·
   `--warn` (needs you) · the `--bad-*` family (wrong, in grades) · `--info` · work-item status
-  `--ok-2` / `--status-yellow` / `--status-red`
+  `--ok-2` / `--status-red`
 - house: `--kaki` (the Ronin identity mark; this session; heightened access/visibility) ·
   `--aiiro` (Ronin navigation and selection) · `--graphite` (the admin header) — Kojin's fixed palette, borrowed. The kaki
   identity ruling is the open hexagonal **hito** mark, drawn in `--kaki` (`ninMark()`), so a
