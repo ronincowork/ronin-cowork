@@ -25,6 +25,7 @@ import { loadHarnessCatalog } from './form-steps.js';
 import { createModelDefaults } from './models-surface.js';
 import { createModelServicesSurface } from './model-services-surface.js';
 import { createMembersSeeSurface } from './members-see-surface.js';
+import { folderWorkbenches } from './folder-workbenches.js';
 
 const elem = (tag, cls, text) => { const out = document.createElement(tag); if (cls) out.className = cls; if (text != null) out.textContent = text; return out; };
 const enterable = (surface) => ({ el: surface.el, show: () => surface.enter() });
@@ -67,6 +68,7 @@ export function createSettingsV2View() {
       const groups = [
         [WORKBENCH_TYPES.modelStones, t('settings2.group_harness', 'Harnesses and models')],
         [WORKBENCH_TYPES.settings2AgentDefaults, t('settings2.group_defaults', 'Office defaults')],
+        [WORKBENCH_TYPES.settings2MembersSee, t('settings2.appliance_access', 'Appliance Access')],
         [WORKBENCH_TYPES.campaignRoots, t('settings2.group_work', 'Workspaces and integrations')],
         [WORKBENCH_TYPES.settings2BehaviorFiles, t('settings2.group_advanced', 'Advanced')],
       ];
@@ -94,6 +96,8 @@ export function createSettingsV2View() {
         settings2ModelServices: ({ detail }) => createModelServicesSurface({ tab: detail?.tab || 'gateway', serviceId: detail?.key || '' }),
         settings2AgentDefaults: () => officeDefaults(selected),
         settings2MembersSee: () => createMembersSeeSurface(),
+        // Appliance Access is offered only when an appliance is set up (KAN-973).
+        appliances: () => folderWorkbenches(),
         // Workspaces (owner, 26 Nov; KAN-900): a stone each, its Configuration alone, and New Workspace's doors.
         rootsSummary: () => t('campaign_view.roots_summary', 'Each Workspace and the folders it works in.'),
         campaignRoots: () => createWorkspaceStones({ workspacesRead: createWorkspacesRead(), workbench: bench(), withNew: true, configOnly: true }),

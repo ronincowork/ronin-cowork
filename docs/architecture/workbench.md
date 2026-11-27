@@ -423,8 +423,9 @@ browser console; the others still open.
 
 ## Which workbenches members see
 
-One office setting (KAN-955), on Settings' **What members see** card under Office defaults: a
-list of workbenches, the first where a member lands. It is one small file:
+One office setting (KAN-955), on Settings' **Appliance Access** card, its own section, offered only
+when an appliance (a folder workbench) is set up (KAN-973; the screen says "people invited from the
+Business Lounge", never "member"): a list of workbenches, the first where a member lands. It is one small file:
 
 ```
 ~/ronin/config/members_see.json      {"workbenches": ["appliance_counter"]}

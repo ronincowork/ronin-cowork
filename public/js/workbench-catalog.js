@@ -120,8 +120,9 @@ export function registerWorkbenchCatalog() {
   campaign(WORKBENCH_TYPES.settings2ModelServices, 'surface', () => t('settings2.model_services', 'Model services'), 'settings2ModelServices', () => t('settings2.model_services_summary', 'Ronin Gateway, OpenRouter and your API keys, and the model entries each offers.'));
   // Office defaults (KAN-871): the starting models live with mandate, launch mode and behaviors.
   campaign(WORKBENCH_TYPES.settings2AgentDefaults, 'surface', () => t('settings2.agent_defaults', 'Agent defaults'), 'settings2AgentDefaults', () => t('settings2.agent_defaults_summary', 'Model, mandate, launch mode and behaviors new Agents and Teams start with.'));
-  // What members see (KAN-955): the workbenches everyone whose role is member is shown (members-see-surface.js).
-  campaign(WORKBENCH_TYPES.settings2MembersSee, 'surface', () => t('settings2.members_see', 'What members see'), 'settings2MembersSee', () => t('settings2.members_see_summary', 'The workbenches members are shown, and the one they land on.'));
+  // Appliance Access (KAN-955, KAN-973): which workbenches the people invited from the Business Lounge are shown
+  // (members-see-surface.js). Offered only when an appliance (a folder workbench) is set up.
+  campaign(WORKBENCH_TYPES.settings2MembersSee, 'surface', () => t('settings2.appliance_access', 'Appliance Access'), 'settings2MembersSee', () => t('settings2.appliance_access_summary', 'People invited from the Business Lounge see only these workbenches and land on the first.'), { discover: (_t, e) => (e.appliances?.().length ? [{}] : []) });
   campaign(WORKBENCH_TYPES.settings2BehaviorFiles, 'surface', () => t('settings2.behavior_files', 'Behavior files'), 'settings2BehaviorFiles', () => t('settings2.behavior_files_summary', 'Read and edit the behavior, fact and tool files themselves.'));
   campaign(WORKBENCH_TYPES.settings2Stats, 'surface', () => t('settings2.stats', 'Machine stats'), 'settings2Stats', () => t('settings2.stats_summary', 'Tool-call activity on this machine.'));
   profiles.define(WORKBENCH_PROFILES.settings2, [
