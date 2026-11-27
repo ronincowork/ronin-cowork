@@ -512,7 +512,7 @@ function workspaceSurface(w, { workspacesRead, onDiscard = () => {}, launch = fa
 
 /** The stones of Workspaces (owner, 2026-11-22; KAN-784; KAN-801): Layer 1, every Workspace a stone as
  * an Epic's or a Team's: its name and the shared marks, the number bottom right its Teams. A pressed stone
- * opens that Workspace beside the rail, Work or Config (Settings: its Config alone, `configOnly`), with
+ * opens that Workspace in place of the stones, Work or Config (Settings: its Config alone, `configOnly`), with
  * Launch to its own page; a stone dragged into a tilespace opens it whole there. The last stone, New
  * Workspace, is the doors (setup-workspace-kickoff.js); the made one's stone is then selected. */
 export function createWorkspaceStones({ workspacesRead, workbench, recordType = '', withNew = false, configOnly = false, onShow = () => {} }) {

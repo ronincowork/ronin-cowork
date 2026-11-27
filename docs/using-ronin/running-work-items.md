@@ -132,7 +132,7 @@ an item has a link on the Jira item that opens its chat.
   question, all one height, each its title and Jira key, ⚑ top right when anything in it is
   flagged, how many of its items are open (small, bottom right), its
   progress a colour line along its bottom edge. Press the line for the Epic's **epic-stage**
-  and its four counts; press the stone to see that Epic beside the stones; a stone dragged into
+  and its four counts; press the stone to see that Epic in their place, and its − to go back to them; a stone dragged into
   a tilespace places that Epic there.
 - **One Epic** (the pressed stone): the same Epics board a Team's Epics view shows, without the
   row of Epic stones: **Launch** when someone holds it, the Epic's own bar (press it for its

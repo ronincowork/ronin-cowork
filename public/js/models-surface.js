@@ -5,8 +5,8 @@
  * surface, and draw with the same drawing (harnesses-surface.js: createHarnessDrawing, the
  * provider's page; harnessStones, the stones) over the same reads.
  *   WS1 `createModelStones`: Phalanx A/B stones of providers. A stone pressed opens the
- *   provider's page beside the rail; a stone dragged into a workspace places the provider
- *   there whole (`createModelHarness`), no rail, the whole workspace to its page.
+ *   provider's page in place of the stones, with the − back; a stone dragged into a workspace
+ *   places the provider there whole (`createModelHarness`), the whole workspace to its page.
  *   The selector lists one card per provider (`harnessOffers`), each placing that surface.
  *   `createModelDefaults`: the model a new Agent, a new Team lead and Mika start on.
  */
@@ -34,7 +34,7 @@ const draggable = (stone) => ({
   } },
 });
 
-/** WS1: the stones of providers; the pressed one's page beside the rail. */
+/** WS1: the stones of providers; the pressed one's page in their place. */
 export function createModelStones(context) {
   const { createSurface } = WorkspaceKit.primitives;
   const out = createSurface({ label: t('harness.stones', 'Harness'), className: 'setup-surface setup-provider-surface models-stones' });

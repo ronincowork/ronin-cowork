@@ -38,10 +38,8 @@ function PAGES() {
   const four = { id: 'four', label: t('help_outline.start_here', 'Start here:'), secondary: t('help_outline.four', '4 things you need to know') };
   const more = { id: 'more', label: t('help_outline.more', 'Everything else') };
   const page = (path, label) => draggable({ id: path, label, path });
-  // A shelf opens one level down on a page of it, pressed, so the page being read is always the stone
-  // that shows it: its own page for one of the four (their level is the four), else its first.
-  const enter = (row, api) => api.down(row.id, { select: row.path || row.items[0].id });
-  const shelf = (id, label, items) => ({ id, group: more, label, items, action: enter });
+  // A shelf opens one level down, its pages the stones; one of the four opens its page.
+  const shelf = (id, label, items) => ({ id, group: more, label, items });
   const musts = [
     page('docs/using-ronin/team-lead-and-edges.md', t('help_outline.lead', 'Team Lead and edges')),
     page('docs/using-ronin/what-agents-write-down.md', t('help_outline.records', 'Work records')),
@@ -49,7 +47,7 @@ function PAGES() {
     page('docs/getting-started/customize.md', t('help_outline.customize', 'Customizing your Ronin')),
   ];
   return [
-    ...musts.map((must) => ({ ...must, group: four, items: musts, action: enter })),
+    ...musts.map((must) => ({ ...must, group: four })),
     shelf('start', t('help_outline.start', 'Getting started'), [
       page('docs/getting-started/get-started.md', t('help_outline.get_started', 'Get started')),
       page('docs/getting-started/setup-workbench.md', t('help_outline.setup', 'Ronin Setup')),
@@ -97,12 +95,9 @@ function readPage(item, host, onLink) {
   return page;
 }
 
-/** Every page of the outline with the shelf it opens on: one of the four opens on its own stone. */
-const allPages = (rows) => rows.flatMap((row) => row.items.map((item) => ({ item, shelf: row })));
-const findPage = (rows, path) => {
-  const all = allPages(rows).filter(({ item }) => item.path === path);
-  return all.find(({ shelf }) => shelf.id === path) || all[0];
-};
+/** Every page of the outline with the shelf it sits on: one of the four sits on none. */
+const allPages = (rows) => rows.flatMap((row) => row.items ? row.items.map((item) => ({ item, shelf: row })) : [{ item: row, shelf: null }]);
+const findPage = (rows, path) => allPages(rows).find(({ item }) => item.path === path);
 
 /** `onRead(label)` hears each page the outline reads: a pressed stone or a followed link. */
 export function createHelpOutline({ onRead = () => {} } = {}) {
@@ -112,16 +107,16 @@ export function createHelpOutline({ onRead = () => {} } = {}) {
     const found = findPage(pages, path);
     if (!found || fragment) { stones.openDetail({ ...(found?.item || { id: path, label: path.split('/').pop(), path }), fragment }); return; }
     const at = stones.level();
-    if (at?.items.some((item) => item.path === path)) stones.select(path);
+    if (at && at === found.shelf) stones.select(path);
+    else if (!found.shelf) { if (at) stones.top(); stones.select(path); }
     else { if (at) stones.top(); stones.down(found.shelf.id, { select: path }); }
   };
   const stones = createPhalanx({
     items: pages, className: 'help-outline-stones', grouped: { groups: [...new Map(pages.map((item) => [item.group.id, item.group])).values()] },
     renderDetail: (item, host) => {
       host.scrollTop = 0;
-      const page = item.path ? item : item.items[0]; // a shelf whose page was pressed off still reads its own, or its first
-      readPage(page, host, open);
-      onRead(page.label);
+      readPage(item, host, open);
+      onRead(item.label);
     },
   });
   const intro = el('div', 'sws-intro help-outline-intro');

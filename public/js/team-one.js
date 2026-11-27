@@ -147,7 +147,7 @@ export function createTeamBody(name, { say = () => {}, rows: rowsOf = () => new 
   // name (人 for the lead); one mark top right
   // — ⚑ when flagged, else the pill's dot (solid working, hollow just finished), else none; bottom
   // right, small and grey, how many open items it holds; the lifecycle line along its foot. A
-  // pressed stone opens under the stones, full width (launch-forms.css, no rail in a rail): its Objective, Work items and Configuration.
+  // pressed stone opens in place of the stones, with the − back (phalanx.js): its Objective, Work items and Configuration.
   const stoneMarks = new Map(); // agent -> { node, mark, size }, kept: the phalanx compares a marker by identity
   const marksOf = (agent, row) => {
     if (!stoneMarks.has(agent)) {
