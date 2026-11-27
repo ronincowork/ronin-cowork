@@ -96,10 +96,11 @@
   .team-fold { border-top: var(--edge) solid var(--line-2); }
   .team-fold > summary.team-fold-line { padding: var(--space-inline) 0; color: var(--fg-strong); font-weight: var(--weight-strong); cursor: pointer; }
   .team-fold > .team-fold-body { padding-bottom: var(--space-inline); }
-  /* The Team's Epics: stones as a phalanx from the left edge; their empty head takes no room. */
-  .league-team-view-epics .epics-records-bare.sws-host { padding: 0; overflow: visible; }
-  .league-team-view-epics .epics-records-bare > .sws-header { display: none; }
-  .league-team-view-epics .sws-stones { justify-content: flex-start; padding: var(--edge-2); }
+  /* The Team's Epics and Agents (KAN-964): stones as a phalanx from the left edge, each in its
+     own bare seat; their empty head takes no room. */
+  :is(.league-team-view-epics, .league-team-view-agents) .epics-records-bare.sws-host { padding: 0; overflow: visible; }
+  :is(.league-team-view-epics, .league-team-view-agents) .epics-records-bare > .sws-header { display: none; }
+  :is(.league-team-view-epics, .league-team-view-agents) .sws-stones { justify-content: flex-start; padding: var(--edge-2); }
   :is(.league-team-view-epics, .league-team-view-agents) .sws-grid { width: 100%; flex-direction: row; flex-wrap: wrap; justify-content: flex-start; }
   /* THE TEAMS STONES (w900): the Epic stones' grammar (launch-forms.css); a Team holding nothing has
      no line, and No Team is plain: no line, its name muted. */

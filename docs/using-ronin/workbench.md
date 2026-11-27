@@ -155,14 +155,16 @@ more stone, **No Team**, last and plain, while there are any.
 
 Press a stone and the Team opens in place of the stones, a kaki **−** at its top right to go back to them, in the bar an
 Epic has on its own page: its name with **Launch** (the Team's own workbench; No Team's opens one
-workbench for those Agents), its concept in full and its item lifecycle along its foot. Press the Team's bar and its **Configuration** opens under it (the Team's configuration form, **Delete team** at its foot); press it again to close it. Under it, two lines that expand and collapse, each with its count in brackets: **Agents**, open on arrival (one bar per
-Agent, the same bar as the Team's: the lead's first with 人, then flagged ones, then by name; each bar
-its name; at the right how many open items it holds and one mark, ⚑ in amber
-when flagged (the bar takes the pill's amber), otherwise the pill's dot, solid while working and
-hollow just finished, otherwise nothing; its objective (what its work record states); its progress
-line along its foot. Press a bar and it opens under the bar, the bar staying as its title; press it
-again to close it. Open, two lines that expand and collapse: **Work items held** (the Epic page's bars over
-what it holds) and **Configuration** (the Agent's own: name, mandate and the rest, with Save).
+workbench for those Agents), its concept in full and its item lifecycle along its foot. Press the Team's bar and its **Configuration** opens under it (the Team's configuration form, **Delete team** at its foot); press it again to close it. Under it, two lines that expand and collapse, each with its count in brackets: **Agents**, open on arrival (one stone per
+Agent, as the Epics are: the lead's first, then flagged ones, then by name; each stone its name,
+Team lead or Coworker, its ⚑ and open count, its progress line). Press a stone and the Agent opens
+in place of the stones, a **−** to go back to them: the same bar as the Team's, its name (人 for the
+lead), at the right how many open items it holds and one mark, ⚑ in amber when flagged (the bar
+takes the pill's amber), otherwise the pill's dot, solid while working and hollow just finished;
+its objective (what its work record states); its progress line along its foot. Under the bar, two
+lines that expand and collapse: **Work items held** (the Epic page's bars over what it holds),
+closed until pressed, and **Configuration** (the Agent's own: name, mandate and the rest, with
+Save), open on arrival.
 An Agent is added to a Team where Agents are made, not here), then, closed until you press it, **Epics** (the
 Team's open Epics as Epic stones, each with its progress line; press one to read it in their place,
 with **Launch** to its own page). No Team has its Agents only. The **−** or Escape goes back one step. The
