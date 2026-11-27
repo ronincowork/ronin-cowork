@@ -4,7 +4,7 @@
  * Harness step and Settings' harness surfaces mount this same code: the stones of harnesses
  * (`createHarnessesSurface`), each wearing one state word (`harnessState`), and for the one pressed its panel
  * (`mountHarnessPanel`): name and state; Install or Update; Model services, first the row of services the harness
- * can use (Subscription, API key in harness, a key in the Ronin key vault, Ronin Gateway, OpenRouter, Terminal),
+ * can use (Subscription, API key, Ronin Gateway, OpenRouter, Terminal as Backup),
  * signing in where one needs it, then its model entries under it (harness-model-entries.js); Turn off or on.
  * The place decides only where the Helpful Assistant opens (`openAgent`): Setup's work surface, Settings' window.
  * Refresh all (`createRefreshAll`) is the one press that reads the CLIs' model lists.
@@ -237,7 +237,9 @@ export function mountHarnessPanel(host, id, { drawing, context = {}, openAgent =
   const newEditor = () => {
     editor?.destroy();
     const entry = catalogEntry();
-    editor = entry ? harnessModelEditor(harnessCatalog(), entry, openServices) : null;
+    // One API key per harness (owner, 27 Nov 2026): its own key login where it has one, else a key in the vault.
+    const own = harnessFromRuntime(drawing.runtime(), id)?.direct_sign_in === true;
+    editor = entry ? harnessModelEditor(harnessCatalog(), entry, openServices, { skip: own ? ['private_api'] : [] }) : null;
     editor?.onChange(() => { if (!disposed) paint(); });
   };
 
@@ -325,17 +327,18 @@ export function mountHarnessPanel(host, id, { drawing, context = {}, openAgent =
     if (provider.direct_sign_in) {
       const sub = stone(t('harness.subscription', 'Subscription'), warnFirst('subscription', start('subscription')));
       sub.setAttribute('aria-selected', String(current === 'subscription'));
-      const key = stone(t('harness.api_key_harness', 'API key in harness'), warnFirst('api_key', start('api_key')), t('harness.recommended', 'Recommended'));
+      const key = stone(t('harness.api_key', 'API key'), warnFirst('api_key', start('api_key')));
       key.setAttribute('aria-selected', String(current === 'api_key'));
       if (run) { sub.disabled = true; key.disabled = true; }
       row.append(sub, key);
     }
     if (editor) row.append(...editor.stones());
     if (!NO_TERMINAL.has(id)) {
+      // Terminal: the harness's own sign-in by hand, the backup to the others (owner, 27 Nov 2026).
       const terminal = stone(t('harness.terminal', 'Terminal'), warnFirst('terminal', async () => {
         const result = await press(`${base}/login`);
         if (result.ok) tellHer(`${cli} · Terminal`);
-      }));
+      }), row.children.length ? t('harness.backup', 'Backup') : ''); // the only way is no one's backup
       terminal.setAttribute('aria-selected', 'false');
       if (run || provider.login_open) terminal.disabled = true;
       row.append(terminal);

@@ -15,23 +15,30 @@ or **Off**. Press one to open it.
 An open harness shows **Model services**: first the services it can use, then the model entries of
 each one that is on.
 
-| Service | What it is | Claude Code | Codex | Hermes | OpenCode | Others |
-|---|---|---|---|---|---|---|
-| **Subscription** | the plan you pay its maker for, signed in in the harness | yes | yes | | | |
-| **API key in harness** *(recommended)* | a key from its maker's console, signed in in the harness | yes | yes | | | |
-| **API key in Ronin key vault** | a key Ronin keeps and starts the Agent on | coming | yes | yes | yes | |
-| **Ronin Gateway** | Ronin's own models; nothing to sign in | | yes | yes | | |
-| **OpenRouter** | one OpenRouter key for many models, kept in the Ronin key vault | | | yes | yes | |
-| **Terminal** | the harness's own sign-in in its terminal, done by hand | yes | yes | | yes | yes, the only way |
+| Harness | Its services |
+|---|---|
+| Claude Code | Subscription · API key · OpenRouter · Terminal *(Backup)* |
+| Codex | Subscription · API key · Ronin Gateway · OpenRouter · Terminal *(Backup)* |
+| Hermes | Ronin Gateway · API key · OpenRouter |
+| OpenCode | API key · OpenRouter · Terminal *(Backup)* |
+| Antigravity, Grok and the rest | Terminal |
 
-- **Subscription** and **API key in harness** sign the harness in without a terminal: the panel
-  shows the link, the code, or a box for the code or key, with **Send** and **Cancel**. One at a
-  time: signing in the other way replaces it. The one it is on is filled.
-- **API key in Ronin key vault**, **Ronin Gateway** and **OpenRouter**: one not set up says so and
-  opens Model services in Settings to add it. One set up is filled when New Agent offers it; press it
-  to turn it off or on.
-- **Terminal** opens the harness's own sign-in on the panel. Follow what it asks, then press
-  **Done**, or **Cancel** to close it.
+- **Subscription**: the plan you pay its maker for, signed in in the harness.
+- **API key**: for Claude Code and Codex, a key from its maker's console, signed in in the harness. For
+  Hermes and OpenCode, which have no key login of their own, a key kept in the Ronin key vault.
+- **Ronin Gateway**: Ronin's own models; nothing to sign in.
+- **OpenRouter**: one OpenRouter key, kept in the Ronin key vault, for many models.
+- **Terminal**: the harness's own sign-in in its terminal, done by hand: the backup to the others.
+
+Subscription and API key on Claude Code and Codex sign the harness in without a terminal: the panel
+shows the link, the code, or a box for the code or key, with **Send** and **Cancel**. One at a time:
+signing in the other way replaces it. The one it is on is filled.
+
+An outside service with no key yet reads **Not signed in**: press it to add the key in Model services.
+One signed in is filled when New Agent offers it; press it to turn it off or on.
+
+**Terminal** opens the harness's own sign-in on the panel. Follow what it asks, then press **Done**, or
+**Cancel** to close it.
 
 A harness already signed in warns first: signing in again signs out every Agent on it until you
 finish. A second press goes ahead.
@@ -44,7 +51,7 @@ it back.
 
 ## The Helpful Assistant
 
-**Subscription** and **API key in harness** open the Helpful Assistant: in Setup beside the step, in
+**Subscription** and **API key** open the Helpful Assistant: in Setup beside the step, in
 Settings in a window over the page (put it away with −). She hears what you pressed and how it ends,
 and helps. **Terminal** tells her, without opening her.
 

@@ -39,7 +39,7 @@ function createAgentWindow() {
   const build = () => {
     const out = el('section', 'harness-agent-window');
     const head = el('header', 'harness-agent-window-head');
-    const close = el('button', 'harness-agent-window-close', '−');
+    const close = el('button', 'window-control minimize', '−'); // the kaki − documents and the phalanx use
     close.type = 'button';
     close.setAttribute('aria-label', t('harness.put_away', 'Put away'));
     const chat = createIrasshaiChat();

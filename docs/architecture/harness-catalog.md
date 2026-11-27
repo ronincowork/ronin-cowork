@@ -359,43 +359,60 @@ is either, so a Codex on the Ronin Gateway alone reads Active and counts in `act
 case of its own. The Installed / Signed in / Activated facts and the numbered Install →
 Authenticate → Ready steps go: the word says it once.
 
-### Model services, part 1: choose a service, authenticate where needed
+### Model services, part 1: choose a service, sign in where needed
 
-One row of stones; a harness shows only the services it can use (`serviceTypesFor` over `SPEAKS`,
-`src/model-services.ts`, plus its CLI's own `login`). Today `SPEAKS` has Codex (Responses: Gateway,
-key vault), Hermes (both: all three) and OpenCode (chat: key vault, OpenRouter). Claude Code is not in
-it: its key-vault API key is not built yet, an Anthropic key the launch hands Claude Code
-(`ANTHROPIC_API_KEY`), added to `SPEAKS` as its own wire, with the key store's wire types, model
-discovery over Anthropic's `/v1/models` and the launch adapter. Until then Claude Code's row has no
-key-vault stone. Several can be on at once; the in-harness
-ones are one at a time, as the CLI itself allows.
+One row of stones: the in-harness ways the CLI has (its `login`), then the outside services it can use,
+then Terminal. Several can be on at once; the in-harness ones are one at a time, as the CLI allows.
 
-| Service | Where it lives | Pressing it | Claude Code | Codex | Hermes | Others |
-|---|---|---|---|---|---|---|
-| **Subscription** | in harness | runs the CLI's subscription login (Claude Code `auth login --claudeai`, Codex `login --device-auth`); the panel shows the link and the code or code box | yes | yes | | |
-| **API key in harness** *(recommended)* | in harness | runs the CLI's key login (Claude Code `auth login --console`, Codex `login --with-api-key`); the panel shows the link and code box, or the key box | yes | yes | | |
-| **API key in Ronin key vault** | Ronin | the key goes into the Ronin key vault as a model service; Ronin starts the Agent on it | not yet | yes | yes | OpenCode |
-| **Ronin Gateway** | Ronin | nothing to sign in; on, with its supplied models | never | yes | yes | |
-| **OpenRouter** | Ronin | the OpenRouter key into the Ronin key vault | | | yes | OpenCode |
-| **Terminal** | in harness | the CLI's own login in its terminal tile, its own menu, **Done** and **Cancel**: subscription or key by hand. Offered, never pushed | yes | yes | | yes, the only one |
+**One rule for every outside service** (owner, 27 Nov 2026; `src/model-services.ts`). A service speaks
+request formats; a harness's launch adapter (`src/model-service-launch.ts`) speaks formats; a harness
+can use a service wherever they share one, and its launch uses the harness's first shared format. No
+special case per harness or per service.
 
-`src/harness-sign-in.ts` and the routes stay as they are: the in-harness stones start the run
-(with `tell` set to the Helpful Assistant), and the panel shows what the run printed, with
-**Send** and **Cancel**. Keys and codes are typed only on the panel or into the key vault, never
-in chat. The service it is on stays selected (`readWays` for the in-harness two, the model service
-record for the rest).
+| | Speaks |
+|---|---|
+| Ronin Gateway | Responses |
+| OpenRouter | Responses · Chat Completions · Anthropic |
+| API key | the format chosen when the key is added |
+| Codex | Responses |
+| Claude Code | Anthropic: the service's address without `/v1` as `ANTHROPIC_BASE_URL`, the key as `ANTHROPIC_AUTH_TOKEN`, `ANTHROPIC_API_KEY` blank |
+| Hermes | Responses · Chat Completions |
+| OpenCode | Chat Completions |
 
-**The Helpful Assistant.** Subscription and API key in harness open her where the place puts her
-and tell her `<cli> · Sign in with subscription|API key`. Terminal tells her `<cli> · Terminal`
-and does not open her; no stone names her (owner, 27 Nov). **The place decides only where she
-opens**: the host passes `openAgent`. Setup opens her in its work surface; Settings opens her chat
-in a window on the surface with a kaki − (a small function in `models-surface.js`, over
-`createIrasshaiChat`).
+**One API key per harness** (owner, 27 Nov 2026): a harness with its own key login (Claude Code, Codex)
+shows that one; a harness without one (Hermes, OpenCode) shows its key in the Ronin key vault. Nothing
+is "Coming soon": a service is offered where it shares a format, or not shown.
 
-**Warn before re-sign-in (w994)** stays on the three in-harness stones (Subscription, API key in
-harness, Terminal): on a harness already signed in the first press says *Signing in again signs out
-every {cli} Agent until you finish*; the second goes ahead. The Ronin services touch no CLI sign-in,
-so they never warn.
+| Harness | Its row |
+|---|---|
+| Claude Code | Subscription · API key · OpenRouter · Terminal *(Backup)* |
+| Codex | Subscription · API key · Ronin Gateway · OpenRouter · Terminal *(Backup)* |
+| Hermes | Ronin Gateway · API key · OpenRouter |
+| OpenCode | API key · OpenRouter · Terminal *(Backup)* |
+| Antigravity, Grok and the rest | Terminal |
+
+- **Subscription** and **API key** (in harness) run the CLI's own login for that way (Claude Code
+  `auth login --claudeai` or `--console`, Codex `login --device-auth` or `--with-api-key`); the panel
+  shows the link and the code, or the box for the code or key, with **Send** and **Cancel**
+  (`src/harness-sign-in.ts`, unchanged). The one it is on is filled (`readWays`).
+- **Outside services** with no key yet read **Not signed in**; the press opens Model services on its
+  tab to add the key. One signed in is filled when New Agent offers it; a press turns it off or on.
+  The Ronin Gateway needs no key.
+- **Terminal**: the CLI's own login in its terminal tile, its own menu, **Done** and **Cancel**,
+  under the small word **Backup**.
+
+Keys and codes are typed only on the panel or into the Ronin key vault, never in chat.
+
+**The Helpful Assistant.** Subscription and API key open her where the place puts her and tell her
+`<cli> · Sign in with subscription|API key`. Terminal tells her `<cli> · Terminal` and does not open
+her; no stone names her (owner, 27 Nov). **The place decides only where she opens**: the host passes
+`openAgent`. Setup opens her in its work surface; Settings opens her chat in a window on the surface
+with the kaki − (`models-surface.js`, over `createIrasshaiChat`).
+
+**Warn before re-sign-in (w994)** stays on the three in-harness stones (Subscription, API key,
+Terminal): on a harness already signed in the first press says *Signing in again signs out every {cli}
+Agent until you finish*; the second goes ahead. The outside services touch no CLI sign-in, so they
+never warn.
 
 ### Model services, part 2: model entries
 
@@ -436,7 +453,7 @@ The owner's name for where Ronin keeps a secret, said everywhere a secret is ask
 | `public/js/setup-hermes-services.js` | deleted; Hermes uses the same row and entries |
 | `public/js/models-surface.js` | `createModelStones` and `createModelHarness` mount `mountHarnessPanel` with the window `openAgent` |
 | `src/setup-runtime.ts` | `activated` counts any model service on |
-| `src/model-services.ts`, the launch | Claude Code's key-vault API key: its wire in `SPEAKS`, the key handed at launch |
+| `src/model-services.ts`, `src/model-service-launch.ts` | the format rule; Claude Code on the Anthropic format |
 | `harness-setup-session.js`, `src/harness-sign-in.ts`, the sign-in routes | unchanged |
 | `secret-ask.js`, `model-services-surface.js`, `integrations-panel.js` | say Ronin key vault |
 | `public/style.css` | the `setup-harness-*` bar and `setup-provider-step*`/`-facts`/`-models` rules the panel no longer uses go |
@@ -459,11 +476,11 @@ The owner's name for where Ronin keeps a secret, said everywhere a secret is ask
 
 ### Decided
 
-Owner, 27 Nov: one state word and the one control that applies; stones in both places; the section
-is Model services, choose and authenticate first, model entries under it; Subscription, API key in
-harness (recommended), API key in Ronin key vault, Ronin Gateway, OpenRouter, Terminal, each where
-the harness can use it; Terminal tells the Helpful Assistant and never names her; Ronin key vault
-is the name everywhere a secret is asked for. Nothing is open.
+Owner, 27 Nov: one state word and the one control that applies; stones in both places; the section is
+Model services, choose and sign in first, model entries under it; one rule by request format for every
+outside service, so OpenRouter runs Codex and Claude Code; one API key per harness; Terminal last, under
+Backup; no "Recommended", no "Coming soon"; Terminal tells the Helpful Assistant and never names her;
+Ronin key vault is the name everywhere a secret is asked for. Nothing is open.
 
 ## The Harnesses surface
 

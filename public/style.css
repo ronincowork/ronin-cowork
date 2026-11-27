@@ -1089,7 +1089,7 @@ body {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.tile-head button, .wi-head > button.window-control, .sws-head > button.window-control, .wk-surface-header > button.transcript-toggle {
+.tile-head button, .wi-head > button.window-control, .sws-head > button.window-control, .harness-agent-window-head > button.window-control, .wk-surface-header > button.transcript-toggle {
   flex: 0 0 auto;
   background: var(--surface);
   border: var(--edge) solid var(--muted);
@@ -1116,17 +1116,17 @@ body {
   color: var(--bad);
   border-color: var(--bad);
 }
-.tile-head button.window-control, .wi-head > button.window-control, .sws-head > button.window-control {
+.tile-head button.window-control, .wi-head > button.window-control, .sws-head > button.window-control, .harness-agent-window-head > button.window-control {
   font-size: var(--text-label);
   line-height: var(--leading-none);
 }
 /* The item's − and an opened stone's (phalanx.js) wear the Launch button's look (workspace-kit.css .wk-action[data-kind='primary']). */
-.wi-head > button.window-control.minimize, .sws-head > button.window-control.minimize {
+.wi-head > button.window-control.minimize, .sws-head > button.window-control.minimize, .harness-agent-window-head > button.window-control.minimize {
   border-color: var(--kaki);
   background: var(--kaki); /* kaki: the action, or what needs you */
   color: var(--on-strong);
 }
-.wi-head > button.window-control.minimize:hover, .sws-head > button.window-control.minimize:hover {
+.wi-head > button.window-control.minimize:hover, .sws-head > button.window-control.minimize:hover, .harness-agent-window-head > button.window-control.minimize:hover {
   background: var(--kaki-lift); /* kaki: the action, or what needs you */
   color: var(--on-strong);
 }
@@ -4628,11 +4628,10 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 .harness-panel .setup-harness-terminal { align-self: stretch; }
 /* Settings' window on the surface: the Helpful Assistant's chat over the harness surface, put away with −. */
 .setup-surface:has(> .harness-agent-window) { position: relative; }
-.harness-agent-window { position: absolute; z-index: 5; inset-inline-end: 16px; inset-block-end: 16px; inline-size: min(440px, calc(100% - 32px)); block-size: min(560px, calc(100% - 32px)); display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--line-2); border-radius: 8px; box-shadow: 0 8px 24px rgb(0 0 0 / 0.35); overflow: hidden; }
+.harness-agent-window { position: absolute; z-index: 5; inset-inline-end: 16px; inset-block-end: 16px; inline-size: min(440px, calc(100% - 32px)); block-size: min(560px, calc(100% - 32px)); display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--line-2); border-radius: 8px; box-shadow: var(--shadow-menu); overflow: hidden; }
 .harness-agent-window-head { display: flex; align-items: center; gap: var(--space-control); padding: var(--space-row) var(--space-control); border-block-end: 1px solid var(--line); }
 .harness-agent-window-head b { color: var(--fg-strong); }
 .harness-agent-window-head .transcript-toggle { margin-inline-start: auto; }
-.harness-agent-window-close { border: 0; background: none; color: var(--kaki); font: inherit; font-size: 18px; line-height: 1; cursor: pointer; padding: 0 4px; }
 .harness-agent-window .setup-irasshai-chat { flex: 1; min-height: 0; border: 0; border-radius: 0; }
 .harness-agent-window .setup-irasshai-chat > .tile-body[hidden], .harness-agent-window .setup-irasshai-chat > .wk-terminal-host[hidden] { display: none; }
 .harness-agent-window .setup-irasshai-chat .wk-hosted-tile > .tile-head { display: none; }
