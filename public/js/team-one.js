@@ -123,16 +123,17 @@ export function createTeamBody(name, { say = () => {}, rows: rowsOf = () => new 
     const box = el('div', 'team-config-open team-agent-open');
     const board = createItemBoard({ every: () => (held.get(agent) || []).map((item) => ({ ...item })), empty: t('island.none', 'This Agent holds no open work items.') });
     const work = fold('agent-items', t('island.items', 'Work items held'), () => board.paint(), `${name}\0${agent}\0items`);
-    if (!teamFoldsOpen.has(`${name}\0${agent}\0items`)) work.node.open = true;
     work.body.append(board.el);
     let reader = null;
+    const configKey = `${name}\0${agent}\0config`;
+    if (!teamFoldsOpen.has(configKey)) teamFoldsOpen.set(configKey, true);
     const config = fold('agent-config', t('workspace.tab_team_configuration', 'Configuration'), () => {
       if (reader) return;
       // Its Save, as the tile's Configuration has it (tilehead.js openConfiguration): nothing saves on its own.
       reader = createAgentCompositionReader(agent);
       config.body.append(reader.el, createActionBar({ actions: [reader.action] }).el);
       reader.show?.();
-    }, `${name}\0${agent}\0config`);
+    }, configKey);
     box.append(work.node, config.node);
     const one = { box, board, destroy: () => { board.destroy(); reader?.destroy?.(); } };
     panels.set(agent, one);
