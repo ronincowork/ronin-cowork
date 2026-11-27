@@ -718,6 +718,13 @@ body {
 /* A phone has no room for the centred island beside the crumb and the right-hand end: it sat
    on top of the gauge and took its taps (KAN-640). The crumb already names the place. */
 @media (max-width: 680px) { #bar .view-island { display: none; } }
+/* A phone (KAN-930): the brand keeps its mark and drops its word, and what still does not fit
+   wraps — the crumb onto its own lines, the right-hand end onto the next row — never drawn over. */
+@media (max-width: 680px) {
+  #bar { flex-wrap: wrap; row-gap: var(--space-row); }
+  #bar .bar-crumb { flex-wrap: wrap; }
+  #bar .brand-word { display: none; }
+}
 
 #bar .shape-cycle,
 #bar .bar-toggle {
@@ -4223,9 +4230,8 @@ body {
    the stones at the same height on every step, whether the zone above them has something to
    say or nothing at all (owner, 2026-09-21). Only operation mode takes the slot away, which
    is a different thing — there is no phalanx view to keep level. */
-.setup-zone-slot { display: flex; flex: 0 0 auto; align-items: flex-start; box-sizing: border-box; min-width: 0; block-size: var(--sws-header-height, clamp(6rem, 15dvh, 9rem)); overflow: hidden; }
 .setup-zone { display: grid; align-content: start; justify-items: start; gap: var(--space-section); box-sizing: border-box; width: 100%; min-width: 0; height: calc(100% - 20px); overflow: hidden; border-bottom: var(--edge) solid var(--line); padding: var(--space-inset) 0 0; transition: border-color var(--motion-quick) var(--ease); }
-:is(.sws-header, .setup-zone-slot):has(> .setup-zone):hover > .setup-zone { border-bottom-color: var(--kaki); }
+.sws-header:has(> .setup-zone):hover > .setup-zone { border-bottom-color: var(--kaki); }
 .setup-zone-state { min-height: calc(var(--form-input) * 1.4 * 2); max-width: 40rem; margin: 0; color: var(--fg-strong); font-size: var(--form-input); font-weight: var(--weight-regular); line-height: var(--leading-body); }
 .setup-zone-options { width: auto; }
 /* A NARROW LEANING SLAB. Five standing together are a bar read left to right; five circles

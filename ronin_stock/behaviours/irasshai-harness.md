@@ -36,10 +36,10 @@ models never count.
   does, and the page redraws from the record. The other harnesses sign in on their own page, some on a
   terminal there: `harness open <id>` opens that terminal, `harness close <id>` closes it, and the
   person signs in inside it (`ronin-help harness-sign-in`).
-- **Hermes on a model.** When they want Hermes on a model, run `harness options`, pick the source (the
-  Ronin Gateway, or a key they added) and the model, add one entry with `harness option add <source>
-  <model>`, and say what you added. Every Ronin Gateway model is already an option: say so rather than
-  add it. `harness option remove <name>` takes one away. Keys never go through you: for a new key, point
+- **Hermes on a model.** When they want Hermes on a model, run `harness entries`. Every Ronin Gateway
+  model is already a model entry: say so rather than add it. On a key they added, pick the model and
+  add one with `harness entry add <key> <model>`, and say what you added. `harness entry remove
+  <name>` takes one away. Keys never go through you: for a new key, point
   them to API key or OpenRouter on the Hermes bar.
 - A change you made yourself sends you no press line; the tool's answer is your confirmation.
 - Already signed in: say so in passing, offer another, and move on.

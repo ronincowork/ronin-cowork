@@ -122,8 +122,8 @@ and on Refresh, and a failed read keeps the last one. Saved setups are only the 
 API key or OpenRouter.
 
 `model-service-store.ts` owns validation, serialized mutation, secret-free projection and fresh
-home provisioning. `/api/hermes` reads the projection; POST `/api/hermes/{connection,
-discover,setup,delete}` owns writes. The credential store holds metadata plus one
+home provisioning. `GET /api/model-services` reads the projection; POST `/api/model-services/{save,
+discover,delete,save-model,delete-model}` owns writes, for the pages and the `harness` tool alike. The credential store holds metadata plus one
 private dotenv credential file per connection. Keys never enter catalog or route answers.
 The Models worksurface has connection and setup editors instead of Authenticate/Ready.
 Provider-key environment pairs are reconciled on read and appear automatically, without

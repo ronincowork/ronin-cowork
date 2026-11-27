@@ -16,10 +16,10 @@ it finishes: start one there only when the person asks, and tell them so first.
 each CLI's own status says) and the sign-ins open now; `harness cancel <id>` stops one. How a run ends
 comes to you as a House notice ("Codex is signed in."). The other harnesses sign in on their own
 page (`ronin-help harness-sign-in`): `harness open <id>` opens its terminal sign-in there, the page's
-own press, and `harness close <id>` closes it. Hermes: `harness options` prints what it can use, the
-Ronin gateway and each key the person added, with their models, then its model entries (name,
-source, model, reasoning, approvals). `harness option add <source> <model> [--name N] [--reasoning R]
-[--approvals off|prompt]` adds one (the source: `gateway` or a key's name; defaults: named as the model,
-provider-default reasoning, approvals off; the model must be in that source's list), and
-`harness option remove <name>` removes one. Each verb calls the button's own route, so the page
+own press, and `harness close <id>` closes it. Hermes: `harness entries` prints its model services, the
+Ronin Gateway (every model it lists is already an entry) and each key the person added, with their
+models, then the model entries (name, service, model, reasoning, approvals). `harness entry add <key>
+<model> [--name N] [--reasoning R] [--approvals off|prompt]` adds one on a key (defaults: named as the
+model, provider-default reasoning, approvals off), and
+`harness entry remove <name>` removes one. Each verb calls the button's own route, so the page
 redraws from the record. Keys never go through this tool: the person types them on the page. `harness --help`.

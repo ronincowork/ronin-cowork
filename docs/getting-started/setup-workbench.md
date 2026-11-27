@@ -27,7 +27,7 @@ Under the steps, each step's questions follow the step you are on. **Ask Ronin**
 steps, is the Helpful Assistant: she sees the step you are on, answers your
 questions, and can do it with you in the conversation.
 
-Registration, Ronin Services, a password, and launching your own Agent are not Setup steps:
-they are in **Settings**.
+Registration, Ronin Services and a password are not steps here, or in Settings. A new Team or
+Agent is made from **Teams**.
 
 Contributors: [Setup construction](../architecture/setup-workbench.md).

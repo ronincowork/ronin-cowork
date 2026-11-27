@@ -83,29 +83,8 @@ export function createSetupZone({ className = '' } = {}) {
 }
 
 /**
- * The same zone for a step whose surface is a document rather than a stone work surface.
- * A stone surface already has `.sws-header` to seat it in; this is that slot, at the same
- * height, so the two kinds of step keep one rhythm.
- */
-export function createSetupZoneSlot(options) {
-  const zone = createSetupZone(options);
-  const slot = document.createElement('div');
-  slot.className = 'setup-zone-slot';
-  slot.append(zone.el);
-  return { el: slot, paint: zone.paint };
-}
-
-/**
  * One step's record from the server-owned progress resource — `{ answered, answer }`, or
  * undefined before it has loaded. Five surfaces were each spelling out the same lookup.
  */
 export const setupStep = (environment, id) =>
   environment?.setupProgress?.()?.steps?.find((step) => step.id === id);
-
-/**
- * Repaint whenever the answer record changes. Answering does not reload a surface, so a zone
- * that reads the record has to hear about it or it shows a stale mark. Returns the unsubscribe
- * to call on destroy; safe to call when there is no zone and nothing to watch.
- */
-export const watchSetupProgress = (environment, repaint) =>
-  environment?.onSetupProgress?.(() => repaint()) || (() => {});
