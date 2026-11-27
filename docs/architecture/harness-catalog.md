@@ -356,25 +356,38 @@ Ready steps go: the word says it once.
 
 ### One sign-in
 
-Every harness, the same two presses in both places (owner, 27 Nov):
+**What subscription and API key do today (from the code).** They are not two ways an Agent helps;
+they choose which login command Ronin runs. `startSignIn(provider, way)` (`src/harness-sign-in.ts`)
+looks up `login[way]` in `src/agents.ts` and runs that CLI's own login with its menu skipped:
+Claude Code `auth login --claudeai` (subscription) or `--console` (API key), both a link and a
+pasted code; Codex `login --device-auth` (a link and a code) or `--with-api-key` (a key box). After
+that the way is used for one thing only: `readWays` reads the CLI's status (`claude auth status`,
+`codex login status`) so the page can say which one it is on. Launches never read it, and Ronin
+records nothing; the CLI keeps its credential and its maker bills that way. The Helpful Assistant
+uses it only as the argument to `harness sign-in <cli> subscription|api_key`.
 
-- **Authenticate with Agent (recommended)**: asks for the Helpful Assistant if she is not here
-  and tells her `<harness> · Authenticate with Agent`. She asks the way and runs it with her
-  `harness` tool: for Claude Code and Codex, `harness sign-in <cli> subscription|api_key`
-  (`src/harness-sign-in.ts`, unchanged), and the panel shows the link, the code, the paste box
-  and Cancel from that run's push, as Setup's bar does today; for any other harness, `harness
-  open <id>`, and she talks the person through its terminal.
-- **Terminal**: the harness's own sign-in in its terminal tile on the panel (the CLI's own menu
-  asks the way), with **Done** and **Cancel**. Setup's **Close** goes; Done and Cancel everywhere.
+**Three buttons, the same in both places (owner, 27 Nov):** **Subscription** · **API key** ·
+**Terminal**.
+
+- **Subscription** and **API key** start that way's run from the panel (the route Setup's bar
+  calls today, with `tell` set to her), open the Helpful Assistant where the place puts her, and tell
+  her `<cli> · Sign in with subscription|API key`. The panel shows what the run printed: the link,
+  the code, the box for the code or key, **Send** and **Cancel**. She helps in chat and hears how it
+  ends; keys and codes are typed only on the panel.
+- **Terminal**: the CLI's own sign-in in its terminal tile on the panel, its own menu, with
+  **Done** and **Cancel**. Setup's **Close** goes.
 
 **The place decides only where she opens**: the host passes `openAgent`. Setup opens her in its
 work surface, as now; Settings opens her chat in a window on the surface with a kaki − (a small
 function in `models-surface.js`, over `createIrasshaiChat`).
 
-Warn before re-sign-in (w994) stays, one rule for both presses: on an **Active** harness the first
-press shows the line *Signing in again signs out every {cli} Agent until you finish*, the second
-goes ahead. She says the same before she starts one (her `irasshai-harness` behaviour, as now).
-The panel keeps the line *Signed in with your subscription / API key* from `readWays`.
+Warn before re-sign-in (w994) stays, one rule for all three: on an **Active** harness the first
+press shows *Signing in again signs out every {cli} Agent until you finish*; the second goes ahead.
+The way it is on stays selected, from `readWays`.
+
+**A harness with no subscription/API key split** (Antigravity, Grok, OpenCode, Kimi, Copilot):
+Ronin has no `login` for it, so the CLI's own terminal is the only sign-in. It shows the
+**Terminal** button; whether it also gets an Agent press is question 1.
 
 ### One panel, both places
 
@@ -384,7 +397,7 @@ The panel, top to bottom, shows only the control that applies:
 
 1. Name, vendor, the state word.
 2. **Install** (or Install guide) when Not installed; **Update to x** when one is available.
-3. The two sign-in presses when Not signed in or Active; the run or the terminal while Signing in.
+3. The sign-in buttons when Not signed in or Active; the run or the terminal while Signing in.
 4. **Turn off** / **Turn on**, with its sentence.
 5. **Models** (`harness-model-entries.js`, unchanged): In harness, Ronin Gateway, API key,
    OpenRouter. Hermes's panel is only this.
@@ -407,28 +420,29 @@ Settings' Refresh and Defaults surfaces are not harness sign-in and stay.
 | lexicon (`ronin_stock/lexicons/professional_en.md`) | the unused `setup_harness.*` and `setup_surface.*` keys go; `harness.*` keys for the six words and two presses |
 | `docs/getting-started/harness-sign-in.md` | In Setup and In Settings become one section |
 | `docs/architecture/setup-workbench.md` *Harnesses* | one section; it points here |
-| `ronin_stock/behaviours/irasshai-harness.md` | she hears *Authenticate with Agent*, asks the way, warns on Active |
+| `ronin_stock/behaviours/irasshai-harness.md` | she is opened and told *Sign in with subscription / API key*; helps with the panel's run; warns on Active |
 
 ### Earlier rulings
 
 | Ruling | Kept or changed |
 |---|---|
-| One way at a time, subscription or API key (24–25 Nov) | kept, as the Agent's question and the CLI's menu; the two page stones go (question 1) |
+| One way at a time, subscription or API key (24–25 Nov) | kept, as two of the three buttons; "Authenticate with Agent" (27 Nov) is replaced by them |
 | Warn before re-sign-in (w994) | kept, both presses |
 | Ronin Gateway on Codex and Hermes, never Claude Code | kept, as a Models stone |
-| Hermes's model services: Setup shows, Settings edits (25 Nov) | changed if question 3 is yes |
+| Hermes's model services: Setup shows, Settings edits (25 Nov) | changed: the same editable Models in both (owner, 27 Nov) |
 | The bar names the state (25 Nov) | kept: one word everywhere |
-| Settings' three numbered steps | changed if question 2 is yes |
+| Settings' three numbered steps | gone: one state word and the one control (owner, 27 Nov) |
 
-### Questions for the owner
+### Decided and open
 
-1. **Subscription / API key** on the page: (a) gone; the Agent asks, the Terminal's CLI asks
-   *(recommended)* · (b) kept as two stones under the Agent press.
-2. **Settings' layout**: (a) the state word and the one control that applies, as above
-   *(recommended)* · (b) keep the numbered Install → Authenticate → Ready steps, in both places.
-3. **Hermes's models in Setup**: (a) the same editable Models section as Settings *(recommended)*
-   · (b) Setup shows them, Settings edits.
-4. **Setup's list**: (a) stones, as Settings (KAN-939) *(recommended)* · (b) bars, in both places.
+Owner, 27 Nov: one state word and the one control that applies; the same editable Models section
+for Hermes in both places; stones in both; three sign-in buttons, Subscription, API key, Terminal.
+
+Open:
+
+1. **A harness with no split** (Antigravity, Grok, OpenCode, Kimi, Copilot): (a) **Terminal**
+   only; the Helpful Assistant is told and opened beside it, as for the other two *(recommended)* ·
+   (b) **Terminal** alone, nobody told.
 
 ## The Harnesses surface
 
