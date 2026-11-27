@@ -231,11 +231,11 @@ colour and motion intensify only while the owner-triggered check or installation
 
 ## Theme
 
-Two shells, same roles: `:root` is dark, `:root[data-theme='light']` remaps. **The
-default FOLLOWS THE DEVICE** (`prefers-color-scheme`, live — flip the Mac and Ronin
-follows). The ◐/☀ toggle in the Home and Setup headers (`theme-toggle.js`) flips it:
-flipping away from the device's mode pins the shell; flipping
-back to match re-arms following — no third control exists (`theme.js setTheme`).
+Two shells, same roles: `:root` is dark, `:root[data-theme='light']` remaps. The bar's
+switch (`theme-toggle.js`) is the website's pill (ronin-site `theme.js` +
+`theme-switch.css`): its kaki dot steps auto → light → dark. Auto follows the office's
+Machine Settings theme (desktop and phone each), else light; light and dark pin this device
+(`theme.js setTheme`).
 Per device (localStorage `tmuxgrid.theme`); `index.html` resolves the choice inline
 before first paint. One resolved palette feeds CSS, xterm and the browser's
 `theme-color`; `theme.js`'s token reads and the stylesheet keep the same list. The browser gates pin `colorScheme: 'dark'` so the baselines are a choice,
