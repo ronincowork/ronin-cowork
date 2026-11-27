@@ -2,7 +2,7 @@
 # show — open a Ronin surface in another visible workspace of one browser tab, never the
 # one the owner has selected.
 #
-# Usage: show <tab-id> <surface>     e.g. show a1b2c3d4e5f6 setup.providers
+# Usage: show <tab-id> <surface>     e.g. show a1b2c3d4e5f6 setup.harness
 # Exit 2 = not one tab id and one surface, 4 = no operator to ask, 5 = refused (stale tab,
 # or no other visible workspace).
 set -u

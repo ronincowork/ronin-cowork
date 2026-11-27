@@ -1,72 +1,21 @@
-import { harnessModelEditor } from './harness-model-entries.js';
-import { modelServicePageRequest } from './model-services-surface.js';
-import { openWorkbenchTab } from './workspace.js';
 /* part of the ronin-cowork client — see js/README.md */
 /**
- * ONE MODEL PROVIDERS SURFACE, TWO SEATS. Ronin Setup's Model providers card and Ronin
- * Settings' Model providers card open this same surface: one definition under one type,
- * registered by both workbenches. Its first face is an inventory of equal stones on the
- * shared stone work surface — one per CLI the registry knows, each wearing its short
- * measured state, then any catalog provider no registry CLI serves — mounted straight on
- * the surface content so the stone seat owns every inset. The
- * footer keeps the catalog research date and this machine's measurement date available
- * behind a short disclosure.
- *
- * Choosing a stone opens that provider beside the rail, top to bottom:
- *   1. YOURS — the three numbered steps (install · authenticate with the native sign-in
- *      tile, Done and Close · ready), read from the runtime row alone
- *      (setup-harness-state.js). The sign-in tile is mounted through the workbench
- *      environment's `mountHarnessSetupSession` (harness-setup-session.js), so it works
- *      on either seat. An installed CLI's step says its version and, once Refresh has
- *      asked, the newest release its package source lists; an **Update** control runs the
- *      registry's update line in a tile as Install does — the owner's press, never Ronin's.
- *   2. THE CATALOG — the three measured facts, dated, then every model the CLI listed for
- *      this provider with its tier, the default marked.
- *
- * The Setup progress resource owns measurement. This surface paints the Campaign's dated
- * provider summary, which every reader takes from the record; the catalog rows come from the one
- * picker's read (form-steps.js), so this surface and every picker cannot disagree.
- *
- * MEASURING IS NOT A REASON TO WITHHOLD THE FRAME. The stones paint at once from the
- * recorded summary — the same read every other surface makes, and the catalog read this
- * one makes anyway — and the measure runs behind them, repainting when it lands. A probe
- * that asks five CLIs their version was sitting between the owner and the first frame
- * (gemini alone took 2.9s to answer, 2026-09-09); nothing measured ever stands there again.
+ * THE HARNESS PAGES IN SETTINGS (docs/architecture/setup-workbench.md "Harnesses"): the stones of
+ * harnesses (`harnessStones`) and, for the one pressed, its page (`createHarnessDrawing`): three
+ * numbered steps (install, authenticate on the CLI's own terminal with Done and Cancel, ready), read
+ * from the measured runtime alone (setup-harness-state.js), then Models (harness-model-entries.js).
+ * The stones paint at once from the recorded summary; the measure runs behind them and repaints.
+ * Refresh all (`createRefreshAll`) is the one press that reads the CLIs' model lists.
  */
 import { t } from './lexicon.js';
-import { createSetupZone, setupStep } from './setup-zone.js';
+import { harnessModelEditor } from './harness-model-entries.js';
 import { request } from './request.js';
 import { WorkspaceKit } from './workspace-kit.js';
-import { createPhalanx } from './phalanx.js';
 import { dayTime, loadHarnessCatalog, modelLabel, harnessCatalog, tierWord } from './form-steps.js';
 import { mountHarnessAttachment, harnessFromRuntime, harnessPresentation, harnessReadiness } from './setup-harness-state.js';
 import { createStatusMarker } from './status-marker.js';
-import { IRASSHAI_NAME } from './setup-journey.js';
 
 const el = (tag, cls = '', text = null) => { const out = document.createElement(tag); if (cls) out.className = cls; if (text != null) out.textContent = String(text); return out; };
-
-/** The one type, on both workbenches. */
-export const PROVIDER_SURFACE_TYPE = 'setup.providers';
-
-export function harnessesSurfaceDefinition() {
-  return {
-    type: PROVIDER_SURFACE_TYPE,
-    header: 'surface',
-    groupKey: PROVIDER_SURFACE_TYPE,
-    label: () => t('setup_surface.providers', 'Harnesses'),
-    summary: () => harnessesSummary(harnessCatalog()),
-    create: (context) => createHarnessesSurface(context),
-  };
-}
-
-/** The card's line on both seats: the catalog's counts and this machine's. */
-export function harnessesSummary(catalog) {
-  if (!catalog?.loaded) return t('setup_surface.providers_summary_unread', 'Every harness and model Ronin offers, and what this machine has.');
-  const rows = catalog.rows;
-  const providers = new Set(rows.map((row) => row.provider)).size;
-  const activated = new Set(rows.filter((row) => row.operational).map((row) => row.provider)).size;
-  return t('setup_surface.providers_summary', '{providers} harnesses · {models} models · {activated} activated here', { providers, models: rows.length, activated });
-}
 
 /** The recorded summary as a runtime: the record every reader takes, before any measure lands. */
 export const recordRuntime = () => {
@@ -87,8 +36,8 @@ const catalogOnly = (runtime) => {
 };
 
 /** THE STONES, one builder (owner, 2026-10-19): every CLI the runtime knows wearing its measured
- * state, then every catalog provider no CLI serves. The Settings surface, the Models workbench
- * and its selector cards all read this. */
+ * state, then every catalog provider no CLI serves. The stones and the selector's cards read this. */
+const modelCount = (vendor, n) => n === 1 ? t('setup_surface.provider_models_1', '{vendor} · 1 model', { vendor }) : t('setup_surface.provider_models_n', '{vendor} · {n} models', { vendor, n });
 export function harnessStones(runtime) {
   const rows = harnessCatalog().rows;
   const providers = (Array.isArray(runtime.harnesses) ? runtime.harnesses : []).filter((provider) => provider?.id);
@@ -98,89 +47,16 @@ export function harnessStones(runtime) {
       const own = rows.filter((row) => row.cli === provider.id);
       const vendor = own[0]?.provider_label || provider.from || '';
       const entry = (harnessCatalog().harnesses || []).find((candidate) => candidate.cli === provider.id);
-      return stoneOf(String(provider.id), provider.label || provider.id, own.length ? t('setup_surface.provider_models_n', '{vendor} · {n} models', { vendor, n: own.length }) : vendor, provider.id === 'hermes' ? (own.length ? 'Setups available' : 'Add a connection and setup') : harnessPresentation(provider).inventoryState, provider.activated === true, createStatusMarker(entry?.maturity));
+      return stoneOf(String(provider.id), provider.label || provider.id, own.length ? modelCount(vendor, own.length) : vendor, provider.id === 'hermes' ? (own.length ? t('setup_surface.hermes_ready', 'Ready') : t('setup_surface.hermes_no_service', 'No model service yet')) : harnessPresentation(provider).inventoryState, provider.activated === true, createStatusMarker(entry?.maturity));
     }),
     ...catalogOnly(runtime).map((entry) => ({
-      ...stoneOf(entry.provider, entry.label, entry.models.length ? t('setup_surface.provider_models_n', '{vendor} · {n} models', { vendor: entry.label, n: entry.models.length }) : '', entry.models.length ? t('setup_surface.no_cli_state', 'No CLI') : '', false, createStatusMarker(entry.maturity)),
+      ...stoneOf(entry.provider, entry.label, entry.models.length ? modelCount(entry.label, entry.models.length) : '', entry.models.length ? t('setup_surface.no_cli_state', 'No CLI') : '', false, createStatusMarker(entry.maturity)),
       disabled: entry.models.length === 0,
     })),
   ];
   return items;
 }
 
-export function createHarnessesSurface(context) {
-  const out = WorkspaceKit.primitives.createSurface({ label: t('setup_surface.providers', 'Harnesses'), className: 'setup-surface setup-provider-surface' });
-  const notice = el('p', 'setup-fine setup-provider-notice'); notice.hidden = true;
-  const mikaAvailability = el('p', 'setup-fine setup-mika-availability');
-  let opened = String(context.detail?.provider || context.detail?.key || '');
-  let firstHarnessId = '';
-  let openFirstWhenReady = false;
-  const drawing = createHarnessDrawing(context, { repaint: () => repaint(), say: (text, bad) => say(text, bad) });
-  const stones = createPhalanx({
-    selectedId: opened,
-    className: 'setup-provider-stones',
-    renderDetail: (item, host) => drawing.paintHarness(item.id, host),
-    onSelectionChange: (id) => { opened = String(id || ''); if (!id) drawing.closed(); },
-  });
-  const controller = Object.freeze({
-    openFirst: () => {
-      if (firstHarnessId) stones.select(firstHarnessId, { focus: true });
-      else openFirstWhenReady = true;
-    },
-  });
-  context.environment?.onHarnessSurface?.(controller);
-  const refresh = createRefreshAll(drawing);
-  const zone = context.environment?.setupZones ? createSetupZone() : null;
-  /** Step 1 states one fact: whether any provider is Activated (integrations_authentications, KAN-768). */
-  const paintZone = (activated) => {
-    if (!zone) return;
-    // Ticked is the mark's own condition, so the zone and the card cannot disagree.
-    if (setupStep(context.environment, 'provider')?.answered) { zone.paint(); return; }
-    zone.paint(activated > 0
-      ? { state: 'Provider signed in and authenticated.', picks: [] }
-      : { state: 'No provider found on this machine.', picks: [{ label: 'Sign in a provider', action: () => controller.openFirst() }] });
-  };
-  stones.mount(out.content, { before: [...(zone ? [zone.el] : []), refresh.el], after: [mikaAvailability, notice] });
-  const say = (text, bad = false) => { notice.className = `${bad ? 'setup-notice bad' : 'setup-fine'} setup-provider-notice`; if (notice.textContent !== text) notice.textContent = text; notice.hidden = !text; };
-  /** The surface's frame from the drawing's runtime: the zone, the dates, the stones, the selector.
-   * Each part compares what it shows (KAN-414): the stones are the phalanx's kept rows, the zone's
-   * picks the kit list's, the selector's cards the Workbench's, and the lines write only on a change. */
-  const repaint = () => {
-    const runtime = drawing.runtime();
-    const activatedNow = Number(runtime.activated_count || 0);
-    paintZone(activatedNow);
-    refresh.paint();
-    mikaAvailability.hidden = activatedNow === 0;
-    const signedIn = activatedNow === 1
-      ? t('setup_surface.one_model_signed_in', '1 model signed in')
-      : activatedNow > 1 ? t('setup_surface.models_signed_in', '{count} models signed in', { count: activatedNow }) : '';
-    if (mikaAvailability.textContent !== signedIn) mikaAvailability.textContent = signedIn;
-    context.workbench?.refreshSelector?.();
-    const items = drawing.stones();
-    firstHarnessId = String(items[0]?.id || '');
-    say(items.length ? '' : t('setup_surface.no_catalog', 'No harnesses are in the catalog on this machine.'));
-    stones.setItems(items);
-    if (openFirstWhenReady && firstHarnessId) {
-      openFirstWhenReady = false;
-      stones.select(firstHarnessId, { focus: true });
-    }
-  };
-  const stopProgressRefresh = context.environment?.onSetupProgress?.(() => { void drawing.showRecord(); }) || (() => {});
-  return {
-    el: out.el,
-    show: async () => { await drawing.showRecord(); },
-    destroy: () => { stopProgressRefresh(); context.environment?.onHarnessSurface?.(null); drawing.destroy(); stones.destroy(); },
-  };
-}
-
-/**
- * REFRESH ALL — the one door that reads model lists (owner, 2026-09-25): every activated
- * CLI's own list, and the newest release of each, in one press. Never on a timer. The
- * line beside it says when it last ran, so the owner knows how fresh every list is.
- * Exported once (owner, 2026-10-20): Settings' provider surface and the Models workbench's
- * Model refresh surface press the same control over the same drawing; `paint()` is the
- * host's, called whenever the frame moves.
- */
 /**
  * ONE STEP, the shape every provider flow draws (the provider page's three, Model refresh's
  * three): a mark that says done, current, failed or its number; the label with its state
@@ -203,12 +79,11 @@ export function stepItem({ key, n, label, state = '', detail = '', status = '', 
 }
 
 /**
- * REFRESH ALL — one door, said as it runs: the CLIs' own model lists (and npm for their newest
- * releases). `onStep(key, state)` hears each step start and end (`lists` | `accounts`,
- * `running` | `done` | `failed`); a host that draws the steps listens.
+ * REFRESH ALL, the one press that reads model lists (owner, 2026-09-25): every activated CLI's own
+ * list and its newest release, then (`between`, KAN-236) each model service's list; never on a timer.
+ * The line beside it says when it last ran. `onStep(key, state)` hears each step start and end
+ * (`lists` | `accounts`, `running` | `done` | `failed`); `paint()` is the host's.
  */
-/** `between` (KAN-236): a step the Agent Harness workbench's Refresh runs after the harnesses — each
- * account's Discover; it resolves true when every account answered. Settings' surface passes none. */
 export function createRefreshAll(drawing, { onStep = () => {}, between = null } = {}) {
   const bar = el('div', 'setup-provider-refresh');
   const lastRan = el('p', 'setup-fine setup-provider-last-ran');
@@ -242,10 +117,9 @@ export function createRefreshAll(drawing, { onStep = () => {}, between = null } 
 }
 
 /**
- * THE PROVIDER DRAWING, exported once (owner, 2026-10-19): a provider's page — YOURS, the three
- * steps with the native sign-in tile, then THE CATALOG — and the frame read behind it (the record,
- * then any measure), drawn the same wherever a provider is read: the Settings and Setup surface
- * and the Models workbench call this. `repaint()` is the host's: it paints from `runtime()` and
+ * THE HARNESS DRAWING (owner, 2026-10-19): a harness's page (the three steps with the terminal
+ * sign-in tile, then Models) and the frame read behind it (the record, then any measure); every
+ * Settings harness surface calls this. `repaint()` is the host's: it paints from `runtime()` and
  * `stones()` whenever the frame moves; `say(text, bad)` is the host's notice line.
  */
 export function createHarnessDrawing(context, { repaint, say = () => {} }) {
@@ -320,7 +194,6 @@ export function createHarnessDrawing(context, { repaint, say = () => {} }) {
         if (!result.ok) { problem.textContent = result.message; problem.hidden = false; submit.disabled = false; return; }
         mounted?.park?.();
         await paint();
-        context.environment?.onHarnessChoice?.();
       });
       submit.dataset.endsEdit = '';
       submit.classList.add('setup-provider-done');
@@ -408,22 +281,7 @@ export function createHarnessDrawing(context, { repaint, say = () => {} }) {
       : auth.status === 'open' ? t('setup_surface.sign_in_open', 'Sign-in open')
         : auth.status === 'available' ? t('setup_surface.not_signed_in', 'Not signed in') : t('setup_surface.install_first', 'After install'));
     if (auth.current && auth.action !== 'login_open' && !provider.install_open) {
-      const assisted = typeof context.environment?.onMikaHarnessGuide === 'function'
-        && typeof context.environment?.onMikaHarnessConnect === 'function';
-      if (assisted) {
-        const irasshai = context.environment.assistName?.() === IRASSHAI_NAME;
-        const operate = control(auth, irasshai ? t('setup_surface.authenticate_irasshai', 'Let the Helpful Assistant authenticate') : t('setup_surface.authenticate_mika', 'Let Mika authenticate'), () => context.environment.onMikaHarnessConnect({ provider, workspace: context.workspace }));
-        const guide = action(irasshai ? t('setup_surface.authenticate_guided_irasshai', 'Use the CLI with the Helpful Assistant') : t('setup_surface.authenticate_guided', 'Use the CLI with Mika'), '', async () => {
-          guide.disabled = true;
-          const result = await press(`/api/setup/harnesses/${encodeURIComponent(provider.id)}/login`);
-          if (result?.ok) await context.environment.onMikaHarnessGuide({ provider, setupSession: result.data?.attachment?.key || `provider_setup_${provider.id}`, workspace: context.workspace });
-          guide.disabled = false;
-        });
-        guide.classList.add('setup-provider-action');
-        authRow.controls.append(operate, guide);
-      } else {
-        authRow.controls.append(control(auth, t('setup_surface.authenticate', 'Authenticate'), () => press(`/api/setup/harnesses/${encodeURIComponent(provider.id)}/login`)));
-      }
+      authRow.controls.append(control(auth, t('setup_surface.authenticate', 'Authenticate'), () => press(`/api/setup/harnesses/${encodeURIComponent(provider.id)}/login`)));
     } else if (auth.action === 'login_open') {
       const terminal = el('div', 'setup-provider-terminal');
       finish(`/api/setup/harnesses/${encodeURIComponent(provider.id)}/done`);
@@ -512,7 +370,7 @@ export function createHarnessDrawing(context, { repaint, say = () => {} }) {
     if (!provider && !rows.length) { host.append(el('p', 'setup-notice bad', t('setup_surface.provider_missing', 'This harness is no longer in the harness catalog.'))); return null; }
     // Hermes has no sign-in of its own: it runs on a model service, so its page is only Models.
     const harness = harnessCatalog().harnesses.find(entry => entry.cli === id);
-    const openServices = (tab) => context.environment?.openModelServices ? context.environment.openModelServices(tab, context.workspace) : openWorkbenchTab(modelServicePageRequest(tab));
+    const openServices = (tab) => context.environment.openModelServices(tab, context.workspace);
     const editor = harness && harnessModelEditor(harnessCatalog(), harness, openServices);
     if (id === 'hermes') {
       if (editor) {

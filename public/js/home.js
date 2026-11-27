@@ -19,7 +19,7 @@ subscribe('home', (rows) => { homeData = rows; });
 
 export let projectData = null; // every Workspace's folder rows, once by name: [{name, dir, note, title}]
 // The provider catalog is not cached here: form-steps.js reads it for the one picker and
-// the Campaign's Model providers surface, fresh on every surface entry.
+// Settings' harness pages, fresh on every surface entry.
 
 const projectListeners = new Set();
 /** Hear the folders change: a Workspace saved reads them again. */

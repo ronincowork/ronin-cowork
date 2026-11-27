@@ -111,11 +111,8 @@ export function createSetupView() {
     // from the facts (KAN-768). Nothing here records a step.
     onGithubAuthenticated: () => { void readProgress(); },
     onWorkspaceFolderChosen: () => { void readProgress(); },
-    onHarnessChoice: () => { void readProgress(); },
     setupProgress: () => progress,
     onSetupProgress: (listener) => { progressListeners.add(listener); listener(progress); return () => progressListeners.delete(listener); },
-    /** The surfaces draw their Setup header zones here, and only here. */
-    setupZones: true,
     readSetupProgress: () => readProgress(),
     nextSetupStep: () => advance(),
     setupRuntime: null,

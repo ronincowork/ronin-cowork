@@ -196,13 +196,13 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     defaultsNote.replaceChildren();
     const hasTeam = draft.teamMode !== 'none';
     const teaching = el('p', null, hasTeam
-      ? t('new_agent.defaults_cascade_team', 'Defaults cascade from Desk → Workspace → Team → this Agent. Changes on this form apply only to this Agent.')
-      : t('new_agent.defaults_cascade_desk', 'Defaults cascade from Desk → this Agent. Changes on this form apply only to this Agent.'));
+      ? t('new_agent.defaults_cascade_team', 'Defaults cascade from office → Workspace → Team → this Agent. Changes on this form apply only to this Agent.')
+      : t('new_agent.defaults_cascade_desk', 'Defaults cascade from office → this Agent. Changes on this form apply only to this Agent.'));
     const links = el('p', 'na-defaults-links');
     if (hasTeam && chosenTeam()) links.append(defaultsLink(t('new_agent.team_defaults', 'Team defaults'),
       teamDefaultsSpec?.(chosenTeam()) || { destination: 'team', param: chosenTeam(), mode: 'overlay' },
       openTeamDefaults ? () => openTeamDefaults(chosenTeam()) : null), ' · ');
-    links.append(defaultsLink(t('new_agent.desk_defaults', 'Desk defaults'),
+    links.append(defaultsLink(t('new_agent.desk_defaults', 'Office defaults'),
       deskDefaultsSpec?.() || { destination: 'settings2', mode: 'overlay', state: { count: 1, selected: 'workspace1', seats: { workspace1: 'settings2.agent-defaults' } } }, openDeskDefaults));
     if (!configure && hasAgent()) {
       const entry = harnessCatalog().harnesses.find(row => row.provider === (draft.provider || seed?.seeds?.provider?.value));

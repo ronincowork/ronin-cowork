@@ -31,7 +31,7 @@ export const HARNESS_SURFACE_TYPE = 'setup.harness';
 
 const el = (tag, cls = '', text = null) => { const out = document.createElement(tag); if (cls) out.className = cls; if (text != null) out.textContent = String(text); return out; };
 // EVERY BUTTON IS AN ERABI STONE (owner, 24 Nov): `ask-opt ask-rect` with its name, in an `ask` row,
-// as Setup's zone picks are (setup-zone.js; ask.js).
+// (ask.js).
 const button = (label, _primary, onClick) => {
   const out = el('button', 'ask-opt ask-rect');
   out.type = 'button';
@@ -63,9 +63,9 @@ function createHarnessSurface(context) {
   const body = el('div', 'setup-harness-body');
   const stack = el('div', 'setup-harness-stack');
   const note = el('p', 'setup-harness-note');
-  // Harnesses has no stone on a hosted Home: Setup's Harness step is the way to it (KAN-856).
+  // Settings, in its own tab, holds each harness's page, its models and the office defaults.
   const more = el('p', 'setup-harness-note');
-  more.append(t('setup_harness.more', 'Defaults and models are on '), Object.assign(document.createElement('a'), { href: '#/models', textContent: t('campaign_home.harnesses', 'Harnesses') }), '.');
+  more.append(t('setup_harness.more', 'Defaults and models are in '), modelSettingsLink('', t('settings2.title', 'Settings')), '.');
   body.append(stack, note, more);
   out.content.append(body);
   let runtime = recordRuntime();

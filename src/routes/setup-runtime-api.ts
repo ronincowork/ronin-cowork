@@ -49,6 +49,9 @@ export function registerSetupRuntime(app: express.Express): void {
         case 'delete-model': await deleteModelEntry(String(body.id)); break;
         default: return res.status(404).json({ error: 'Unknown model service action.' });
       }
+      // A service set up or removed can change which harnesses run (Hermes rides one): measure, so the
+      // Harness step's tick and its bars read the same new fact.
+      await measureAndRecordHarnesses();
       res.json({ services: await modelServices() });
     } catch (error) { res.status(400).json({ error: errMsg(error) }); }
   });

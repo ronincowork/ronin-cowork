@@ -59,7 +59,7 @@ Write a task's objective as:
 Do: what done is, in one line.
 Details: where the steps are: `ronin-help <topic>`, a screen, a tool's `--help`.
 Check: how the Agent knows it is done.
-Open: `setup.providers` (optional): the Setup surface for it.
+Open: `setup.harness` (optional): the Setup surface for it.
 ```
 
 Tasks come in id order. Point at reference material; never write lines for the Agent to say.

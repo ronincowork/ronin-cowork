@@ -18,17 +18,14 @@ import { FILES_ON } from './files-surface.js';
 import { t } from './lexicon.js';
 import { workbenchView } from './workspace-contract.js';
 import { registerWorkbenchCatalog, WORKBENCH_PROFILES, WORKBENCH_TYPES } from './workbench-catalog.js';
-import { openWorkbenchTab } from './workspace.js';
-import { modelServicePageRequest } from './model-services-surface.js';
 import { createHarnessSetupSessionMount } from './harness-setup-session.js';
-import { loadHarnessCatalog } from './form-steps.js';
-import { createModelDefaults, createModelHarness, createModelRefresh, createModelStones, harnessOffers } from './models-surface.js';
+import { createModelHarness, createModelRefresh, createModelStones, harnessOffers } from './models-surface.js';
 import { createWorkspaceNew, createWorkspaceRecord, createWorkspaceStones, workspaceOffers } from './workspaces-surface.js';
 import { createWorkspacesRead } from './workspaces-read.js';
 import { campaignById, loadCampaigns, normalizeSelection } from './campaigns.js';
 import { createEpicRecord, createEpicStones, createEpicsRead, createNewItem, epicOffers } from './epics-surface.js';
 import { createHelpOutline, createHelpPage } from './help-outline.js';
-import { askMika, askSignInHelper, createMikaTilePool, reportMikaView, signInHelperName } from './mika.js';
+import { createMikaTilePool, reportMikaView } from './mika.js';
 import { readyMika } from './mika-ready.js';
 import { S } from './state.js';
 import { request } from './request.js';
@@ -90,57 +87,26 @@ export function doorWorkbench({ id, profile, label, seat, seats = { workspace1: 
   };
 }
 
-/** Agent Harness (KAN-236; owner, 2026-11-04), Home's door where Model Providers was: three tilespaces on first open —
- * the stones of harnesses (Harness) in 1, Refresh in 2, Defaults in 3 (model services are Settings', KAN-892); a harness whole where a stone is
- * dropped or its card placed, one card per harness; the sign-in tile mounted as on Setup. The route id stays `models`
- * so saved arrangements survive. */
-export function createModelsView() {
-  const harness = harnessKit();
-  return doorWorkbench({
-    id: 'models', profile: WORKBENCH_PROFILES.models, label: t('campaign_home.harnesses', 'Harnesses'), seat: WORKBENCH_TYPES.modelStones,
-    count: 3, seats: { workspace1: WORKBENCH_TYPES.modelStones, workspace2: WORKBENCH_TYPES.modelRefresh, workspace3: WORKBENCH_TYPES.modelDefaults },
-    loaded: loadHarnessCatalog,
-    environment: ({ bench }) => harness.environment(bench),
-    destroy: harness.destroy,
-  });
-}
-
-/** The harness and model surfaces' resident data over a bench: Harnesses' own, and Settings v2's Harness and Models. */
+/** Settings' harness surfaces over a bench: the stones, Refresh, a harness whole, and the press that opens Model services. */
 export function harnessKit() {
-  const MIKA_SESSION = 'mika_agent';
-  const { surface: mikaSurface, pool: mikaPool } = createMikaTilePool();
   const providerSessions = createHarnessSetupSessionMount();
   const made = [];
   const keep = (surface) => { made.push(surface); return surface; };
   return {
     environment: (bench) => {
-      let helper = MIKA_SESSION;
-      const showMika = async (workspace, prompt) => {
-        helper = await askSignInHelper(prompt);
-        mikaPool.sync([helper]);
-        bench().place(WORKBENCH_TYPES.modelMika, workspace);
-      };
       const opposite = (workspace) => ({ workspace1: 'workspace2', workspace2: 'workspace1', workspace3: 'workspace4', workspace4: 'workspace3' })[workspace] || 'workspace1';
-      const guidePrompt = (provider, setupSession) => `You are helping the owner authenticate ${provider.label || provider.id} in the adjacent session ${setupSession}. Read its live terminal with edges read ${setupSession} and guide the owner from what is displayed. Explain each prompt briefly and say exactly what to do next. Re-read the session after each step. This machine is remote, so any browser approval happens on the owner's local computer. Do not operate the setup terminal and never ask for or display a credential. When the native flow finishes, tell the owner to return to Agent Harness so Ronin can measure readiness.`;
-      const connectPrompt = (provider) => `Authenticate the ${provider.label || provider.id} Agent Harness CLI on this machine. Its registry-owned native setup command is: ${provider.login_command || provider.id}. Run that command in an interactive shell and guide the owner through any browser or device approval on their local computer. Stay with the process until the native flow succeeds or needs an owner decision. Never ask for a token in chat and never print, inspect, or expose credentials. When it finishes, tell the owner to return to Agent Harness; Ronin's own measurement, not your report, decides whether it is Ready.`;
       const environment = {
         setupRuntime: null, mountHarnessSetupSession: providerSessions.mountHarnessSetupSession,
         providers: harnessOffers,
         modelStones: (workspace) => keep(createModelStones({ workspace, detail: {}, environment, workbench: bench() })),
         modelRefresh: (workspace) => keep(createModelRefresh({ workspace, detail: {}, environment, workbench: bench() })),
-        modelDefaults: () => createModelDefaults(),
         modelHarness: (workspace, detail) => keep(createModelHarness(detail.key, { workspace, detail, environment, workbench: bench() })),
-        // A harness page's model service press: Model services in the other pane, on the tab asked, where
-        // the workbench holds it (Settings v2); otherwise in its own tab.
-        openModelServices: (tab, from) => bench().place(WORKBENCH_TYPES.settings2ModelServices, opposite(from), { tab }) || openWorkbenchTab(modelServicePageRequest(tab)),
-        modelMika: () => ({ el: mikaSurface.el, show: () => { mikaPool.sync([helper]); mikaPool.show(helper, false); } }),
-        assistName: signInHelperName,
-        onMikaHarnessGuide: ({ provider, setupSession, workspace }) => showMika(opposite(workspace), guidePrompt(provider, setupSession)),
-        onMikaHarnessConnect: ({ provider, workspace }) => showMika(workspace, connectPrompt(provider)),
+        // A harness page's model service press: Model services in the other pane, on the tab asked.
+        openModelServices: (tab, from) => bench().place(WORKBENCH_TYPES.settings2ModelServices, opposite(from), { tab }),
       };
       return environment;
     },
-    destroy: () => { for (const surface of made.splice(0)) surface.destroy?.(); providerSessions.destroyAll(); mikaPool.destroyAll(); },
+    destroy: () => { for (const surface of made.splice(0)) surface.destroy?.(); providerSessions.destroyAll(); },
   };
 }
 
