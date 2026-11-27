@@ -4650,7 +4650,7 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 .harness-panel-title h2, .harness-panel-title p { margin: 0; }
 .harness-panel-state { margin-left: auto; font-weight: var(--weight-strong); color: var(--fg-strong); }
 .harness-panel-part { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-paragraph); min-width: 0; }
-.harness-panel-part > .ask, .harness-panel-part > .setup-harness-window, .harness-panel-part > .harness-models, .harness-panel-part > p { align-self: stretch; }
+.harness-panel-part > .setup-harness-window, .harness-panel-part > .harness-models, .harness-panel-part > p { align-self: stretch; }
 .harness-panel-part > .setup-provider-eyebrow { margin: 0; }
 .harness-panel .setup-harness-terminal { align-self: stretch; }
 /* Settings' window on the surface: the Helpful Assistant's chat over the harness surface, put away with −. */
@@ -4748,7 +4748,6 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 /* In a narrow reading (a tile, a phone) each section stacks, its body under its name, as on Work items;
    the three tabs stay on one row. */
 .model-services { container: model-services / inline-size; }
-.model-services .setup-hermes-sources { grid-template-columns: repeat(auto-fit, minmax(88px, 1fr)); }
 @container model-services (max-width: 32rem) {
   .model-services .fs-step { grid-template-columns: minmax(0, 1fr); }
   .model-services .fs-step > .fs-step-body, .model-services .fs-step:has(> .fs-step-head.fs-togglable) > .fs-step-body { grid-column: 1; }
@@ -4776,9 +4775,7 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
   .data-table td.hermes-tools { white-space: normal; }
   .data-table td.hermes-tools .data-table-link { display: block; margin-left: auto; }
 }
-/* A harness's service row: equal stones across the panel, wrapping when narrow. */
-.setup-harness-row.setup-harness-ways { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); }
-.setup-harness-ways .ask-rect { width: auto; flex: none; }
+/* A harness's service row: Erabi's own stones at their own size, wrapping (ask.css); never stretched. */
 .setup-harness-ways .ask-opt:disabled { opacity: .6; cursor: default; }
 /* Hermes's Ronin Gateway on the Settings page: always there, ticked, nothing to press. */
 .hermes-fixed { pointer-events: none; }
