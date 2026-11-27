@@ -31,6 +31,7 @@ Each file's `when:` picks its readers; an Agent is told only its own.
 | `behaviours/pm-coworker.md` | coworkers: take, start, side work, hand in, hand over at the end, end when accepted | `pm, team, role:coworker` |
 | `behaviours/pm-lead.md` | Team leads: the kinds of ask, when to offer a plan (`ronin-help planning`), giving out work, deciding what an ending handed over or flagged, promote in batches | `pm, lead` |
 | `behaviours/pm-epic-lead.md` | an epic_lead | `pm, role:epic_lead` |
+| `behaviours/pm-appliance.md` | an appliance's standing Agent: takes each order handed to her, waits on the person who placed it, stays when her orders are done | `pm, role:appliance` |
 | `behaviours/pm-traffic-control.md` | a coordinator: placing the items nobody holds | `pm, role:coordinator` |
 | `tools/work-item.md` | the `item` tool, told under Project management (`serves: project-management`) | (with its behaviour) |
 

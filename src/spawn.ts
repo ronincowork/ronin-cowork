@@ -30,7 +30,7 @@ export interface SpawnForm {
   agent_type?: 'irasshai';
   team?: string;
   team_lead?: boolean;
-  role?: 'coworker' | 'lead' | 'epic_lead' | 'coordinator';
+  role?: 'coworker' | 'lead' | 'epic_lead' | 'coordinator' | 'appliance';
   model?: string;
   provider?: string;
   mandate?: Partial<Mandate>;

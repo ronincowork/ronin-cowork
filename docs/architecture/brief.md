@@ -70,7 +70,7 @@ Agents with it, through `when:`.
 | `mika` | Mika, Ronin's help Agent | Mika's own seat (`src/house-seats.ts`) |
 | `irasshai` | the Helpful Assistant, the welcome Agent | the ordinary launch with `agent_type: irasshai` (Services' `irasshai` part) |
 
-Lead, epic lead and coordinator are **roles**, not types: a lead is a `cowork` Agent whose role
+Lead, epic lead, coordinator and appliance are **roles**, not types: a lead is a `cowork` Agent whose role
 is `lead`, and its files say `when: lead` or `role:epic_lead`.
 
 A type is only a value the files read. The Helpful Assistant shows the pattern. Her behaviour
@@ -174,7 +174,7 @@ They read values on the configuration (`src/conditionals.ts`; the list there is 
 | `mcp` | at least one MCP server is on for the Agent |
 | `api` | at least one web API is on for the Agent |
 | `pm` | project management is on |
-| `team` · `lead` · `role:<coworker\|lead\|epic_lead\|coordinator>` | on a Team, its lead, its role |
+| `team` · `lead` · `role:<coworker\|lead\|epic_lead\|coordinator\|appliance>` | on a Team, its lead, its role |
 | `desk` · `checkout` | a desk is cut, a repository is checked out |
 | `workspace:<name>` | born in that Workspace |
 
@@ -502,7 +502,7 @@ facts/       office: about_user, machine, account (hosted), office-workspaces,
 behaviours/  base-agent (full) · cowork-agent, flags, write-it-down, workspaces (cowork, full)
              reach-*, recruit-*, output-* (mandate: one file per value)
              team-lead, planning (lead) · lead-worktrees (lead, desk) · canvases (cowork, seed)
-             project-management (pm, !irasshai, full) · pm-coworker · pm-lead · pm-epic-lead ·
+             project-management (pm, !irasshai, full) · pm-coworker · pm-lead · pm-epic-lead · pm-appliance ·
              pm-traffic-control (pm, by role, full)
              working-at-a-desk (desk) · checkout (checkout)
              integrations (every Agent, seed; brings `secret`, so keys are taught once)
