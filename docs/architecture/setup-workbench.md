@@ -91,23 +91,32 @@ harness pages in Settings (`harnesses-surface.js`, seated by `harnessKit` in `do
 so a change shows on both. Setup's line under the bars links to Settings.
 The CLI's own credential file is the record of a sign-in; Ronin keeps nothing beside it.
 
+### One sign-in, both places
+
+Every harness but Hermes signs in by the same two presses, in the same words on Setup's bars and
+on its page in Settings (`harness-authenticate.js`):
+
+- **Authenticate with Agent (recommended)** asks for the Helpful Assistant when she is not live and
+  tells her `<harness> · Authenticate with Agent`. In Setup she opens in the work surface (Ask
+  Ronin's panel); in Settings, in a window on the harness's surface, put away with **−**. She runs
+  the sign-in with the person: on Claude Code and Codex the CLI's own login for the way they pick,
+  **Subscription** or **API key** (`login` in `src/agents.ts`, run by `src/harness-sign-in.ts`),
+  whose link and code show under the bar or the Authenticate step with a box for any code or key it
+  asks back, **Send** and **Cancel**; on the others the terminal sign-in below, which she reads and
+  talks them through.
+- **Terminal** opens the harness's own sign-in in a terminal tile, with what that CLI asks
+  (`signIn` in `src/agents.ts`); **Done** under it re-measures, **Cancel** ends it.
+
+On a harness already signed in the first press says that signing in again signs out every Agent
+on it until it finishes; the second goes ahead.
+
 ### Setup's Harness step
 
 One bar per harness, registry order, Claude Code and Codex first, each saying **Not set up**,
-**Signing in**, **Active** or **Off**.
-
-- **Claude Code and Codex** sign in without a terminal, one way at a time: **Subscription** or
-  **API key** (a new sign-in replaces the old one, as the CLI itself does). Ronin runs the CLI's own
-  login command for that way (`login` in `src/agents.ts`, run by `src/harness-sign-in.ts`), reads the
-  link and code it prints, and the bar shows only what the person must do: the link and code
-  (Codex subscription), the link and a box for the code it gives back (Claude Code), or a key box
-  (Codex API key), with **Send** and **Cancel**. When the CLI exits Ronin measures again and the bar
-  turns Active; a run that did not sign in leaves the CLI's last line under the bar.
-- **Other harnesses** sign in on their own terminal, opened in the bar (**Open its sign-in**,
-  **Close**); `signIn` in `src/agents.ts` says what that CLI asks.
-- **Hermes** shows its three model services (Ronin Gateway, API key, OpenRouter), each ticked when
-  set up, and the model entries of the one pressed (`setup-hermes-services.js`). Adding or changing
-  them is a link to Model services in Settings.
+**Signing in**, **Active** or **Off**. Pressed, a bar opens on the two presses above, or on the
+sign-in under way. **Hermes** shows its three model services (Ronin Gateway, API key, OpenRouter),
+each ticked when set up, and the model entries of the one pressed (`setup-hermes-services.js`).
+Adding or changing them is a link to Model services in Settings.
 
 Keys and codes are typed only in the bar or the harness's own terminal, never in chat.
 
@@ -115,8 +124,8 @@ Keys and codes are typed only in the bar or the harness's own terminal, never in
 the person's own line (`press.js`, drawn in her chat as "Pressed: …"), only after its route answered
 OK. The rule: a press goes to her when it changes what an Agent can run on or starts something she
 should follow; one that only moves around the page, or handles a secret, stays silent. So she gets
-`Codex · Sign in with subscription`, `Codex · Sent the code` (never its text), `Codex · Cancel
-sign-in`, `Grok · Open its sign-in` and `Grok · Close sign-in`. A result nobody pressed, the CLI
+`Codex · Authenticate with Agent`, `Codex · Sent the code` (never its text), `Codex · Cancel
+sign-in`, `Grok · Terminal`, `Grok · Done` and `Grok · Cancel sign-in`. A result nobody pressed, the CLI
 exiting, reaches her from the run itself: `Codex is signed in.` or `Codex sign-in did not finish:
 <last line>`.
 
@@ -134,7 +143,7 @@ the control.
 | Step | What it measures | The control |
 |---|---|---|
 | **Install** | whether the CLI is on this machine | **Install** opens the installer in a tile on the page; a CLI Ronin cannot install safely gets an **Install guide** link |
-| **Authenticate** | whether the harness is signed in here | **Authenticate** opens the CLI's own sign-in in a terminal tile, with what that CLI asks (`signIn`); **Done** under it re-measures, **Cancel** ends the terminal. While it is open the runtime reads the CLI's credential file each time it answers |
+| **Authenticate** | whether the harness is signed in here | **Authenticate with Agent (recommended)** or **Terminal**, as above. While a terminal sign-in is open the runtime reads the CLI's credential file each time it answers |
 | **Ready** | activation, which unlocks Home's doors | **Turn off** stops Ronin measuring, updating and launching the harness; running tiles and the sign-in are kept. **Turn on** brings it back |
 
 Below the steps, **Models** (`harness-model-entries.js`) picks what New Agent offers for this
