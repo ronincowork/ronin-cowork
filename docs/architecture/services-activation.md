@@ -9,7 +9,7 @@ usage route. Cowork owns the office record and the HQ transport.
 |---|---|
 | `src/activation/transport.ts` | Shared allowlisted HTTPS transport to Ronin HQ |
 | `src/activation/egress.ts` | Request metadata and outcomes, without tokens, addresses, or bodies |
-| `src/activation/secrets.ts` | The hosted office's house token, written by the provisioner |
+| `src/activation/secrets.ts` | The hosted office's entitlement and house tokens, written by the provisioner; Cowork reads them, and Services' account part sends the entitlement to Ronin HQ |
 | `src/routes/services-activation-api.ts` | Feedback to Ronin HQ |
 | `src/update-run.ts` | Shared updater launcher, through `systemd-run` or the spawn broker |
 

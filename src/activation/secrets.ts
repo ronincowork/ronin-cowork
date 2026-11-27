@@ -21,5 +21,9 @@ async function readSecret(file: string): Promise<string | null> {
   }
 }
 
+/** The office's entitlement, written by the provisioner beside office_record.json in the office_unit store
+ *  (ronin-cloud office_kohai/unit-install.sh); Ronin only reads it. Services' account part sends it to HQ
+ *  (account/read.ts, account/tomodachi-send.ts). Null when there is none: a self-hosted office. */
+export const getEntitlementToken = () => readSecret(path.join(storeDir('office_unit'), 'entitlement_token'));
 export const getHouseToken = () => readSecret(houseTokenFile());
 export const putHouseToken = (v: string) => writeSecret(houseTokenFile(), v);
