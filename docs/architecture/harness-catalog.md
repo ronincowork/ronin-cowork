@@ -387,7 +387,7 @@ The way it is on stays selected, from `readWays`.
 
 **A harness with no subscription/API key split** (Antigravity, Grok, OpenCode, Kimi, Copilot):
 Ronin has no `login` for it, so the CLI's own terminal is the only sign-in. It shows the
-**Terminal** button; whether it also gets an Agent press is question 1.
+**Terminal** button; whether the Helpful Assistant is told and opened beside it is question 1.
 
 ### One panel, both places
 
