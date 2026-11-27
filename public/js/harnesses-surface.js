@@ -260,41 +260,48 @@ export function mountHarnessPanel(host, id, { drawing, context = {}, openAgent =
   };
   const dropTerminal = () => { stopCopy(); mounted?.destroy?.(); mounted = null; mountedKey = ''; terminalHost = null; copyRow = null; };
 
-  /* COPY CODE AND COPY LINK under a sign-in terminal (owner, 27 Nov 2026): what the screen shows, read, never
-   * typed into. A link the CLI hides behind its own "show full URL" is not on screen: Copy link waits for it. */
+  /* UNDER A SIGN-IN TERMINAL (owner, 27 Nov 2026): Copy code, Show URL then Copy link, and Go Back, from what the
+   * screen shows. Read, and pressed for the person only where the screen itself offers it: its "show full URL"
+   * clicked where it is drawn, its go-back key sent. What was seen stays: a code that leaves the screen when the
+   * URL is shown is still the code. */
   // A device code as sign-ins print it: two groups of four or five letters and digits (9Q3Z-9V69).
   const CODE = /\b[A-Z0-9]{4,5}-[A-Z0-9]{4,5}\b/g;
-  // A ctrl key the screen offers with its word ("ctrl+q  quit"): pressed for the person from the panel.
-  const KEY = /\bctrl\+([a-z])\s+([a-z]+)/gi;
-  const lastKey = (text) => { const all = [...text.matchAll(KEY)]; const one = all.pop(); return one ? { letter: one[1].toLowerCase(), word: one[2].toLowerCase() } : null; };
   const LINK = /https:\/\/[^\s<>"'│]+/g;
+  const SHOW_URL = /show full url/i;
+  // The key the screen names for going back ("esc go back", "ctrl+b back").
+  const BACK = /\b(esc|ctrl\+[a-z])\s+(?:to\s+)?(?:go\s+)?back\b/i;
+  const keyOf = (name) => (name.toLowerCase() === 'esc' ? '\x1b' : String.fromCharCode(name.toLowerCase().charCodeAt(5) - 96));
   const last = (text, pattern) => (text.match(pattern) || []).pop() || '';
   let copyRow = null;
   let stopCopy = () => {};
   const copyStones = () => {
     if (copyRow) return copyRow;
-    copyRow = el('div', 'ask setup-harness-row setup-harness-ways'); copyRow.dataset.density = 'tight';
+    copyRow = el('div', 'ask setup-harness-row setup-harness-ways harness-terminal-stones'); copyRow.dataset.density = 'tight';
     const said = el('p', 'setup-fine'); said.hidden = true;
-    let seen = { code: '', link: '', key: '' };
+    let seen = { code: '', link: '', show: false, back: '' };
     const copy = (value) => { void navigator.clipboard?.writeText(value).then(() => { said.textContent = t('setup_harness.copied', 'Copied.'); said.hidden = false; }, () => {}); };
+    /** A click where the screen draws its own "show full URL" (SGR mouse, as the CLI's mouse mode reads it). */
+    const showUrl = () => {
+      const at = mounted?.locate?.(SHOW_URL);
+      if (!at) return;
+      const col = at.col + 6;
+      mounted?.send?.(`\x1b[<0;${col};${at.row}M\x1b[<0;${col};${at.row}m`);
+    };
     const paintCopy = () => {
       const code = stone(t('harness.copy_code', 'Copy code'), () => { if (seen.code) copy(seen.code); }, seen.code || t('harness.no_code', 'No code yet'));
       code.disabled = !seen.code;
-      const link = stone(t('harness.copy_link', 'Copy link'), () => { if (seen.link) copy(seen.link); }, seen.link ? '' : t('harness.expose_url', 'Expose full URL'));
-      link.disabled = !seen.link;
+      const link = seen.link
+        ? stone(t('harness.copy_link', 'Copy link'), () => copy(seen.link))
+        : stone(t('harness.show_url', 'Show URL'), showUrl);
+      if (!seen.link && !seen.show) link.disabled = true;
       const stones = [code, link];
-      if (seen.key) {
-        const [letter, word] = seen.key.split(' ');
-        // ctrl+<letter> is that letter's control character: q is 0x11.
-        stones.push(stone(word[0].toUpperCase() + word.slice(1), () => { mounted?.send?.(String.fromCharCode(letter.charCodeAt(0) - 96)); }, `ctrl+${letter}`));
-      }
+      if (seen.back) stones.push(stone(t('harness.go_back', 'Go Back'), () => { mounted?.send?.(keyOf(seen.back)); }));
       copyRow.replaceChildren(...stones, said);
     };
     const scan = () => {
       const text = mounted?.screenText?.() || '';
-      const key = lastKey(text);
-      const next = { code: last(text, CODE), link: last(text, LINK), key: key ? `${key.letter} ${key.word}` : '' };
-      if (next.code === seen.code && next.link === seen.link && next.key === seen.key) return;
+      const next = { code: last(text, CODE) || seen.code, link: last(text, LINK) || seen.link, show: SHOW_URL.test(text), back: text.match(BACK)?.[1] || '' };
+      if (next.code === seen.code && next.link === seen.link && next.show === seen.show && next.back === seen.back) return;
       seen = next;
       paintCopy();
     };
