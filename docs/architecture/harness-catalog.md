@@ -399,7 +399,10 @@ is "Coming soon": a service is offered where it shares a format, or not shown.
   tab to add the key. One signed in is filled when New Agent offers it; a press turns it off or on.
   The Ronin Gateway needs no key.
 - **Terminal**: the CLI's own login in its terminal tile, its own menu, **Done** and **Cancel**,
-  under the small word **Backup**.
+  under the small word **Backup** where the harness has another way. Under the terminal, **Copy code**
+  and **Copy link** copy the last device code and link the screen shows (read only, `screenText` in
+  `termview.js`; the terminal's own copy and links are untouched, for scrolling's sake). Copy link waits,
+  saying **Expose full URL**, until a link is on screen (owner, 27 Nov 2026).
 
 Keys and codes are typed only on the panel or into the Ronin key vault, never in chat.
 

@@ -38,7 +38,9 @@ An outside service with no key yet reads **Not signed in**: press it to add the 
 One signed in is filled when New Agent offers it; press it to turn it off or on.
 
 **Terminal** opens the harness's own sign-in on the panel. Follow what it asks, then press **Done**, or
-**Cancel** to close it.
+**Cancel** to close it. Under it, **Copy code** and **Copy link** copy what the terminal shows. A harness
+that hides its link until asked shows **Expose full URL** on Copy link: do that in the terminal, and
+Copy link works.
 
 A harness already signed in warns first: signing in again signs out every Agent on it until you
 finish. A second press goes ahead.

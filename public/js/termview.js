@@ -106,6 +106,27 @@ export class TermView {
     this.term.onWriteParsed?.(mark); // output arriving while scrolled up keeps the pill honest
   }
 
+  /** The text on screen now, a soft-wrapped line joined back to one: read only, for a page that offers what
+   *  the screen shows (the harness panel's Copy code and Copy link). */
+  screenText() {
+    const b = this.term.buffer?.active;
+    if (!b) return '';
+    const lines = [];
+    for (let y = b.baseY; y < b.baseY + this.term.rows; y++) {
+      const line = b.getLine(y);
+      if (!line) continue;
+      const text = line.translateToString(true);
+      if (line.isWrapped && lines.length) lines[lines.length - 1] += text; else lines.push(text);
+    }
+    return lines.join('\n');
+  }
+
+  /** Called after each piece of output is drawn; returns its stop. */
+  onOutput(fn) {
+    const sub = this.term.onWriteParsed?.(fn);
+    return () => sub?.dispose();
+  }
+
   /** The live selection, if xterm has one — `layout.js` feeds it to the clipboard on ⌘C. */
   getSelection() {
     return this.term.getSelection ? this.term.getSelection() : '';

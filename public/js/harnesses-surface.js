@@ -247,6 +247,7 @@ export function mountHarnessPanel(host, id, { drawing, context = {}, openAgent =
   const terminalFor = (provider) => {
     const key = provider.attachment?.key || '';
     if (mounted && mountedKey === key) return terminalHost;
+    stopCopy(); copyRow = null;
     mounted?.destroy?.();
     terminalHost = el('div', 'setup-harness-terminal');
     mountedKey = key;
@@ -257,7 +258,41 @@ export function mountHarnessPanel(host, id, { drawing, context = {}, openAgent =
     if (!mounted) terminalHost.append(el('p', 'setup-harness-line bad', t('harness.no_terminal', 'The terminal is open but cannot be shown here.')));
     return terminalHost;
   };
-  const dropTerminal = () => { mounted?.destroy?.(); mounted = null; mountedKey = ''; terminalHost = null; };
+  const dropTerminal = () => { stopCopy(); mounted?.destroy?.(); mounted = null; mountedKey = ''; terminalHost = null; copyRow = null; };
+
+  /* COPY CODE AND COPY LINK under a sign-in terminal (owner, 27 Nov 2026): what the screen shows, read, never
+   * typed into. A link the CLI hides behind its own "show full URL" is not on screen: Copy link waits for it. */
+  // A device code as sign-ins print it: two groups of four or five letters and digits (9Q3Z-9V69).
+  const CODE = /\b[A-Z0-9]{4,5}-[A-Z0-9]{4,5}\b/g;
+  const LINK = /https:\/\/[^\s<>"'│]+/g;
+  const last = (text, pattern) => (text.match(pattern) || []).pop() || '';
+  let copyRow = null;
+  let stopCopy = () => {};
+  const copyStones = () => {
+    if (copyRow) return copyRow;
+    copyRow = el('div', 'ask setup-harness-row setup-harness-ways'); copyRow.dataset.density = 'tight';
+    const said = el('p', 'setup-fine'); said.hidden = true;
+    let seen = { code: '', link: '' };
+    const copy = (value) => { void navigator.clipboard?.writeText(value).then(() => { said.textContent = t('setup_harness.copied', 'Copied.'); said.hidden = false; }, () => {}); };
+    const paintCopy = () => {
+      const code = stone(t('harness.copy_code', 'Copy code'), () => { if (seen.code) copy(seen.code); }, seen.code || t('harness.no_code', 'No code yet'));
+      code.disabled = !seen.code;
+      const link = stone(t('harness.copy_link', 'Copy link'), () => { if (seen.link) copy(seen.link); }, seen.link ? '' : t('harness.expose_url', 'Expose full URL'));
+      link.disabled = !seen.link;
+      copyRow.replaceChildren(code, link, said);
+    };
+    const scan = () => {
+      const text = mounted?.screenText?.() || '';
+      const next = { code: last(text, CODE), link: last(text, LINK) };
+      if (next.code === seen.code && next.link === seen.link) return;
+      seen = next;
+      paintCopy();
+    };
+    paintCopy();
+    scan();
+    stopCopy = mounted?.onOutput?.(scan) || (() => {});
+    return copyRow;
+  };
 
   /** What the person must do now in a sign-in run, from what the CLI printed. */
   const runWindow = (provider, run) => {
@@ -291,10 +326,11 @@ export function mountHarnessPanel(host, id, { drawing, context = {}, openAgent =
   };
 
   /** A terminal on the panel with what ends it: Done records the sign-in (it re-measures), Cancel ends it. */
-  const terminalWindow = (provider, { line = '', done = true } = {}) => {
+  const terminalWindow = (provider, { line = '', done = true, copy = false } = {}) => {
     const box = el('div', 'setup-harness-window');
     if (line) box.append(el('p', 'setup-harness-line', line));
     box.append(terminalFor(provider));
+    if (copy && mounted) box.append(copyStones());
     const row = el('div', 'ask setup-harness-row'); row.dataset.density = 'tight';
     if (done) row.append(stone(t('setup_surface.done', 'Done'), async () => { const r = await press(`${base}/done`); if (r.ok) mounted?.park?.(); }));
     row.append(stone(t('setup_surface.cancel', 'Cancel'), async () => { const r = await press(`${base}/close`); if (r.ok) tellHer(`${shortName(provider)} · Close sign-in`); }));
@@ -345,7 +381,7 @@ export function mountHarnessPanel(host, id, { drawing, context = {}, openAgent =
     }
     part.append(el('p', 'setup-harness-line', t('harness.services_line', 'Choose how {cli} gets its models. Sign in where a service needs it.', { cli })), row);
     if (run) part.append(runWindow(provider, run));
-    else if (provider.login_open) part.append(terminalWindow(provider, { line: provider.sign_in_how || '' }));
+    else if (provider.login_open) part.append(terminalWindow(provider, { line: provider.sign_in_how || '', copy: true }));
     const said = switching
       ? t('harness.signed_in_already', 'Signing in again signs out every {cli} Agent until you finish. Press it again to go ahead.', { cli })
       : current === 'subscription' ? t('harness.on_subscription', 'Signed in with your subscription.')
