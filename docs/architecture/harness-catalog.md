@@ -184,28 +184,28 @@ What this machine *has* is measured, not derived on every read. The Campaign rec
 | Field | Meaning |
 |---|---|
 | `measured_at` | when the machine was last asked |
-| `refreshed_at` | when **Refresh all** last ran — every activated CLI's list read, npm asked; `''` when never |
+| `refreshed_at` | when the last refresh read every activated CLI's list; `''` when never |
 | `installed` | CLI ids found on the login-shell PATH, with `paths` saying where |
 | `signed_in` | CLI ids whose own credential file is on this machine — presence only, never read |
 | `operational` | CLI ids that can launch: installed, signed in or recorded through **Done**, not turned off, and its vendor is not `comingSoon` |
 | `off` | installed CLI ids the owner turned off; the sign-in is kept |
 | `activated_count` | the size of `operational` — a provider with nothing to launch does not count |
 | `versions` | what each operational/activated CLI said to the registry's `operations.version` argv, per CLI id; an installed but unactivated CLI is not run |
-| `models` | per CLI id, its own model list as **Refresh all** last read it: `{ read_at, by, rows: [{ id, name }] }` in the CLI's order, `by` the CLI version installed at the read; or `{ read_at, by, rows: [], unavailable }` saying why there is none. Never guessed, never inferred from the catalog |
-| `latest` | per CLI id, the newest release its npm package listed and when it was asked — asked only by **Refresh all**, never by an ordinary measure, since each ask is an outbound request with its own egress line; kept until the next; absent for a CLI with no npm package to ask |
+| `models` | per CLI id, its own model list as the last refresh read it: `{ read_at, by, rows: [{ id, name }] }` in the CLI's order, `by` the CLI version installed at the read; or `{ read_at, by, rows: [], unavailable }` saying why there is none. Never guessed, never inferred from the catalog |
 
 `src/harness-summary.ts` has two writers and one record:
 
-- `measureAndRecordHarnesses` — the machine facts; the recorded lists, the last npm answer
-  and `refreshed_at` ride along unchanged. After **Cancel** on a sign-in (a
-  sign-in closed without Done may still have left a credential file), and after Turn off / on.
-- `refreshHarnesses` — **Refresh all**: the same facts, then every activated
-  CLI's own list read again, the Ronin Gateway's list, then npm asked.
-  It runs at every Ronin start, so after every
-  Update (which restarts Ronin), with nobody pressing anything (KAN-651); in a hosted office
-  the park calls `POST /api/setup/harnesses/refresh` over the unit's socket when it moved the
-  CLIs in place (`ronin_cloud` office_kohai); the member's press; and once on **Done**,
-  because activating a provider is a press too (owner, 2026-09-25). Never a timer, never on open.
+- `measureAndRecordHarnesses` — the machine facts; the recorded lists and `refreshed_at`
+  ride along unchanged. At every Ronin start, after **Cancel** on a sign-in (a sign-in closed
+  without Done may still have left a credential file), and after Turn off / on.
+- `refreshHarnesses` — the same facts, then every activated CLI's own list read again and
+  the Ronin Gateway's list. **HQ drives it** (owner, 2026-11-27; KAN-972): HQ moves the CLIs on
+  a hosted office, and the park then calls `POST /api/setup/harnesses/refresh` over the unit's
+  socket (`ronin_cloud` office_kohai); the park reports `GET /api/setup/runtime`'s
+  `harnesses[].model_list`, `version` and `refreshed_at` back to HQ as `cli_models`
+  (`ronin_shiwake` contracts/v1/park.md). The one other caller is a sign-in's **Done**. No
+  page, no press, no start-up refresh, never a timer. Ronin asks no package source for a
+  newer release and offers no Update: the CLIs' versions are HQ's.
 
 **How a list is read is the registry's declaration.** `AGENTS[].operations.models` in
 `src/agents.ts` names the reader: `claude-cache` (`~/.claude/cache/model-catalog/*-cc.json`,
@@ -314,7 +314,7 @@ server joined (`GET /api/harness-catalog`) and what this machine measured of eac
 (`GET /api/setup/runtime`, which answers from the Campaign's recorded summary and never
 probes), and it offers:
 
-- every provider with Native and every model its CLI gave on the last Refresh all, the
+- every provider with Native and every model its CLI gave on the last refresh, the
   providers this machine can launch first and the rest after, grouped Frontier, Standard,
   Light, Unrated within each;
 - each model as `<name> · <tier> · <use_for>`, the id as the value;
@@ -432,12 +432,12 @@ stones, kaki − top right). The same list in both: every registry CLI, then cat
 The panel, top to bottom, shows only the control that applies:
 
 1. Name, vendor, the state word.
-2. **Install** (or Install guide) when Not installed; **Update to x** when one is available.
+2. **Install** (or Install guide) when Not installed.
 3. **Model services**: part 1, the service row and any run or terminal open; part 2, the model
    entries.
 4. **Turn off** / **Turn on**, with its sentence.
 
-Settings' Refresh and Defaults surfaces are not this panel and stay.
+Settings' Defaults surface is not this panel and stays.
 
 ### Ronin key vault
 
@@ -450,7 +450,7 @@ The owner's name for where Ronin keeps a secret, said everywhere a secret is ask
 
 | File | What happens |
 |---|---|
-| `public/js/harnesses-surface.js` | becomes the one module: `recordRuntime`, `harnessState`, `harnessStones`, `mountHarnessPanel(host, id, { openAgent })`, the service row, the sign-in run window, the attachment mount. `paintYours`, `installedState`, the facts and the old model table go. `stepItem` and `createRefreshAll` stay for Refresh |
+| `public/js/harnesses-surface.js` | becomes the one module: `recordRuntime`, `harnessState`, `harnessStones`, `mountHarnessPanel(host, id, { openAgent })`, the service row, the sign-in run window, the attachment mount. `paintYours`, `installedState`, the facts and the old model table go. `stepItem` and `createRefreshAll` went with Settings' Refresh card (KAN-972) |
 | `public/js/harness-model-entries.js` | part 2; its service stones move up into part 1's row, its tables stay |
 | `public/js/setup-harness-surface.js` | deleted; Setup's surface definition (a phalanx over `mountHarnessPanel`, `openAgent` = work surface) moves into `setup-surfaces.js`, ~15 lines |
 | `public/js/setup-harness-state.js` | deleted; its sentences become `harnessState`, `mountHarnessAttachment` moves into the one module |
@@ -490,21 +490,17 @@ Ronin key vault is the name everywhere a secret is asked for. Nothing is open.
 
 Settings' harness cards draw it (`public/js/harnesses-surface.js`, seated by `harnessKit` in
 `door-workbenches.js` through `models-surface.js`): **Harness**, one stone per CLI the registry knows,
-wearing its measured state and the vendor it serves with its model count, and **Refresh**, the one
-door: **Refresh all harnesses**, with *Last ran <date>* beside it and its steps under it, Harnesses
-then Model services. The harness part also runs at start, never on a timer: it measures the machine,
-reads every activated CLI's own model list and asks npm for each one's newest release; the press
-then asks each model service for its list.
+wearing its measured state and the vendor it serves with its model count. There is no Refresh
+card: HQ drives the refresh (above).
 
 A stone opens that harness's panel, the same in Setup and Settings (*One harness panel*, above). Its
-terminal (sign-in, install or update) is mounted through the one shared mount
+terminal (sign-in or install) is mounted through the one shared mount
 (`public/js/harness-setup-session.js`), which Setup and Settings both hand their environment. Showing
-the surface paints the record; only Refresh all reads.
+the surface paints the record; only the refresh reads.
 
 **Activation is the one switch.** It decides whether Ronin spends anything on a
 provider. **Turn off**, at the foot of its panel, writes Ronin's own `setup.providers.<cli>.off_at`
-and nothing else: the provider is then not measured, not asked for its latest, not offered
-an Update, greyed in every picker with the words *turned off*, and refused for new
+and nothing else: the provider is then not measured, greyed in every picker with the words *turned off*, and refused for new
 launches with its own sentence — *turned off on this machine; your sign-in is kept*. No
 vendor file is touched, the sign-in stays, and tiles already running run on; what the CLI
 does on its own in the background is not Ronin's business. **Turn on** deletes the field,
@@ -513,25 +509,10 @@ both the credential file and `activated_at`, because `operational` is derived fr
 and neither can be unset. A provider never activated is not refused at launch; it opens
 its own sign-in in the tile, as it always has.
 
-**Versions, Refresh all, Update — for activated providers only.** A provider that is not
-activated gets nothing spent on it (owner's rule, 2026-09-09): Ronin does not run it, does
-not ask its package source, does not read its list, and offers no control; its step says
-*Installed* and stops, never a stale version and never "not read", since nothing was asked.
-An activated CLI's Install step says its version, which binary said it, and, once **Refresh
-all** has asked, the newest release its package source lists: *Installed 0.151.0 · 0.153.4
-available · ~/.local/bin/codex*, or *up to date*, or *latest unknown: no package source to
-ask* when its install line names no npm package. Refresh all asks the npm registry for each
-activated CLI whose registry install line names an npm package — one outbound request
-each, on the egress record, only on this press. **Update** runs the registry's `operations.update` line in a temporary
-`provider_setup` session shown in the page exactly as a sign-in is. The same **Cancel** ends
-all three temporary sessions — install, sign-in and update — through one teardown; npm is
-pointed at the owner's own prefix, so no box needs root and the owner
-answers nothing. It is the owner's press, never Ronin's. Tiles already running keep the
-binary they started with until they turn over; every launch after the update reads the new
-one, by absolute path from the login shell's resolution, and by name too, because a newborn's
-PATH carries Ronin's install bin dir (`docs/architecture/operator-connection.md`). Some CLIs usually
-update themselves; the row says so as information, but a failed self-update that leaves an
-authenticated provider behind still offers the manual Update.
+**Versions and lists — for activated providers only.** A provider that is not activated gets
+nothing spent on it (owner's rule, 2026-09-09): Ronin does not run it, does not read its list,
+and offers no control; it says *Installed* and stops, never a stale version and never "not
+read", since nothing was asked. An activated CLI's version is what it said at the last measure.
 
 ## New-session integration contract
 
@@ -595,7 +576,7 @@ confirm that the tile reaches a prompt and receives the complete built brief.
 3. Configure and test the CLI/profile outside Ronin; keep credentials out of the repo.
 4. For a new agent CLI, capture and test every new-session state in the contract above,
    and add its registry row to `src/agents.ts`, with its `vendor`.
-5. Refresh all; ask Glen to rate its models in HQ's Models table.
+5. Sign it in (its **Done** reads its list); ask Glen to rate its models in HQ's Models table.
 6. Update the Agent page's complete command permutations and unsupported forms.
 7. Run `npm run verify` ([verification guidance](../development/verification.md)).
 8. Launch every new model through New Agent. Confirm the receipt's command, the agent

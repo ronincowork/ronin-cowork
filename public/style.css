@@ -3865,53 +3865,9 @@ body {
 .setup-provider-stone[data-activated='true'] { border-color: var(--ok-2); }
 .setup-provider-notice { margin: 0; }
 .setup-provider-notice[hidden] { display: none; }
-/* Refresh all: the one control that reads every activated CLI's model list and asks outside this machine (each CLI's package source). It sits once, at the top, with the date it last ran. */
-.setup-provider-refresh { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-row) var(--space-inline); margin: var(--space-paragraph) 0 var(--space-paragraph); }
-.setup-provider-last-ran { margin: 0; font-size: var(--text-body); }
-/* A stone's detail is two sections, top to bottom: Yours (the steps), then The catalog. */
 .setup-provider-eyebrow { margin: 0; color: var(--muted); font-size: var(--text-small); font-weight: var(--weight-strong); letter-spacing: var(--tracking-wide); text-transform: uppercase; }
-/* Two names per model: the CLI's own name in bold, the id every launch uses beneath it. */
-/* The selected provider: a flat detail on the shared stone seat, on the Setup type baseline
-   (14 body · 16 step · 20 title). Three numbered steps share one shape — the mark, the copy,
-   then a control of one size — under a restrained kaki rule. The mark says done, current,
-   or pending, and the control's enabled state says the same thing. The shared stone
-   surface is the size container: the control sits beside the copy only when the detail is
-   wide enough and otherwise takes its own line under the copy, never stretched. */
-.setup-provider { display: grid; gap: var(--space-subsection); max-width: 44rem; min-width: 0; padding-bottom: var(--space-inset); }
 .setup-provider-from { margin: 0; color: var(--muted); font-size: var(--text-body); }
-.setup-provider-steps { --provider-rule: var(--line); display: grid; gap: 0; min-width: 0; margin: 0; padding: 0; list-style: none; }
-.setup-provider-step { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-paragraph) var(--space-inline); align-items: start; min-width: 0; padding: calc(var(--space-section) / 2) 0; border-top: var(--edge) solid var(--provider-rule); }
-.setup-provider-step:first-child { padding-top: 0; border-top: 0; }
-.setup-provider-step:last-child { padding-bottom: 0; }
-.setup-provider-mark { display: inline-grid; place-items: center; width: 24px; height: 24px; box-sizing: border-box; border: var(--edge) solid var(--line-2); border-radius: var(--radius-round); color: var(--muted); font-size: var(--text-body); font-weight: var(--weight-strong); line-height: var(--leading-none); }
-.setup-provider-step[data-current='true'] .setup-provider-mark { border-color: var(--kaki); background: var(--kaki); /* kaki: the action, or what needs you */ color: var(--on-strong); }
-.setup-provider-step[data-done='true'] .setup-provider-mark { border-color: var(--ok-2); color: var(--ok-2); }
-.setup-provider-copy { display: grid; gap: var(--space-row); min-width: 0; }
-.setup-provider-title { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-row) var(--space-inline); min-width: 0; }
-.setup-provider-label { color: var(--fg-strong); font-size: var(--text-heading); font-weight: var(--weight-strong); line-height: var(--leading-body); }
-.setup-provider-state { color: var(--muted); font-size: var(--text-body); }
-.setup-provider-step[data-current='true'] .setup-provider-state { color: var(--kaki); }
-.setup-provider-step[data-done='true'] .setup-provider-state { color: var(--ok-2); }
-.setup-provider-step[data-failed='true'] .setup-provider-mark { border-color: var(--bad); color: var(--bad); }
-.setup-provider-step[data-failed='true'] .setup-provider-state { color: var(--bad); }
-/* Model refresh: the door's three steps, each line a quiet label and its value; the review in the provider table's columns. */
-/* Each step: title, then its description, then a block of facts or the review table, each group spaced apart. */
-.models-refresh-steps { margin-top: var(--space-subsection); }
-.models-refresh-steps .setup-provider-copy { gap: var(--space-paragraph); }
-.models-refresh-steps .setup-provider-control { margin-top: var(--space-subsection); }
-.models-refresh-facts { display: grid; gap: var(--space-row); }
-.models-refresh-line { display: grid; grid-template-columns: 10rem minmax(0, 1fr); gap: var(--space-paragraph) var(--space-inline); }
-.models-refresh-key { color: var(--muted); }
-.setup-provider-note { margin: 0; color: var(--muted); font-size: var(--text-body); line-height: var(--leading-body); overflow-wrap: anywhere; }
 .setup-provider-command { color: var(--muted); font: var(--text-body) var(--font-mono); overflow-wrap: anywhere; }
-.setup-provider-control { display: flex; flex-wrap: wrap; gap: var(--space-inline); min-width: 0; grid-column: 2; }
-.setup-provider-control:empty { display: none; }
-@container setup-stone-work-surface (min-width: 46rem) {
-  .setup-provider-step { grid-template-columns: auto minmax(0, 1fr) auto; }
-  .setup-provider-control { grid-column: auto; align-self: center; justify-content: flex-end; }
-}
-/* The native sign-in tile: headerless, with a bounded height so the surrounding
-   setup controls remain reachable. Terminal output scrolls inside the tile. */
 /* THE FIVE STEP MARKS (js/setup-steps-bar.js) — one drawing of Setup's progress, seated
    wherever it has to be read. It draws at ONE size and never reads its surroundings, so
    it is the same shape in a selector column and in a header; a consumer that needs

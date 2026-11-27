@@ -289,10 +289,6 @@ nothing paints exactly this.
 
 - **harness.stones:** Harness
 - **harness.stones_summary:** The CLIs: install, model services
-- **harness.refresh:** Refresh
-- **harness.refresh_summary:** One press: harnesses, model services
-- **harness.step_harnesses:** Harnesses
-- **harness.step_harnesses_detail:** Each activated CLI: its version, the newest release, and its own model list. Only these models can launch on a subscription.
 
 ## accounts — model-services-surface.js, models-surface.js (model service words still read under these keys)
 
@@ -311,9 +307,6 @@ nothing paints exactly this.
 - **accounts.cancel:** Cancel
 - **accounts.edit:** Edit
 - **accounts.remove:** Remove
-- **accounts.key_missing:** Key missing
-- **accounts.none_yet:** None yet
-- **accounts.step_detail:** Each private API and Ronin Gateway is asked for its model list.
 - **accounts.approvals_off:** YOLO — approvals off
 - **accounts.approvals_prompt:** Ask for approval
 - **accounts.reasoning_default:** Service default
@@ -1346,10 +1339,6 @@ The pad's current config downloads as a backup first.
 - **setup_surface.no_cli:** No CLI in Ronin’s registry serves this harness, so it cannot be installed or signed in here.
 - **setup_surface.no_cli_state:** No CLI
 - **setup_surface.no_models:** The catalog lists no models for this harness.
-- **setup_surface.refresh_all:** Refresh all harnesses
-- **setup_surface.refreshing_accounts:** Reading account lists…
-- **setup_surface.last_ran:** Last ran {date}
-- **setup_surface.never_ran:** Never run — every harness offers Native only until it runs.
 - **setup_surface.provider_models_1:** {vendor} · 1 model
 - **setup_surface.provider_models_n:** {vendor} · {n} models
 - **setup_surface.part_models_n:** {n} models

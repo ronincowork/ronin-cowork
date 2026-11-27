@@ -23,7 +23,7 @@ through Ronin.
 or sign in to a subscription it supports; each one goes into
 `~/.local/share/opencode/auth.json`, the file Ronin reads as "signed in". OpenCode Zen's free
 models work with no sign-in at all, so the owner's **Done** activates it too.
-OpenCode updates itself on start (`autoupdate`); Update runs `npm install -g opencode-ai@latest`.
+OpenCode updates itself on start (`autoupdate`).
 
 ## Ronin launch sequence
 
@@ -36,7 +36,7 @@ OpenCode updates itself on start (`autoupdate`); Update runs `npm install -g ope
 
 The brief is passed with `--prompt`: the TUI opens with it as the first turn. `--auto`
 auto-approves every permission not explicitly denied in its config. Model ids are
-`provider/model`, as `opencode models` prints them one per line; Refresh all reads that list.
+`provider/model`, as `opencode models` prints them one per line; a refresh reads that list.
 
 Chat shows the terminal only. OpenCode keeps every session in one SQLite store,
 `~/.local/share/opencode/opencode.db` (`opencode db path`), whose schema it does not publish;

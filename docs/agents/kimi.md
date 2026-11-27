@@ -24,7 +24,7 @@ Moonshot's curl installer is not used: it installs into `~/.kimi-code/bin` and a
 `kimi login` (device code; `--region global` for kimi.ai, `mainland-cn` for kimi.com), which
 writes `~/.kimi-code/credentials/managed:kimi-code.json`, the file Ronin reads as "signed
 in". A Moonshot API key is set with `kimi provider` instead, and the owner's **Done**
-activates it. Update runs `npm install -g @moonshot-ai/kimi-code@latest`.
+activates it.
 
 ## Ronin launch sequence
 

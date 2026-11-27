@@ -37,7 +37,7 @@ Grok additionally accepts `--resume`, `--continue`, explicit session IDs, and
 reasoning-effort controls. These are recorded here for drift review but are not Ronin
 standards until their lifecycle and safety behavior are exercised end to end.
 
-The initial brief is positional. Install/update/version operations are in the registry.
+The initial brief is positional. Install and version operations are in the registry.
 Resume syntax and exact conversation discovery remain unsupported; Archive refuses.
 The catalog currently declares no Dangerously mode.
 

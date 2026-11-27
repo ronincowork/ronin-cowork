@@ -42,7 +42,7 @@ A service step needs an installed harness that works with the service. What a ha
 
 ## When Ronin Gateway can't be used
 
-Ronin keeps what the Gateway's last model-list read found, as the service's `status`. The list is read at start-up and on Refresh, never on a timer.
+Ronin keeps what the Gateway's last model-list read found, as the service's `status`. The list is read at start-up and on each refresh HQ drives (`POST /api/setup/harnesses/refresh`), never on a timer.
 
 | Status | The read found | What the person sees |
 |---|---|---|

@@ -98,20 +98,3 @@ function installLine(get: string, cmd: string): string {
   return [...installPreamble(), `${get} && ${cmd}`].join('; ');
 }
 
-/** The registry's update for a CLI as one shell line, or '' when it has none. */
-export function updateLineOf(spec: (typeof AGENTS)[number]): string {
-  return spec.operations.update.shell || (spec.operations.update.argv.length ? [spec.cmd, ...spec.operations.update.argv].join(' ') : '');
-}
-
-/**
- * UPDATE — the same preamble as Install, the registry's update line, then the CLI's own
- * version so the owner sees what landed. The preamble points npm at the owner's own prefix
- * (no box needs root; the owner answers nothing) and puts that prefix's bin dir first so the
- * version printed is the one just installed. It runs in a temporary provider_setup session
- * shown in the page, opened and closed by src/setup-runtime.ts exactly as a sign-in is.
- */
-export function updateCommand(spec: (typeof AGENTS)[number]): string {
-  const line = updateLineOf(spec);
-  if (!line) throw new Error(`nothing updates ${spec.label} from here yet`);
-  return [...installPreamble(), `${line} && ${spec.cmd} ${spec.operations.version.join(' ')}`].join('; ');
-}

@@ -24,8 +24,7 @@ office unit that signs it in proves it.
 (Free, Pro, Pro+ or a business seat). `COPILOT_GITHUB_TOKEN`, `GH_TOKEN` or `GITHUB_TOKEN`
 in the environment wins over a stored sign-in. The token goes to the OS keyring, or, where
 there is none, into `~/.copilot/config.json`: no file means "signed in" on its own, so the
-owner's **Done** after sign-in activates it. An npm install never updates itself; Update runs
-`npm install -g @github/copilot@latest`.
+owner's **Done** after sign-in activates it. An npm install never updates itself.
 
 ## Ronin launch sequence
 

@@ -19,7 +19,7 @@ import { t } from './lexicon.js';
 import { workbenchView } from './workspace-contract.js';
 import { registerWorkbenchCatalog, WORKBENCH_PROFILES, WORKBENCH_TYPES } from './workbench-catalog.js';
 import { createHarnessSetupSessionMount } from './harness-setup-session.js';
-import { createModelHarness, createModelRefresh, createModelStones, harnessOffers } from './models-surface.js';
+import { createModelHarness, createModelStones, harnessOffers } from './models-surface.js';
 import { createWorkspaceNew, createWorkspaceRecord, createWorkspaceStones, workspaceOffers } from './workspaces-surface.js';
 import { createWorkspacesRead } from './workspaces-read.js';
 import { campaignById, loadCampaigns, normalizeSelection } from './campaigns.js';
@@ -99,7 +99,6 @@ export function harnessKit() {
         setupRuntime: null, mountHarnessSetupSession: providerSessions.mountHarnessSetupSession,
         providers: harnessOffers,
         modelStones: (workspace) => keep(createModelStones({ workspace, detail: {}, environment, workbench: bench() })),
-        modelRefresh: (workspace) => keep(createModelRefresh({ workspace, detail: {}, environment, workbench: bench() })),
         modelHarness: (workspace, detail) => keep(createModelHarness(detail.key, { workspace, detail, environment, workbench: bench() })),
         // A harness page's model service press: Model services in the other pane, on the tab asked.
         openModelServices: (tab, from) => bench().place(WORKBENCH_TYPES.settings2ModelServices, opposite(from), { tab }),

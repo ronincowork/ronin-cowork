@@ -64,7 +64,7 @@ it until exact conversation discovery is supported.
 
 Hermes can serve different inference providers. Its CLI identity is distinct from the
 provider/model selected in the catalog. Ronin has no automated installer for it; a
-manual installation can be detected. Update and declared resume arguments are registry
+manual installation can be detected. Declared resume arguments are registry
 data, but exact conversation discovery is unsupported, so Archive refuses.
 
 The initial brief is passed as one literal `--query` argument. On a TTY Hermes submits it as the first turn and keeps the session interactive. Hermes calls Ronin's Dangerously

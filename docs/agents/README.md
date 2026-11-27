@@ -42,7 +42,7 @@ field (`idPath`) is one store file the birth owns, such as Hermes's `state.db`, 
 whole rather than placed and chained by its first line. Each CLI's `vendor.transcript_source` in
 `src/agents.ts` carries descriptive source observations; executable CLI mechanics live here. This keeps the commands we use in one auditable place
 beside the upstream alternatives we deliberately do not use. `src/agents.ts` owns
-install/update/version and identity-discovery adapters. Each Agent page also owns its
+install/version and identity-discovery adapters. Each Agent page also owns its
 executable `stop_keys` and `clear_keys` fields. Ronin reads that page when an
 action is requested. Values are tmux key names (`C-c` means Ctrl+C); multiple keys are
 space-separated and sent in order. Change the Agent page to change its mapping.
@@ -57,7 +57,7 @@ explicit. Authentication Behaviors express owner policy and link here for CLI me
 ## Code ownership
 
 - `src/agent-launches.ts` and these pages: executable launch and resume commands.
-- `src/agents.ts`: CLI install/update/version and session-discovery adapters.
+- `src/agents.ts`: CLI install/version and session-discovery adapters.
 - `src/spawn.ts`, `src/routes/launch.ts`: resolve catalog entries and persist launch identity.
 - `src/tmux.ts`, `src/session-archive.ts`, `src/routes/sessions-api.ts`: live identity and archive/resume.
 - `src/terminal-controls.ts`: read the Agent document and dispatch using persisted CLI identity; no screen detection.

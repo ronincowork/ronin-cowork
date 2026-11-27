@@ -110,7 +110,7 @@ export interface HarnessRows extends HarnessEntry {
 /** What `GET /api/harness-catalog` answers: the dates of the record, and the joined rows. */
 export interface HarnessCatalogAnswer {
   measured_at: string;
-  /** When Refresh all last read every activated CLI's list; '' when never. */
+  /** When the last refresh read every activated CLI's list; '' when never. */
   refreshed_at: string;
   /** When HQ's catalog was made; '' when none has arrived. */
   catalog_at: string;
@@ -147,13 +147,13 @@ export interface ModelList {
 
 /**
  * Written at Ronin start and after a sign-in closes (machine facts, the recorded lists
- * carried forward), and by Refresh all (machine facts, every activated CLI's list read
- * again, npm asked for the newest release). Read by everything else. A stale summary
+ * carried forward), and by a refresh — HQ's, through the park, or a sign-in's Done (machine
+ * facts, every activated CLI's list read again). Read by everything else. A stale summary
  * shows its dates. It is never guessed.
  */
 export interface HarnessSummary {
   measured_at: string;
-  /** When Refresh all last ran: every activated CLI's list read, npm asked; '' when never. */
+  /** When the last refresh read every activated CLI's list; '' when never. */
   refreshed_at: string;
   /** CLI ids found on this machine's login-shell PATH. */
   installed: string[];
@@ -168,14 +168,8 @@ export interface HarnessSummary {
   paths: Record<string, string>;
   /** Each installed CLI's own version, as its `--version` printed it; absent when it would not say. */
   versions: Record<string, string>;
-  /** Each activated CLI's own model list as last read; absent until Refresh all has read it. */
+  /** Each activated CLI's own model list as last read; absent until a refresh has read it. */
   models: Record<string, ModelList>;
-  /**
-   * The newest version its package source offers, asked only on Refresh all — never on an
-   * ordinary measure, since each ask is an outbound request with an egress line. Kept
-   * from the last Refresh until the next; absent for a CLI with no source Ronin can ask.
-   */
-  latest: Record<string, { version: string; checked_at: string }>;
 }
 
 const idList = (v: unknown): string[] => Array.isArray(v)
@@ -235,11 +229,6 @@ export function parseHarnessSummary(value: unknown): HarnessSummary | null {
   for (const [id, where] of Object.entries(record(v.paths))) if (typeof where === 'string' && where) paths[id] = where;
   const versions: Record<string, string> = {};
   for (const [id, version] of Object.entries(record(v.versions))) if (typeof version === 'string' && version) versions[id] = version;
-  const latest: HarnessSummary['latest'] = {};
-  for (const [id, row] of Object.entries(record(v.latest))) {
-    const { version, checked_at } = record(row);
-    if (typeof version === 'string' && version && typeof checked_at === 'string' && checked_at) latest[id] = { version, checked_at };
-  }
   const models: Record<string, ModelList> = {};
   const source = v.models !== undefined ? record(v.models) : record(v.model_lists);
   const parse = v.models !== undefined ? parseModelList : parseLegacyModelList;
@@ -258,20 +247,7 @@ export function parseHarnessSummary(value: unknown): HarnessSummary | null {
     paths,
     versions,
     models,
-    latest,
   };
-}
-
-/** True when `candidate` is a newer release than `installed`, comparing dotted numbers; false when either is unreadable. */
-export function newerVersion(installed: string, candidate: string): boolean {
-  const nums = (s: string) => /\d+(?:\.\d+)*/.exec(s)?.[0].split('.').map(Number);
-  const a = nums(installed); const b = nums(candidate);
-  if (!a || !b) return false;
-  for (let i = 0; i < Math.max(a.length, b.length); i++) {
-    const x = a[i] ?? 0; const y = b[i] ?? 0;
-    if (x !== y) return y > x;
-  }
-  return false;
 }
 
 /* ---------------------------------------------------------------------------------- */

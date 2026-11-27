@@ -159,8 +159,7 @@ Teams door opens the Teams workbench (`#/cowork`, `cowork-view.js`; owner, 2026-
 and Help are one shape (`door-workbenches.js`): the Kit Workbench on a profile of the door's surfaces, the door's
 surface seated in Workspace 1 on first open. Settings' harness cards come from the same file's `harnessKit`: the
 stones of harnesses (`models.stones`; a stone pressed opens its page in place of the stones, a stone dragged or a harness's
-selector card places it whole, `models.provider`), and **Refresh** (`models.refresh`), the one Refresh all press with
-its steps under it, Harnesses then Model services (`models-surface.js`, drawn with `harnesses-surface.js`).
+selector card places it whole, `models.provider`; `models-surface.js`, drawn with `harnesses-surface.js`).
 Workspaces seats
 its own stones of Workspaces (`workspaces-surface.js`, `workspaces.records`): a pressed one's page is the whole
 Workspace: Describe (its objective), Where it lives (its folder and its repositories, Desks or Direct each; Add a repository clones one into its `repos/`, KAN-809), and More;
@@ -320,7 +319,6 @@ The door's own destination over the provider drawing Settings and Setup share.
 | Surface | Required data and owner |
 |---|---|
 | Model stones (`models.stones`) | the recorded provider summary and catalog through `recordRuntime()`; a measure only on a press, as on Settings |
-| Model refresh (`models.refresh`) | the same record; the Refresh all press (`/api/setup/harnesses/refresh`) through the shared drawing's measure, then each account's Discover |
 | Defaults (`models.defaults`) | `GET /api/machine-settings`, the schema's `models` section; each row PATCHes `agents` (`sessions.default`, `sessions.lead`, `jobs.mikaassist.level`) |
 | Model provider (`models.provider`) | the same record for the one provider named in its detail; its selector cards come from `harnessOffers()` over the same record |
 

@@ -9,7 +9,6 @@ import {
   closeHarnessLogin,
   completeHarnessLogin,
   openHarnessLogin,
-  openHarnessUpdate,
   setHarnessOff,
   setupRuntimeAnswer,
   githubSetupAnswer,
@@ -23,7 +22,7 @@ import type { HarnessSummary } from '../harness-catalog.js';
 const errMsg = (error: unknown) => String((error as Error)?.message ?? error).replaceAll(homedir(), '~');
 const EMPTY_PROVIDER_SUMMARY: HarnessSummary = {
   measured_at: '', refreshed_at: '', installed: [], signed_in: [], operational: [], off: [], activated_count: 0,
-  paths: {}, versions: {}, models: {}, latest: {},
+  paths: {}, versions: {}, models: {},
 };
 /** A record-only answer. Setup progress owns every automatic machine measurement. */
 const answer = async (summary?: HarnessSummary) => {
@@ -65,12 +64,10 @@ export function registerSetupRuntime(app: express.Express): void {
     }
   });
 
-  // REFRESH ALL — the one door that reads model lists: the machine facts, then every
-  // activated CLI's own list and each provider part's, then the one outbound ask — the newest
-  // release of each activated CLI whose install line names an npm package. Ronin runs it at
-  // start; in a hosted office the park calls it over the unit's socket when it moved the CLIs
-  // in place (ronin_cloud office_kohai, KAN-651); the member's press. Never a timer; each ask
-  // is an egress line. Every other reader takes GET /api/setup/runtime, which is the record.
+  // REFRESH — the one door that reads model lists: the machine facts, then every activated
+  // CLI's own list and the Ronin Gateway's. HQ drives it: the park calls it over the unit's
+  // socket after HQ moved the CLIs in place (ronin_cloud office_kohai, KAN-651, KAN-972).
+  // Never a timer. Every other reader takes GET /api/setup/runtime, which is the record.
   app.post('/api/setup/harnesses/refresh', async (_req, res) => {
     try {
       const summary = await refreshHarnesses();
@@ -89,19 +86,6 @@ export function registerSetupRuntime(app: express.Express): void {
         return;
       }
       res.json({ ok: true, outcome: result.outcome, runtime: await answer() });
-    } catch (error) {
-      res.status(400).json({ error: errMsg(error) });
-    }
-  });
-
-  // Update: the registry's update line in a temporary provider_setup session shown in the
-  // page, as a sign-in is; the same /close ends it. The owner's press.
-  app.post('/api/setup/harnesses/:provider/update', async (req, res) => {
-    try {
-      const result = await openHarnessUpdate(String(req.params.provider));
-      const runtime = await answer();
-      const provider = runtime.harnesses.find((row) => row.id === String(req.params.provider));
-      res.json({ ok: true, opened: result.opened, session: result.session, attachment: provider?.attachment ?? null, runtime });
     } catch (error) {
       res.status(400).json({ error: errMsg(error) });
     }
