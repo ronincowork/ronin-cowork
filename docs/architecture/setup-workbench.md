@@ -73,8 +73,8 @@ not start her; an office starts her when none of the three steps is ticked. Movi
 steps tells her nothing; she sees the step (Setup reports its view) and opens what it needs with
 `show`. A button on a step's surface may message her, named on the button.
 
-Registration, Installations (Ronin Services), Password and Launch are not Setup steps: their cards
-stay in Settings. Install makes no Workspace and no folder; Ronin Lab is made in the Workspace step
+Registration, Ronin Services, Password and launching your own are not Setup steps (see "Not in
+Setup or Settings" below). Install makes no Workspace and no folder; Ronin Lab is made in the Workspace step
 (its "Not sure yet" door), as any Workspace is. Plans make their folder on their first
 write.
 

@@ -149,7 +149,7 @@ export const rowTierWord = (row) => {
   const line = row?.model === NATIVE_MODEL ? '' : String(row?.use_for || '');
   return [word, line].filter(Boolean).join(' · ');
 };
-export const modelWord = (row) => rowTierWord(row)
+const modelWord = (row) => rowTierWord(row)
   ? t('forms.model_word', '{model} · {tier}', { model: modelLabel(row), tier: rowTierWord(row) })
   : modelLabel(row);
 

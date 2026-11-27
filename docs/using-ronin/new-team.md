@@ -12,7 +12,8 @@ from the launch flow, or the Team step in Setup: it is the same form.
 3. **Agents.** The Team starts with its lead already in the list, named after the first word of the
    Team name (`front-2` gives `front_lead`); the name follows the Team name as you type until you
    edit it, and the lead can be removed like any Agent. Add the other Agents you want, each with its
-   harness. The model a new Agent or Team lead gets is set on **Models > Defaults**.
+   harness. Left blank, an Agent's harness, model and mandate are the Team's, which it copies from
+   its Workspace when it is made.
 4. **Epic.** Pick one of the Workspace's open epics to hand to the Team, or leave **A new epic** and
    give it a title (the Team's title if you leave it blank). The lead is told its epic and the objective.
 
