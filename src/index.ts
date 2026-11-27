@@ -219,7 +219,8 @@ app.post('/api/logout', (_req, res) => {
 });
 
 app.use('/brand', express.static(path.join(PUBLIC, 'brand')));
-// The token sheet holds no secret; the login page links it so it wears the same values.
+// The token sheet and the stylesheet hold no secret; the login page links them so it wears the same values.
+app.get('/tokens.css', (_req, res) => res.sendFile(path.join(PUBLIC, 'tokens.css')));
 app.get('/style.css', (_req, res) => res.sendFile(path.join(PUBLIC, 'style.css')));
 
 app.use(signIn);
