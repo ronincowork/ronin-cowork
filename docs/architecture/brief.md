@@ -192,8 +192,8 @@ the docs knows the office: the owner, an Agent, a lead, the Helpful Assistant, a
 
 | Fact | What it says | Its sources of truth |
 |---|---|---|
-| `about_user` | the person and the office's people; the Helpful Assistant's notes on them | hosted: `office_unit/members.json` (the Business Lounge's About you, written by the park); self-hosted: the owner's intro (`~/ronin/custom/facts/user-intro.md`); both: `~/ronin/office/ABOUT_USER.md` |
-| `machine` | hosting, Ronin's release, disk, the Services parts running, parked or failed, installations on, browser access, Tailscale, the no-password setting, registration | the office record, machine settings, Services' parts, the Campaign |
+| `about_user` | the person and the office's people; the Helpful Assistant's notes on them | `office_unit/members.json` (the Business Lounge's About you, written by the park) and `~/ronin/office/ABOUT_USER.md` |
+| `machine` | hosting, Ronin's release, disk, the Services parts running, parked or failed, installations on, browser access, Tailscale, the no-password setting | the office record, machine settings, Services' parts, the Campaign |
 | `account` | hosted: the office lease and its plan, the allowance meters, tiers, the Lounge's settings | `office_unit/lounge.json`, written by the park (Services' `account` part adds this fact) |
 | `office-workspaces` | each Workspace: its objective (what the project is), folders, repositories, integrations, plans, canvases | the Workspace store |
 | `integrations_authentications` | every harness (installed, signed in, Activated, off) and Ronin's house models, kept apart, GitHub, integrations, MCP servers and web APIs, Hermes accounts | the provider summary, `gh`, integrations and secrets |

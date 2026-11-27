@@ -458,7 +458,6 @@ nothing paints exactly this.
 ## forms — form-steps.js (the drawn form idiom shared by New Team and New Agent)
 - **forms.default:** Default
 - **ask.answer:** Answer
-- **setup_surface.identity_short:** Register as
 - **setup_surface.kind_short:** You use Ronin for
 - **setup_surface.preferred_feature_short:** Capability
 - **setup_surface.reasons_short:** Describes you

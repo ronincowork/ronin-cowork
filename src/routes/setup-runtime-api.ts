@@ -19,7 +19,6 @@ import { installedAnswer } from './installed-api.js';
 import { cancelSignIn, pasteSignIn, signInState, startSignIn } from '../harness-sign-in.js';
 import { measureAndRecordHarnesses, readHarnessSummary, refreshHarnesses } from '../harness-summary.js';
 import type { HarnessSummary } from '../harness-catalog.js';
-import { readUserIntro, writeUserIntro } from '../user-intro.js';
 
 const errMsg = (error: unknown) => String((error as Error)?.message ?? error).replaceAll(homedir(), '~');
 const EMPTY_PROVIDER_SUMMARY: HarnessSummary = {
@@ -52,16 +51,6 @@ export function registerSetupRuntime(app: express.Express): void {
       }
       res.json({ services: await modelServices() });
     } catch (error) { res.status(400).json({ error: errMsg(error) }); }
-  });
-
-  app.get('/api/setup/user-intro', async (_req, res) => {
-    try { res.json(await readUserIntro()); }
-    catch (error) { res.status(500).json({ error: errMsg(error) }); }
-  });
-
-  app.put('/api/setup/user-intro', async (req, res) => {
-    try { res.json({ ok: true, ...(await writeUserIntro(req.body?.intro)) }); }
-    catch (error) { res.status(400).json({ error: errMsg(error) }); }
   });
 
   app.get('/api/setup/runtime', async (_req, res) => {

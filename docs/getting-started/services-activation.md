@@ -18,5 +18,4 @@ conversations. The
 [Stats guide](https://github.com/ronincowork/ronin-services/blob/dev/docs/stats.md) lists
 exactly what is counted.
 
-A registration on your own machine is optional: an email registration sends only your email
-address to Ronin HQ, and an anonymous one sends the answers on the form, with no email.
+
