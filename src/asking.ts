@@ -22,7 +22,7 @@ import type { RowFields } from './sockets-contract.js';
 export type HookStance = 'working' | 'asking' | 'awaiting_you' | 'interrupted' | 'error' | 'stopped';
 export const HOOK_STANCES: readonly HookStance[] = ['working', 'asking', 'awaiting_you', 'interrupted', 'error', 'stopped'];
 
-interface Choice { question: string; header: string; options: { label: string; description: string }[]; many: boolean }
+interface Choice { question: string; header: string; options: { label: string; description: string }[]; many: boolean; freeText?: boolean }
 /** choice: Claude's AskUserQuestion, Codex's request_user_input. plan: Claude's ExitPlanMode, Codex's
  * proposed plan. permission: a tool waiting to be allowed. form: an MCP server's question (free text). */
 export type Question =
@@ -57,6 +57,9 @@ function choiceOf(input: unknown): Question | undefined {
     options: (Array.isArray(obj(q).options) ? obj(q).options as unknown[] : []).slice(0, 9)
       .map((o) => ({ label: str(obj(o).label, 200), description: str(obj(o).description, 1000) })),
     many: obj(q).multiSelect === true,
+    // Both CLIs add one final free-text answer to a one-of question. It is not in tool_input,
+    // so carry that UI fact explicitly to Chat instead of silently losing the last option.
+    freeText: obj(q).multiSelect !== true,
   })).filter((q) => q.options.length);
   return questions.length ? { kind: 'choice', questions } : undefined;
 }
@@ -209,12 +212,14 @@ export async function readFields(session: string): Promise<RowFields & { stance?
  * several parts, or checkboxes, on a review whose first option submits. A plan and a permission
  * take yes or no. Returns null for a question Chat cannot answer (a form: free text).
  */
-export type Answer = { choices: (number | number[])[] } | { yes: boolean };
+type ChoiceAnswer = number | number[] | { text: string };
+export type Answer = { choices: ChoiceAnswer[] } | { yes: boolean };
+export type AnswerKey = string | { text: string };
 const YES_NO: Record<string, { plan: [string, string]; permission: [string, string] }> = {
   claude: { plan: ['1', 'Escape'], permission: ['1', 'Escape'] },
   codex: { plan: ['1', '3'], permission: ['y', 'Escape'] },
 };
-export function answerKeys(cli: string, question: Question, answer: Answer): string[] | null {
+export function answerKeys(cli: string, question: Question, answer: Answer): AnswerKey[] | null {
   const keys = YES_NO[cli];
   if (!keys) return null;
   if (question.kind === 'plan' || question.kind === 'permission') {
@@ -222,9 +227,17 @@ export function answerKeys(cli: string, question: Question, answer: Answer): str
     return [keys[question.kind][answer.yes ? 0 : 1]];
   }
   if (question.kind !== 'choice' || !('choices' in answer) || answer.choices.length !== question.questions.length) return null;
-  const out: string[] = [];
+  const out: AnswerKey[] = [];
   for (const [i, q] of question.questions.entries()) {
-    const picked = ([] as number[]).concat(answer.choices[i]);
+    const choice = answer.choices[i];
+    if (choice && typeof choice === 'object' && !Array.isArray(choice) && 'text' in choice) {
+      const text = choice.text.trim().replace(/[\r\n]+/g, ' ').slice(0, 4000);
+      if (q.freeText === false || !text) return null;
+      // The implicit final row opens the CLI's text field; literal text and Enter submit it.
+      out.push(String(q.options.length + 1), { text }, 'Enter');
+      continue;
+    }
+    const picked = ([] as number[]).concat(choice as number | number[]);
     if (!picked.length || picked.some((n) => !Number.isInteger(n) || n < 0 || n >= q.options.length)) return null;
     if (!q.many && picked.length > 1) return null;
     out.push(...picked.map((n) => String(n + 1)));

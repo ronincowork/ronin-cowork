@@ -5,8 +5,8 @@
  * even know it's there"). The card's `question` (src/asking.ts) is drawn as ERABI questions: a
  * choice per question the CLI asked, Approve or Keep planning under a plan, Yes or No under a
  * permission with the exact command. One press answers a single choice; several questions, or
- * checkboxes, go with Send. Ronin types the answer into the terminal and the tile stays on Chat.
- * Free text (the CLI's own "type something", an MCP form) keeps Answer in Terminal.
+ * checkboxes, go with Send. A one-of question also carries the CLI's implicit final answer,
+ * Write something: its required line is sent literally. The tile stays on Chat.
  */
 import { t } from './lexicon.js';
 import { ask } from './ask.js';
@@ -62,24 +62,36 @@ export function buildQuestion(question, { send, terminal = null }) {
     const onePress = questions.length === 1 && !questions[0].many;
     const picks = questions.map((q, i) => {
       const fieldKey = `q${i}`;
+      let custom = '';
+      const customRow = () => {
+        const input = el('input', 'chat-question-custom');
+        input.type = 'text';
+        input.value = custom;
+        input.placeholder = t('question.write_placeholder', 'Write your answer');
+        input.addEventListener('input', () => { custom = input.value; });
+        return input;
+      };
       const one = ask([{ fields: [{
         key: fieldKey, label: q.header || t('question.answer', 'Answer'), many: q.many,
-        options: q.options.map((o, n) => ({ v: String(n), l: o.label, ...(o.description ? { sub: o.description } : {}) })),
+        options: [
+          ...q.options.map((o, n) => ({ v: String(n), l: o.label, ...(o.description ? { sub: o.description } : {}) })),
+          ...(q.freeText !== false ? [{ v: 'write', l: t('question.write', 'Write something here'), row: customRow, required: true }] : []),
+        ],
       }] }], {
         exposed: true, density: 'tight',
-        onChange: (now) => { if (onePress && now[fieldKey] !== '') void answer({ choices: [Number(now[fieldKey])] }); },
+        onChange: (now) => { if (onePress && now[fieldKey] !== '' && now[fieldKey] !== 'write') void answer({ choices: [Number(now[fieldKey])] }); },
       });
       root.append(el('p', 'chat-question-title', q.question), one.el);
-      return { q, one, fieldKey };
+      return { q, one, fieldKey, custom: () => custom };
     });
     const actions = [];
-    if (!onePress) {
+    if (!onePress || questions.some((q) => q.freeText !== false)) {
       actions.push(createAction({ label: t('question.send', 'Send'), kind: 'primary', size: 'compact', action: () => {
-        const choices = picks.map(({ q, one, fieldKey }) => {
+        const choices = picks.map(({ q, one, fieldKey, custom }) => {
           const v = one.value()[fieldKey];
-          return q.many ? v.map(Number) : v === '' ? null : Number(v);
+          return q.many ? v.map(Number) : v === 'write' ? { text: custom().trim() } : v === '' ? null : Number(v);
         });
-        if (choices.some((c) => c === null || (Array.isArray(c) && !c.length))) {
+        if (choices.some((c) => c === null || (Array.isArray(c) && !c.length) || (typeof c === 'object' && !Array.isArray(c) && !c.text))) {
           notice.textContent = t('question.unanswered', 'Answer each question first.');
           return;
         }

@@ -283,7 +283,8 @@ export function registerLaunch(app: express.Express): LaunchControl {
       await tmux.run(['send-keys', '-t', exactPane(session.name), '-X', 'cancel']).catch(() => {});
       // One key at a time: a CLI's menu redraws between them.
       for (const key of keys) {
-        await tmux.run(['send-keys', '-t', exactPane(session.name), key]);
+        if (typeof key === 'string') await tmux.run(['send-keys', '-t', exactPane(session.name), key]);
+        else await tmux.run(['send-keys', '-t', exactPane(session.name), '-l', '--', key.text]);
         await new Promise((resolve) => setTimeout(resolve, 150));
       }
     } catch (e) { return res.status(409).json({ error: (e as Error).message }); }
