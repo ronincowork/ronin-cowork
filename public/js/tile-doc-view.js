@@ -2,18 +2,25 @@
 import { buildDocs } from './docs.js';
 import { t } from './lexicon.js';
 
-/** The shared document editor, scoped to and painted over one Agent tile. */
-export function buildTileDocView(tile) {
-  const root = document.createElement('div');
-  root.className = 'home-docs tile-doc-view';
+function closeButton(title) {
   const close = document.createElement('button');
   close.type = 'button';
   close.className = 'tile-doc-close';
   close.textContent = '×';
-  close.title = t('docs.close_agent', 'Close documents and return to this Agent');
-  root.append(close);
+  close.title = title;
+  return close;
+}
 
+/** The shared document editor, scoped to and painted over one Agent tile. */
+export function buildTileDocView(tile) {
+  const root = document.createElement('div');
+  root.className = 'home-docs tile-doc-view';
   const docs = buildDocs(root, (name) => name === tile.session);
+  const closeTitle = t('docs.close_agent', 'Close documents and return to this Agent');
+  const shelfClose = closeButton(closeTitle);
+  const editorClose = closeButton(closeTitle);
+  root.querySelector('.dc-pills')?.append(shelfClose);
+  root.querySelector('.dc-bar')?.append(editorClose);
   const leave = () => {
     if (!tile.surfaceHost.is('docs')) return true;
     if (docs.leave()) {
@@ -23,7 +30,8 @@ export function buildTileDocView(tile) {
     }
     return false;
   };
-  close.addEventListener('click', leave);
+  shelfClose.addEventListener('click', leave);
+  editorClose.addEventListener('click', leave);
   return {
     el: root,
     async open(path) {
@@ -47,18 +55,19 @@ export function openDocOver(body, path) {
   if (!view) {
     view = document.createElement('div');
     view.className = 'home-docs tile-doc-view';
-    const close = document.createElement('button');
-    close.type = 'button';
-    close.className = 'tile-doc-close';
-    close.textContent = '×';
-    close.title = t('docs.close_chat', 'Close documents and return to Chat');
-    view.append(close);
     view.docs = buildDocs(view, () => false);
-    close.addEventListener('click', () => {
+    const closeTitle = t('docs.close_chat', 'Close documents and return to Chat');
+    const shelfClose = closeButton(closeTitle);
+    const editorClose = closeButton(closeTitle);
+    view.querySelector('.dc-pills')?.append(shelfClose);
+    view.querySelector('.dc-bar')?.append(editorClose);
+    const close = () => {
       if (!view.docs.leave()) return;
       view.docs.close();
       body.dataset.surface = view.back;
-    });
+    };
+    shelfClose.addEventListener('click', close);
+    editorClose.addEventListener('click', close);
     body.append(view);
   }
   if (body.dataset.surface !== 'docs') view.back = body.dataset.surface;

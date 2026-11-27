@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { readFile } from 'node:fs/promises';
-import { modelServices } from './model-services.js';
+import { launchFormat, modelServices } from './model-services.js';
 import { isHouse, keyPath } from './model-service-store.js';
 import { gatewayRelay } from './gateway-relay.js';
 import { REPO_ROOT } from './resources.js';
@@ -24,7 +24,8 @@ export async function serviceLaunch(cli: string, argv: string[], person: string,
   const services = await modelServices();
   const service = services.find(s => s.bound.includes(cli) && s.models.some(m => m.id === id));
   const model = service?.models.find(m => m.id === id);
-  if (!service?.configured || !model) throw new Error('This model service or named model is unavailable for this harness.');
+  const format = service ? launchFormat(cli, service.formats) : null;
+  if (!service?.configured || !model || !format) throw new Error('This model service or named model is unavailable for this harness.');
   const args = [...argv];
   args[pos + 1] = model.model;
   if (cli === 'hermes') return args; // The isolated home is provisioned from this same setup ID.
@@ -36,7 +37,9 @@ export async function serviceLaunch(cli: string, argv: string[], person: string,
     return relay(args, person);
   }
   if (house) throw new Error('This harness has no hosted Gateway relay.');
+  // Each harness's adapter, in the format the rule picked: Codex Responses, OpenCode Chat, Claude Code Anthropic.
   let config = '';
+  let anthropicBase = '';
   if (cli === 'codex') {
     const prefix = 'model_providers.ronin_service';
     args.splice(1, 0, '-c', 'model_provider="ronin_service"', '-c', prefix + '.name="Ronin"',
@@ -48,9 +51,13 @@ export async function serviceLaunch(cli: string, argv: string[], person: string,
     config = JSON.stringify({ provider: { ronin_service: { npm: '@ai-sdk/openai-compatible', name: service.name,
       options: { baseURL: service.baseUrl, apiKey: '{env:RONIN_MODEL_SERVICE_KEY}' },
       models: { [model.model]: { name: model.name } } } } });
+  } else if (cli === 'claude' && format === 'anthropic') {
+    // Claude Code speaks Anthropic's format to the service's address without its /v1 (the client adds it), the key
+    // as its auth token, its own API key blank so its own sign-in is not used (openrouter.ai/docs, Claude Code).
+    anthropicBase = service.baseUrl.replace(/\/+$/, '').replace(/\/v1$/, '');
   } else throw new Error('No model service adapter for this harness.');
   return ['/bin/sh', '-c',
-    'RONIN_MODEL_SERVICE_KEY="$("$1" "$2" "$3" "$4")" || exit 1; export RONIN_MODEL_SERVICE_KEY; if [ -n "$5" ]; then export OPENCODE_CONFIG_CONTENT="$5"; fi; shift 5; exec "$@"',
+    'RONIN_MODEL_SERVICE_KEY="$("$1" "$2" "$3" "$4")" || exit 1; export RONIN_MODEL_SERVICE_KEY; if [ -n "$5" ]; then export OPENCODE_CONFIG_CONTENT="$5"; fi; if [ -n "$6" ]; then export ANTHROPIC_BASE_URL="$6" ANTHROPIC_AUTH_TOKEN="$RONIN_MODEL_SERVICE_KEY" ANTHROPIC_API_KEY=""; fi; shift 6; exec "$@"',
     'ronin-model-service', process.execPath, path.join(REPO_ROOT, 'libexec/model-service-key.mjs'),
-    keyPath(service.id), service.baseUrl, config, ...args];
+    keyPath(service.id), service.baseUrl, config, anthropicBase, ...args];
 }

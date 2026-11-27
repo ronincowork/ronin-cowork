@@ -107,15 +107,14 @@ export function createSetupView() {
   };
   const blank = (id) => WorkspaceKit.primitives.createBlankSurface(id.replace('workspace', 'Workspace ')).el;
   const environment = {
+    // A harness sign-in she helps with (harnesses-surface.js): she opens in the work surface, Ask Ronin's panel.
+    showAssistant: () => opener.press(),
     // Every press is a real setting, made by its own route; Setup's ticks are then read again
     // from the facts (KAN-768). Nothing here records a step.
     onGithubAuthenticated: () => { void readProgress(); },
     onWorkspaceFolderChosen: () => { void readProgress(); },
-    onHarnessChoice: () => { void readProgress(); },
     setupProgress: () => progress,
     onSetupProgress: (listener) => { progressListeners.add(listener); listener(progress); return () => progressListeners.delete(listener); },
-    /** The surfaces draw their Setup header zones here, and only here. */
-    setupZones: true,
     readSetupProgress: () => readProgress(),
     nextSetupStep: () => advance(),
     setupRuntime: null,

@@ -133,7 +133,7 @@ export function createIntegrationsPanel(campaign, { panels = {}, embedded = fals
     const form = el('form', 'model-services-form');
     form.autocomplete = 'off';
     const value = input('', 'password'); value.autocomplete = 'new-password';
-    const save = button(row.saved ? t('integrations.replace_key', 'Replace key') : t('integrations.save_key', 'Save key'), () => {}, 'primary'); save.type = 'submit';
+    const save = button(row.saved ? t('integrations.replace_key', 'Replace in Ronin key vault') : t('integrations.save_key', 'Save to Ronin key vault'), () => {}, 'primary'); save.type = 'submit';
     form.append(field(t('integrations.key_for', '{label} key', { label: row.label }), value), bar(save));
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
@@ -141,7 +141,7 @@ export function createIntegrationsPanel(campaign, { panels = {}, embedded = fals
       const sent = value.value; value.value = ''; save.disabled = true;
       const result = await request(`/api/secrets/${encodeURIComponent(row.secret)}`, { method: 'POST', json: { value: sent } });
       save.disabled = false;
-      say(result.ok ? t('integrations.key_saved_line', '{label}: key saved.', { label: row.label }) : result.message, !result.ok);
+      say(result.ok ? t('integrations.key_saved_line', '{label}: key saved in the Ronin key vault.', { label: row.label }) : result.message, !result.ok);
       if (result.ok) await load();
     });
     return form;
@@ -250,7 +250,7 @@ export function createIntegrationsPanel(campaign, { panels = {}, embedded = fals
     const row = rows.find((one) => one.name === open);
     const defs = [list(), ...(open === 'add' ? [add()] : row ? [configure(row)] : [])];
     body.replaceChildren(
-      el('p', 'setup-fine', t('integrations.lede', 'Every outside service is set up here once, with its key. A Workspace chooses which its Agents are told of.')),
+      el('p', 'setup-fine', t('integrations.lede', 'Every outside service is set up here once, its key kept in the Ronin key vault. A Workspace chooses which its Agents are told of.')),
       notice, sections(defs, folds));
   }
 

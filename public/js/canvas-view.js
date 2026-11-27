@@ -86,7 +86,7 @@ export async function openCanvas(from, workspace, name, host = null) {
   const surface = host || from.closest('.wk-surface-content') || from.parentElement;
   if (!surface) return;
   surface.querySelector(':scope > .canvas-view')?.remove();
-  // Set aside, not `hidden`: a surface's own CSS may show a hidden child (the stone rail does).
+  // Set aside, not `hidden`: a surface's own CSS may show a hidden child (the phalanx's stones and detail do).
   const kept = [...surface.children].map((child) => [child, child.style.display]);
   for (const [child] of kept) child.style.display = 'none';
   const view = el('div', 'canvas-view');

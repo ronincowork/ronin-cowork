@@ -12,6 +12,7 @@
     "stage": "node scripts/stage.mjs",
     "check:modules": "node scripts/check-modules.mjs",
     "preloads": "node scripts/generate-modulepreloads.mjs",
+    "tokens": "node scripts/copy-tokens.mjs",
     "byoin": "tsx scripts/byoin-user-check.ts",
     "verify": "node scripts/check-tamper.mjs && tsc --noEmit && node scripts/check-tests.mjs",
     "verify:staging": "node scripts/smoke-ui.mjs --staging",

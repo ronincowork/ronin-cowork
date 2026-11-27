@@ -5,7 +5,6 @@ import { showFailure } from './errors.js';
 import { WorkspaceKit } from './workspace-kit.js';
 import { createWarmTerminalPool } from './team-terminal-pool.js';
 import { mikaShowHandlers } from './events.js';
-import { IRASSHAI_NAME } from './setup-journey.js';
 
 /* ---------- ミ Mika Assist — the way to the house assistant ----------
  *
@@ -97,21 +96,6 @@ export async function askMika(tile, ask) {
     showFailure('mika', e);
     return false;
   }
-}
-
-/* ---------- who helps with a sign-in ----------
- * Mika cannot run before a provider is signed in, so in a new office the sign-in buttons ask
- * the Helpful Assistant (irasshai), its onboarding Agent, while she is running; otherwise Mika. The one place that picks. */
-const IRASSHAI = 'irasshai';
-export const signInHelper = () => (S.sessions.some((s) => s.name === IRASSHAI) ? IRASSHAI : MIKA);
-export const signInHelperName = () => (signInHelper() === IRASSHAI ? IRASSHAI_NAME : 'Mika');
-/** Ask the sign-in helper; answers the session asked. */
-export async function askSignInHelper(prompt) {
-  const who = signInHelper();
-  if (who === MIKA) { await askMika(null, prompt); return who; }
-  try { await request('/api/sessions/' + encodeURIComponent(who) + '/send', { method: 'POST', json: { text: prompt } }); }
-  catch (e) { showFailure('mika', e); }
-  return who;
 }
 
 /* ---------- ミ Help — Mika takes over the selector column ----------

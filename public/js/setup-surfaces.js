@@ -5,23 +5,12 @@ import { WorkspaceKit } from './workspace-kit.js';
 import { t } from './lexicon.js';
 import { createWorkspacesRead } from './workspaces-read.js';
 import { createWorkspaceKickoff } from './setup-workspace-kickoff.js';
-import { PROVIDER_SURFACE_TYPE, harnessesSurfaceDefinition } from './harnesses-surface.js';
-import { harnessSurfaceDefinition } from './setup-harness-surface.js';
+import { createHarnessesSurface } from './harnesses-surface.js';
 import { createEmbeddedNewTeamFormView } from './new-team-form.js';
 import { createTourSurface } from './setup-tour.js';
 
-// Model providers is the one surface two workbenches seat (harnesses-surface.js); its type
-// is that module's, and Ronin Settings registers the same definition.
-export const SETUP_SURFACE_TYPES = Object.freeze({
-  providers: PROVIDER_SURFACE_TYPE, roots: 'setup.roots', team: 'setup.team',
-});
+export const SETUP_SURFACE_TYPES = Object.freeze({ roots: 'setup.roots', team: 'setup.team' });
 
-const summaries = new Map();
-const notifySummary = (type, value, workbench) => {
-  if (summaries.get(type) === value) return;
-  summaries.set(type, value);
-  workbench?.refreshSelector?.();
-};
 const surface = (label, className = '') => WorkspaceKit.primitives.createSurface({ label, className: `setup-surface ${className}`.trim() });
 
 // Setup's Workspace step is the Workspaces themselves (KAN-728): each a stone opening its record, and
@@ -33,9 +22,8 @@ function createRootsSurface(context) {
   const out = surface(t('setup_surface.roots', 'Workspace'), 'setup-workspace-surface');
   const step = createWorkspaceKickoff({ workspacesRead, environment: context.environment, intro: true });
   out.content.append(step.el);
-  return { el: out.el,
-    show: () => { void workspacesRead.read().then(() => notifySummary(SETUP_SURFACE_TYPES.roots, t('setup_surface.roots_summary', '{n} Workspaces', { n: workspacesRead.list().length }), context.workbench)); },
-    destroy: () => step.destroy() };
+  // A step card is its disc, its name and one line: no count (docs/architecture/setup-workbench.md).
+  return { el: out.el, show: () => { void workspacesRead.read(); }, destroy: () => step.destroy() };
 }
 
 // STEP 3, TEAM (w926; docs/architecture/setup-workbench.md): the ordinary New Team form, started in a Workspace;
@@ -48,14 +36,19 @@ function createTeamSurface() {
   return { el: out.el, destroy: () => { view.destroy?.(); } };
 }
 
+// STEP 1, HARNESS (owner, 27 Nov 2026; docs/architecture/harness-catalog.md, One harness panel): the same stones
+// and panel as Settings' harness surfaces; here the Helpful Assistant opens in the work surface, Ask Ronin's panel.
+function createHarnessSurface(context) {
+  return createHarnessesSurface(context, { label: t('setup_harness.label', 'Harness'), className: 'setup-harness', openAgent: () => context.environment?.showAssistant?.() });
+}
+
 export function setupSurfaceDefinitions() {
   const definition = (type, label, create, groupKey = '') => ({
-    type, header: 'surface', label: () => label, summary: () => summaries.get(type), create: (context) => create(context),
+    type, header: 'surface', label: () => label, create: (context) => create(context),
     ...(groupKey ? { groupKey } : {}),
   });
   return [
-    harnessesSurfaceDefinition(),
-    harnessSurfaceDefinition(),
+    definition('setup.harness', t('setup_harness.label', 'Harness'), createHarnessSurface),
     definition(SETUP_SURFACE_TYPES.roots, t('setup_surface.roots', 'Workspace'), createRootsSurface),
     definition(SETUP_SURFACE_TYPES.team, t('setup_surface.team', 'Team'), createTeamSurface),
     definition('setup.tour', t('setup_surface.tour', 'Tour'), createTourSurface),

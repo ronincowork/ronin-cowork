@@ -7,8 +7,8 @@
  * (`workspaceSurface`), in the opened Team's bar: a toggle, Work (its Teams or Epics, to drill into) or
  * Config (`workspacePage`: Describe, Where it lives, and More, folded; Archive
  * under ⋯), and Launch to its own page, `#/workspace/<name>` (`createWorkspaceRoute`), in a new tab. A stone dragged or a card placed opens it whole in
- * a tilespace (`createWorkspaceRecord`); New Workspace is a dotted card (`createWorkspaceNew`). A folder
- * link dragged in from Files (`/files/<path under home>`, KAN-146) adds that folder.
+ * a tilespace (`createWorkspaceRecord`); New Workspace is a dotted card (`createWorkspaceNew`), the
+ * four doors of setup-workspace-kickoff.js. In Settings a pressed stone opens its Config alone (`configOnly`).
  */
 import { openCanvas } from './canvas-view.js';
 import { WorkspaceKit } from './workspace-kit.js';
@@ -306,6 +306,9 @@ export function workspacePage(w, { onSaved = () => {}, onDiscard = () => {} }) {
   const mineList = el('div', 'workspace-mine-list');
   const listMine = async () => {
     mineList.replaceChildren();
+    // Only once GitHub is signed in here: before that there is no list to ask for.
+    const signed = await request('/api/setup/github', { cache: 'no-store' });
+    if (!signed.ok || !signed.data?.authenticated) return;
     const answer = await request('/api/setup/github/repos', { cache: 'no-store' });
     if (!answer.ok) return;
     mineList.replaceChildren(...(answer.data.repos || []).map((repo) => {
@@ -512,7 +515,7 @@ function workspaceSurface(w, { workspacesRead, onDiscard = () => {}, launch = fa
 
 /** The stones of Workspaces (owner, 2026-11-22; KAN-784; KAN-801): Layer 1, every Workspace a stone as
  * an Epic's or a Team's: its name and the shared marks, the number bottom right its Teams. A pressed stone
- * opens that Workspace beside the rail, Work or Config (Settings: its Config alone, `configOnly`), with
+ * opens that Workspace in place of the stones, Work or Config (Settings: its Config alone, `configOnly`), with
  * Launch to its own page; a stone dragged into a tilespace opens it whole there. The last stone, New
  * Workspace, is the doors (setup-workspace-kickoff.js); the made one's stone is then selected. */
 export function createWorkspaceStones({ workspacesRead, workbench, recordType = '', withNew = false, configOnly = false, onShow = () => {} }) {

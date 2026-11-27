@@ -11,7 +11,8 @@ A Workspace holds:
   with a short note. A repository's row also says how Agents work in it.
 - **Integrations** — the outside services it uses.
 - **Instructions** — standing directions every Agent on it is told.
-- **Mode** — Dangerously unless you choose Native (Native for providers that offer no Dangerously form).
+- **New Agent defaults** — the Mandate, Mode and models each new Team and Agent in it starts with,
+  copied from the office's defaults when the Workspace is made; changed only on its Configuration.
 - **Plans** — where its plans are kept ([Writing a plan](planning.md)).
 - **Canvases** — one-page maps of the Workspace: its live site, repos, work, documents and outside services.
 
@@ -36,7 +37,7 @@ everything they need.
 
 ## Make or change a Workspace
 
-Open the **Workspaces** door on Ronin Home (or **Workspaces** in [Ronin Setup](../getting-started/setup-workbench.md)).
+Open the **Workspaces** door on Ronin Home.
 Each Workspace is a stone, like an Epic's or a Team's: its name, and along its foot the progress of
 what its Teams and their Agents hold. ⚑ at the top right means something open in it is flagged;
 the small number at the bottom right is how many Teams work in it.
@@ -45,12 +46,13 @@ Flagged Workspaces come first, then the rest by name. The last stone is **New Wo
 In **Settings**, the Workspaces card has the same stones, and a pressed one opens its
 Configuration alone; its work (Teams, Epics) is on its own page, by **Launch**.
 
-Press a stone and that Workspace opens beside the stones, the way an opened Team does. At its top
+Press a stone and that Workspace opens in place of the stones, the way an opened Team does, a kaki
+**−** at its top right to go back to them. At its top
 is its bar: its name with **Launch**, its objective, its progress along the foot. Press the bar to
 open its Configuration under it (Describe, Where it lives, and More, with **Save**);
 press it again to close it. Below the bar are two lines, each opening and closing, with its count:
 
-- **Teams** — the Teams stones of this Workspace. Press one to open it under them as the Teams page
+- **Teams** — the Teams stones of this Workspace. Press one to open it in their place as the Teams page
   opens it: its bar with **Launch** into its workbench, then its Agents and its Epics.
 - **Epics** — the open Epics its Teams and their Agents hold, the same stones as on the Epics page.
   Press one to open its board, with **Launch** into the Team working it.
@@ -69,44 +71,35 @@ you open it: its instructions, New Agent defaults, plans, canvases, **Integratio
 **Behaviors**. **⋯** at the top holds **Archive**: the Workspace stops being offered when you
 start a Team, and nothing is deleted; **Restore** brings it back.
 
-### Folders
+### Folders and repositories
 
-**Add a folder** picks a folder on this machine: walk to it or find it and press **Add**, make a
-new one with **New folder here**, or paste its path. **Paste a Git URL** clones a repository from
-any Git host (owner/name means GitHub), then asks where to put it: walk to a folder and press
-**Clone**. A public repository needs no sign-in. Once GitHub is signed in here, **My GitHub
-repositories** lists yours, each with **Use**. Under them is a row per
-folder: its name and path and, for a Git repository, its remote in a line under them. Press × to
-take a folder out of this Workspace; nothing on disk is touched. **+ note** on a row adds a note
-for Agents (what the folder is for; it goes into their brief). Where Explorer is on, you can also
-drag a folder from [Explorer](explorer.md) onto the page.
+Every Workspace has its own folder, `~/ronin/<name>`, its first row. **Add a repository** opens a
+panel: a Git URL from any host (owner/name means GitHub) and **Clone**, and once GitHub is signed in
+here, your repositories, each with **Use**. It first asks how Agents work in it, **Desks** unless you
+choose **Direct**. Each repository is cloned into the Workspace's `repos/` folder. A public repository
+needs no sign-in; a private one clones only once this machine is signed in to its host. For GitHub,
+ask the Helpful Assistant to connect GitHub: it signs the GitHub CLI in with a code you approve in your
+browser. That sign-in belongs to the machine, not to a Workspace.
 
-The same folder can be in several Workspaces; it is one folder, under one name, in each.
+Each row is a name and its path and, for a Git repository, its remote in a line under them. Press ×
+to take a row out of this Workspace; nothing on disk is touched. **+ note** adds a note for Agents
+(what the folder is for; it goes into their brief).
 
 **What opens outside Workspaces.** On your own machine, documents an Agent links in Chat or lists
 on its work record open from its tile, wherever they are. In a hosted office Ronin owns the
 machine, so every folder under the office's home opens too (a project you haven't made a
 Workspace yet, for one), except hidden ones: a file or folder whose name starts with "." never
-opens there, not even from a link, and **Add a folder** doesn't show them.
+opens there, not even from a link.
 
 ### How Agents work in a repository
 
 A repository's row shows its **Mode**; press the word to change it. It is kept on that row:
 
-- **Reviewed** — each Agent works in its own worktree and branch and hands its work in to the
+- **Desks** — each Agent works on its own desk (a worktree and branch) and hands its work in to the
   Team lead, who checks it and promotes it to the repository's dev. Best for code, especially
   with several Agents at once. See [Managed worktrees](desks.md).
 - **Direct** — every Agent works in the repository's one checkout and commits straight to it; no
   hand-in, no check. Best for notes, plans and research.
-
-A repository added here starts Direct, on the branch it has checked out.
-
-### Bring in a repository
-
-**Paste a Git URL** uses plain git: a public repository from any host clones with no sign-in. A
-private one clones only once this machine is signed in to its host. For GitHub, ask the Helpful
-Assistant (or Mika on your own machine) to connect GitHub: it signs the GitHub CLI in with a code
-you approve in your browser. That sign-in belongs to the machine, not to a Workspace.
 
 ### Plans and Canvases
 
@@ -122,7 +115,7 @@ made it, for which item); then Live, traffic, forms, the repos and the services 
 Agents make and keep canvases with the `canvas` tool. On a Team's workbench the same canvases are
 on the Docs pane's **Canvases** shelf (its Workspace's): press one and it opens there, read now.
 
-Nothing is kept until you press **Save** (or **Create**) at the top: it lights up once there is a
+Nothing is kept until you press **Save** at the top: it lights up once there is a
 change, and **−** beside it throws the changes away.
 
 ## Where Agents start

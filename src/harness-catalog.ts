@@ -70,7 +70,7 @@ export interface SessionLaunchSpec {
   /** The complete interactive command for this model. */
   cmd: string;
   dangerousCmd?: string;
-  /** The catalog's tier, or the Gateway's own for its model entries; `unrated` for a listed model the catalog lacks; '' for Native and named options. */
+  /** The catalog's tier, or the Gateway's own for its model entries; `unrated` for a listed model the catalog lacks; '' for Native and the user's own model entries. */
   tier: Tier | typeof UNRATED | '';
   /** The catalog's "use it for" line; absent when it has none. */
   use_for?: string;

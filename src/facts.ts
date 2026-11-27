@@ -24,12 +24,10 @@ import { readCampaign } from './campaigns.js';
 import { machineFacts, tailnetIp } from './machine-settings.js';
 import { readAgentsSection, readMachineSection } from './machine-state.js';
 import { passwordAuthEnabled } from './auth.js';
-import { registrationAnswer } from './activation/registration.js';
 import { readOfficeRecord } from './office-record.js';
 import { roninIdentity } from './routes/version.js';
 import { installedAnswer } from './routes/installed-api.js';
 import { loadMembers, officePeople, type Person } from './office-people.js';
-import { readUserIntro } from './user-intro.js';
 import { listWorkspaces } from './workspaces.js';
 import { listPlans } from './plans.js';
 import { listCanvases } from './canvases.js';
@@ -68,8 +66,8 @@ export const aboutUserFile = (): string => path.join(storeDir('office'), 'ABOUT_
 const stamp = (iso: string): string => iso.slice(0, 16).replace('T', ' ');
 const bullets = (items: string[]): string[] => (items.length ? items.map((one) => `- ${one}`) : ['- none yet']);
 
-// ---- about_user: hosted, the people from members.json (the Lounge's About you, office-people.ts);
-// self-hosted, the owner's user-intro; and either way their notes, office/ABOUT_USER.md.
+// ---- about_user: the people from members.json (the Business Lounge's About you, office-people.ts)
+// and their notes, office/ABOUT_USER.md. Nothing else.
 const NOT_FILLED = 'About You not filled in yet in the Business Lounge';
 /** One person as the Lounge's About You has them; nothing there says so. */
 export function personLine(p: Pick<Person, 'email' | 'role'> & Partial<Person>): string {
@@ -82,16 +80,11 @@ export function personLine(p: Pick<Person, 'email' | 'role'> & Partial<Person>):
 }
 
 async function aboutUser(): Promise<Built> {
-  const [hosting, notes, intro] = await Promise.all([readOfficeRecord().catch(() => null), fs.readFile(aboutUserFile(), 'utf8').catch(() => ''), readUserIntro()]);
-  const hosted = hosting?.hosting === 'office_unit';
-  if (hosted) await loadMembers(); // members.json's watcher and this one both fire: read it here, not after
+  const notes = await fs.readFile(aboutUserFile(), 'utf8').catch(() => '');
+  await loadMembers(); // members.json's watcher and this one both fire: read it here, not after
   const people = officePeople();
-  const who = hosted
-    ? (people.length ? people.map(personLine) : [`The owner: ${NOT_FILLED}`])
-    : [intro.intro ? `The owner, in their words: ${intro.intro.replace(/\s*\n\s*/g, ' ')}` : 'The owner: no introduction written yet (Setup → About you)'];
-  const line = hosted
-    ? (people.length ? people.map((p) => `${p.nickname || p.first_name || p.name || p.email}${p.role ? ` (${p.role})` : ''}`).join(', ') : `the owner, ${NOT_FILLED}`)
-    : intro.intro ? 'the owner, with their introduction' : 'the owner, no introduction yet';
+  const who = people.length ? people.map(personLine) : [`The owner: ${NOT_FILLED}`];
+  const line = people.length ? people.map((p) => `${p.nickname || p.first_name || p.name || p.email}${p.role ? ` (${p.role})` : ''}`).join(', ') : `the owner, ${NOT_FILLED}`;
   return { line, lines: ['People:', ...bullets(who), '', `Notes on them (${aboutUserFile()}):`, notes.trim() || '- none yet'] };
 }
 
@@ -123,16 +116,14 @@ export async function browserAccess(): Promise<{ password: boolean; no_password:
   const ip = tailnetIp();
   return { password: passwordAuthEnabled(), no_password: (await readMachineSection().catch(() => ({} as Record<string, unknown>))).no_password === true, tailscale: ip === '127.0.0.1' ? '' : ip };
 }
-/** Registered with Ronin: registered, anonymously, or not ('optional'). */
-export const registrationStatus = async (): Promise<string> => (await registrationAnswer().catch(() => null))?.status ?? 'optional';
 
 // ---- machine: hosting (the office record), Ronin's version, the box, disk, the Services parts,
-// browser access, registration.
+// browser access.
 async function machine(): Promise<Built> {
-  const [hosting, named, box, disk, installed, access, registered] = await Promise.all([
+  const [hosting, named, box, disk, installed, access] = await Promise.all([
     readOfficeRecord().catch((e: Error) => ({ hosting: 'unreadable' as const, error: e.message })),
     readMachineSection().catch(() => ({} as Record<string, unknown>)), machineFacts().catch(() => ({} as Record<string, unknown>)),
-    fs.statfs(os.homedir()).catch(() => null), installedAnswer().catch(() => null), browserAccess(), registrationStatus(),
+    fs.statfs(os.homedir()).catch(() => null), installedAnswer().catch(() => null), browserAccess(),
   ]);
   const host = [named.name, named.where && `in ${String(named.where)}`].filter(Boolean).join(' ') || os.hostname();
   const boxLine = `${host}: ${box.kind ?? 'machine'}${box.hypervisor ? ` (${box.hypervisor})` : ''}, ${box.cores ?? '?'} cores, ${box.ram_gb ?? '?'} GB RAM, ${box.arch ?? os.arch()}`;
@@ -156,7 +147,6 @@ async function machine(): Promise<Built> {
     ...parts,
     `Browser access: ${browser}`,
     `Tailscale: ${access.tailscale ? `on, ${access.tailscale}` : 'not on this machine'}`,
-    `Registered with Ronin: ${registered === 'registered' ? 'yes' : registered === 'anonymous' ? 'yes, anonymously' : 'no'}`,
   ]) };
 }
 
@@ -281,7 +271,7 @@ const NOT_OURS = /^(facts\/|MACHINE_STATUS\.md)/;
 /** THE SUITE, in its order. A part adds its own (Services' account) with addFact. */
 const FACTS: Fact[] = [
   { name: 'about_user', title: 'About the user', build: aboutUser,
-    stores: [{ store: 'office_unit', match: /members\.json$/ }, { store: 'facts', match: /^user-intro\.md$/ }, { store: 'office', match: /^ABOUT_USER\.md$/ }] },
+    stores: [{ store: 'office_unit', match: /members\.json$/ }, { store: 'office', match: /^ABOUT_USER\.md$/ }] },
   { name: 'machine', title: 'The machine', build: machine,
     stores: [{ store: 'office_unit', match: /office_record\.json$/ }, { store: 'config' }, { store: 'campaigns' }, { store: 'services_secrets' }] },
   { name: 'workspaces', title: 'Workspaces', build: workspaces, stores: [{ store: 'workspaces' }] },

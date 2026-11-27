@@ -3,279 +3,7 @@
 @import url('/vendor/xterm.css') layer(vendor);
 
 @layer base {
-:root {
-
-  /* TWO NEUTRAL SURFACES, and nothing else neutral paints a background (owner, cut 13: "if we
-     can't explain why a colour is there, don't do it"). --surface is the one base: the bar, the
-     gutters, the selector, cards, every tile in every view. --inset is set INSIDE it so it reads
-     as inside: an input, a code block, an open document, a nested panel. */
-  --surface: #0b0e14; /* dark: the near-black the terminals always used, so bar, selector, tiles and Commons match */
-  --inset: #131826;   /* one step lifted from it */
-  /* the main places keep their own token, defaulting to the base: change one place, or the base */
-  --bar-bg: var(--surface);        /* the top bar */
-  --workbench-bg: var(--surface);  /* the page behind the workspaces */
-  --selector-bg: var(--surface);   /* the selector column */
-  --tile-bg: var(--surface);       /* every agent tile, in every view */
-
-  /* A line has to be seen: hairline near 2:1 on the panel, edges near 3:1 or better. */
-  --line: #3d475c;
-  --line-2: #515e77;
-  --line-3: #62718e;
-
-  --fg-strong: #d7e3f7;
-  --fg: #c5c8c6;
-  /* Muted is for things that are muted: a state word, a connective. It still has to be
-     read, so it stays at 6:1 or better on the panel; dim, the placeholder grey, at 3.5:1. */
-  --muted: #949eb0;
-
-  --accent: #e0af68;
-
-  --focus-ring: var(--kaki);
-  --accent-2: #81a2be;
-
-  --define-line: var(--accent-2);
-  --accent-deep: #d8a13a;
-
-  --ok: #b5bd68;
-  --ok-2: #7fd4a8;
-  --warn: #f0c674;
-  --status-yellow: #e0c060;
-  --status-red: #e0705f;
-
-  --bad: #cc6666;
-  --bad-soft: #e6a1a1;
-  --bad-deep: #a33c33;
-  --bad-line: #5a3535;
-  --bad-ground: #3a1416;
-  --bad-fg: #f2d6d6;
-  --info: #6ea8fe;
-  /* Jira's own work-type colours, the same in every theme: the item island's kind symbols (js/tile-island.js). */
-  --jira-epic: #904ee2;
-  --jira-story: #63ba3c;
-  --jira-task: #4bade8;
-  --jira-bug: #e5493a;
-  --jira-feature: #65ba43;
-  --on-strong: #fff;
-  --chart-ink: rgb(11 14 20 / 82%);
-
-  --scrim: rgb(0 0 0 / 50%);
-  --shadow-menu: 0 8px 24px rgb(0 0 0 / 45%);
-  --shadow-sheet: 0 12px 34px rgb(0 0 0 / 50%);
-
-  --kaki: #c46243;
-  --kaki-lift: #e08163;
-  /* the one interaction fill: the row, stone or card you are on, have chosen, or are dropping onto */
-  --selected: color-mix(in srgb, var(--kaki) 9%, var(--surface));
-  --aiiro: #274a78;
-  --link: #8fb0dc; /* aiiro, lifted to read on the dark shell */
-
-  /* The kaki fill and its ink: the Setup step bar's answered mark and the Garden Canvas
-     button. Kaki on white fails at small sizes, so light fills with the deeper kaki-lift. */
-  --kaki-fill: var(--kaki);
-  --kaki-fill-ink: var(--surface);
-
-  --kaki-fill-hover: var(--kaki-lift);
-
-  /* THE TERMINAL'S COLOURS ARE THE DESIGNER'S, the 16 ANSI slots included. ui.md "Theme"
-     says what each slot must stay for agent CLIs to stay readable. */
-  --term-cube: standard;
-  --term-size: 13px; /* xterm, the tape and the composer: one size, glyph for glyph (js/theme.js) */
-  --term-bg: var(--tile-bg);
-  --term-fg: var(--fg);
-  --term-cursor: #e0af68;
-  --term-selection: #2a3145;
-  --term-ansi-black: #1d1f21;
-  --term-ansi-red: #cc6666;
-  --term-ansi-green: #b5bd68;
-  --term-ansi-yellow: #f0c674;
-  --term-ansi-blue: #81a2be;
-  --term-ansi-magenta: #b294bb;
-  --term-ansi-cyan: #8abeb7;
-  --term-ansi-white: var(--fg);
-  --term-ansi-br-black: #252d40; /* the band behind the person's messages: a dark neutral --term-fg reads on */
-  --term-ansi-br-red: #d54e53;
-  --term-ansi-br-green: #b9ca4a;
-  --term-ansi-br-yellow: #e7c547;
-  --term-ansi-br-blue: #7aa6da;
-  --term-ansi-br-magenta: #c397d8;
-  --term-ansi-br-cyan: #70c0b1;
-  --term-ansi-br-white: #eaeaea;
-  /* the terminal's surfaces READ the UI's, in both shells: one neutral family, no copies */
-  --term-tape-fg: var(--fg);
-  --term-tape-line: var(--line);
-  --term-tape-line-2: var(--line-2);
-  --term-tape-muted: var(--muted);
-  --term-tape-muted-2: var(--fg);
-  --term-panel-line: var(--line);
-  --term-input-line: var(--line);
-  --term-input-fg: var(--fg-strong);
-
-  /* ROLES, NOT RULERS (owner, cut 10): every token here names what it is FOR. Pick by meaning;
-     docs/architecture/ui.md has the role table. There is no numbered scale to reach for. */
-  --radius-hair: 1px;
-  --radius-small: 4px;   /* controls, chips, fields */
-  --radius-large: 8px;   /* panels, cards, sheets */
-  --radius-pill: 999px;
-  --radius-round: 50%;
-
-  /* vertical rhythm, by what it separates */
-  --space-row: 4px;          /* rows of a list or fact table */
-  --space-paragraph: 8px;    /* paragraphs; a heading and its text */
-  --space-subsection: 16px;  /* subsections */
-  --space-section: 24px;     /* sections */
-  /* horizontal and inside */
-  --space-inline: 8px;       /* things on one line */
-  --space-inset: 12px;       /* inside a panel or card */
-  --space-control: 10px;     /* inside a button or input */
-
-  --workbench-head-font: var(--font-ui);
-  --workbench-head-size: var(--text-label);
-  --workbench-head-weight: var(--weight-bold);
-  --workbench-head-line: var(--leading-tight);
-
-  /* Two weights; bold is for headers only. */
-  --weight-regular: 400;
-  --weight-strong: 600;
-  --weight-bold: 700;
-
-  /* Line spacing inside one paragraph or label (never the space between blocks). */
-  --leading-none: 1;     /* a glyph's own box */
-  --leading-tight: 1.2;  /* a label, a heading */
-  --leading-body: 1.45;  /* running text */
-  --tracking-tight: -.01em;
-  --tracking-wide: .08em;
-
-  --text-small: 11px;    /* notes, ids, captions, meta */
-  --text-body: 12px;     /* running text, values, table cells */
-  --text-label: 14px;    /* names, keys, control text */
-  --text-heading: 16px;  /* a section's heading */
-  --text-display: 20px;  /* a page's title, a glyph */
-
-  /* a form's roles, read from the type roles */
-  --form-head: var(--text-label);
-  --form-key: var(--text-label);
-  --form-input: var(--text-body);
-  --form-note: var(--text-small);
-
-  --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
-  --font-term: Menlo, 'DejaVu Sans Mono', Consolas, monospace;
-
-  --bar-nav-bg: transparent;
-  --bar-nav-fg: var(--fg-strong);
-  --bar-nav-hover: var(--accent);
-  --bar-nav-focus: var(--focus-ring);
-  --bar-nav-size: var(--text-heading);
-  --bar-value-fg: var(--bar-nav-fg);
-  --bar-value-size: var(--bar-nav-size);
-  /* The dynamic island belongs to the application bar, not the Workbench below it. */
-  --bar-place-bg: #090a0c;
-  --bar-place-fg: var(--on-strong);
-
-  /* Header colours, one set per scope: admin (Setup, Home, Models, Workspaces, Settings) is
-     graphite, Teams is aiiro, a Team or Agent is kaki. The workbench switch reads these. */
-  --graphite: #3b3d42;
-  --head-admin-bg: color-mix(in srgb, var(--graphite) 24%, var(--surface));
-  --head-admin-fg: var(--fg-strong);
-  --head-admin-muted: var(--muted);
-  --head-admin-line: var(--graphite);
-  --head-admin-edge: var(--edge-2);
-  --head-teams-bg: color-mix(in srgb, var(--aiiro) 24%, var(--surface));
-  --head-teams-fg: var(--fg-strong);
-  --head-teams-muted: var(--muted);
-  --head-teams-line: var(--aiiro);
-  --head-teams-edge: var(--edge-2);
-  --head-team-bg: #6f300e;
-  --head-team-fg: var(--on-strong);
-  --head-team-muted: #d9b8ab;
-  --head-team-line: var(--define-line);
-  --head-team-edge: var(--edge);
-  --head-attention: #e0af68;
-
-  --edge: 1px;
-  --edge-2: 2px;
-
-  /* every button, input, select and menu item is one of two heights; every focus ring is one ring */
-  --control-height: 2.25rem;
-  --control-height-small: 28px;
-  --focus-width: 2px;
-  --focus-offset: 2px;
-
-  --motion-quick: 120ms;
-  --motion-settle: 250ms;
-  --motion-slow: 600ms;
-  --motion-hint: 900ms;
-  --ease: ease;
-}
-
-:root[data-theme='light'] {
-
-  --kaki-tint: #f2a566;
-  --head-team-bg: var(--kaki-tint);
-  --head-team-fg: #201a0e;
-  --head-team-muted: #4f2e1b;
-  --head-attention: #7a2f10;
-  --surface: #ffffff;
-  --inset: #f2f3f5;
-  --line: #afb2be;
-  --line-2: #9094a5;
-  --line-3: #797e93;
-  --fg-strong: #14161c;
-  --fg: #2c2e36;
-  --muted: #585e6e;
-  --link: var(--aiiro);
-  --accent: #a06b1a;
-  --accent-2: #3f6a95;
-  --accent-deep: #8a5a10;
-  --ok: #5c7a1d;
-  --ok-2: #1e7a4c;
-  --warn: #9a7b00;
-  --status-yellow: #c9a227;
-  --status-red: #b8362a;
-  --bad: #b04343;
-  --bad-soft: #8f3a3a;
-  --bad-deep: #a33c33;
-  --bad-line: #d8b0b0;
-  --bad-ground: #f7e2e2;
-  --bad-fg: #6a1f1f;
-  --info: #1f5fc9;
-  --scrim: rgb(0 0 0 / 35%);
-  --shadow-menu: 0 8px 24px rgb(30 30 30 / 18%);
-  --shadow-sheet: 0 12px 34px rgb(30 30 30 / 22%);
-  --kaki-lift: #a34e2f;
-  --kaki-fill: var(--kaki-lift);
-  --kaki-fill-ink: var(--on-strong);
-  --kaki-fill-hover: color-mix(in srgb, var(--kaki-lift) 86%, #000);
-
-  /* Light mode uses the selected full-fill treatment for collection scopes. */
-  --head-admin-bg: var(--graphite);
-  --head-admin-fg: var(--on-strong);
-  --head-admin-muted: color-mix(in srgb, var(--on-strong) 78%, transparent);
-  --head-teams-bg: var(--aiiro);
-  --head-teams-fg: var(--on-strong);
-  --head-teams-muted: color-mix(in srgb, var(--on-strong) 78%, transparent);
-
-  --term-cube: invert;
-  --term-cursor: #a06b1a;
-  --term-selection: #d8e2f2;
-  --term-ansi-black: #1d1f21;
-  --term-ansi-red: #bc2f2f;
-  --term-ansi-green: #5c7a1d;
-  --term-ansi-yellow: #9a7b00;
-  --term-ansi-blue: #2f5f9e;
-  --term-ansi-magenta: #7a4d9c;
-  --term-ansi-cyan: #2c7a7a;
-  --term-ansi-white: var(--fg);
-
-  --term-ansi-br-black: #dfe1e6; /* the band behind the person's messages: a neutral grey, no yellow */
-  --term-ansi-br-red: #d13b3b;
-  --term-ansi-br-green: #6f8f28;
-  --term-ansi-br-yellow: #b08c00;
-  --term-ansi-br-blue: #3f79c0;
-  --term-ansi-br-magenta: #9060b8;
-  --term-ansi-br-cyan: #35908f;
-  --term-ansi-br-white: var(--fg-strong);
-}
+/* The design tokens, both themes, are in tokens.css, linked before this file. */
 
 :focus-visible {
   outline: var(--focus-width) solid var(--focus-ring);
@@ -359,7 +87,7 @@ body {
   --current-head-line: var(--head-team-line);
   --current-head-edge: var(--head-team-edge);
 }
-:root:is([data-workbench='campaign'], [data-workbench='setup'], [data-workbench='launch'], [data-workbench='models'], [data-workbench='workspaces'], [data-workbench='help']) {
+:root:is([data-workbench='campaign'], [data-workbench='setup'], [data-workbench='launch'], [data-workbench='workspaces'], [data-workbench='help']) {
   --current-head-bg: var(--head-admin-bg);
   --current-head-fg: var(--head-admin-fg);
   --current-head-muted: var(--head-admin-muted);
@@ -718,9 +446,15 @@ body {
 /* A phone has no room for the centred island beside the crumb and the right-hand end: it sat
    on top of the gauge and took its taps (KAN-640). The crumb already names the place. */
 @media (max-width: 680px) { #bar .view-island { display: none; } }
+/* A phone (KAN-930): the brand keeps its mark and drops its word, and what still does not fit
+   wraps — the crumb onto its own lines, the right-hand end onto the next row — never drawn over. */
+@media (max-width: 680px) {
+  #bar { flex-wrap: wrap; row-gap: var(--space-row); }
+  #bar .bar-crumb { flex-wrap: wrap; }
+  #bar .brand-word { display: none; }
+}
 
-#bar .shape-cycle,
-#bar .bar-toggle {
+#bar .shape-cycle {
   display: inline-flex;
   align-items: center;
   background: transparent;
@@ -733,10 +467,41 @@ body {
   cursor: pointer;
   white-space: nowrap;
 }
-/* A compact icon control seated in the bar by the ViewHost (js/workspace.js
-   showActions) — Setup's light/dark. The shape control's frame, square, glyph centred. */
-#bar .bar-toggle { width: 30px; padding: 0; justify-content: center; font-size: var(--text-label); line-height: var(--leading-none); }
-#bar .bar-toggle[aria-pressed='true'] { color: var(--fg); }
+
+/* The light/dark switch (js/theme-toggle.js): the website's pill (ronin-site
+   theme-switch.css), the same look on every page. */
+.theme-switch {
+  flex: 0 0 auto;
+  align-self: center;
+  width: 42px;
+  height: 24px;
+  padding: var(--space-row);
+  border: var(--edge) solid var(--line-3);
+  border-radius: var(--radius-pill);
+  background: var(--inset);
+  cursor: pointer;
+}
+.theme-switch:hover { border-color: var(--kaki); }
+.theme-switch__track {
+  position: relative;
+  display: block;
+  width: 32px;
+  height: 14px;
+  background: radial-gradient(circle, var(--muted) 1.5px, transparent 2px) 0 50% / 16px 14px repeat-x;
+}
+.theme-switch__track i {
+  position: absolute;
+  top: 3px;
+  left: 12px;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-round);
+  background: var(--kaki);
+  box-shadow: 0 0 0 var(--edge-2) var(--inset);
+  transition: transform var(--motion-settle) var(--ease);
+}
+.theme-switch[data-theme-choice='light'] .theme-switch__track i { transform: translateX(-12px); }
+.theme-switch[data-theme-choice='dark'] .theme-switch__track i { transform: translateX(12px); }
 
 .tile-head button.job {
   margin-left: var(--space-inline);
@@ -860,7 +625,6 @@ body {
 .tile-secret-card[data-state='saved'] .tile-secret-notice::before { content: '✓ '; }
 .tile-secret-card:is([data-state='saved'], [data-state='cancelled']) .tile-secret-entry { display: none; }
 .tile-doc-close {
-  align-self: flex-end;
   border: var(--edge) solid var(--line);
   border-radius: var(--radius-large);
   background: var(--surface);
@@ -868,6 +632,7 @@ body {
   padding: var(--space-row) var(--space-inline);
   cursor: pointer;
 }
+.dc-pills .tile-doc-close { margin-left: auto; }
 
 .pad-card {
   display: flex;
@@ -1235,11 +1000,11 @@ body {
 .item-pill[data-status='progress'] .item-pill-status { background: var(--info); }
 .item-pill[data-status='review'] .item-pill-status { background: var(--accent); }
 .item-pill[data-status='done'] .item-pill-status { background: var(--ok); }
-.item-pill .item-pill-subtasks { display: inline-flex; align-items: center; gap: var(--space-row); color: var(--muted); font-size: var(--text-small); line-height: 1; font-variant-numeric: tabular-nums; }
+.item-pill .item-pill-subtasks { display: inline-flex; align-items: center; gap: var(--space-row); color: var(--muted); font-size: var(--text-small); line-height: var(--leading-none); font-variant-numeric: tabular-nums; }
 .item-pill .item-pill-subtasks .item-kind { width: 10px; height: 10px; }
-.item-pill .item-pill-flag { color: var(--warn); font-size: var(--text-small); line-height: 1; }
+.item-pill .item-pill-flag { color: var(--warn); font-size: var(--text-small); line-height: var(--leading-none); }
 /* The hand-in mark (6a): the flag's size, In Review's accent when handed in, ok once on dev; its words only down. */
-.item-pill .item-pill-handin { color: var(--accent); font-size: var(--text-small); line-height: 1; white-space: nowrap; }
+.item-pill .item-pill-handin { color: var(--accent); font-size: var(--text-small); line-height: var(--leading-none); white-space: nowrap; }
 .item-pill[data-handin='dev'] .item-pill-handin { color: var(--ok); }
 .item-pill .item-pill-handin-words { display: none; }
 .item-island[data-state='down'] .item-pill-handin-words { display: inline; color: var(--muted); }
@@ -1319,7 +1084,7 @@ body {
 .item-bar .item-pill-status { width: 8px; height: 8px; border-radius: var(--radius-round); background: var(--muted); }
 .item-bar[data-status='progress'] .item-pill-status { background: var(--info); }
 .item-bar[data-status='review'] .item-pill-status { background: var(--accent); }
-.item-bar .item-pill-flag { color: var(--warn); line-height: 1; }
+.item-bar .item-pill-flag { color: var(--warn); line-height: var(--leading-none); }
 .item-bar .item-bar-handin { color: var(--accent); }
 .item-bar[data-handin='dev'] .item-bar-handin { color: var(--ok); }
 .item-bar .item-bar-objective, .item-bar .item-bar-comment {
@@ -1354,7 +1119,7 @@ body {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.tile-head button, .wi-head > button.window-control, .wk-surface-header > button.transcript-toggle {
+.tile-head button, .wi-head > button.window-control, .sws-head > button.window-control, .harness-agent-window-head > button.window-control, .wk-surface-header > button.transcript-toggle {
   flex: 0 0 auto;
   background: var(--surface);
   border: var(--edge) solid var(--muted);
@@ -1381,17 +1146,17 @@ body {
   color: var(--bad);
   border-color: var(--bad);
 }
-.tile-head button.window-control, .wi-head > button.window-control {
+.tile-head button.window-control, .wi-head > button.window-control, .sws-head > button.window-control, .harness-agent-window-head > button.window-control {
   font-size: var(--text-label);
   line-height: var(--leading-none);
 }
-/* The item's − wears the Launch button's look (workspace-kit.css .wk-action[data-kind='primary']). */
-.wi-head > button.window-control.minimize {
+/* The item's − and an opened stone's (phalanx.js) wear the Launch button's look (workspace-kit.css .wk-action[data-kind='primary']). */
+.wi-head > button.window-control.minimize, .sws-head > button.window-control.minimize, .harness-agent-window-head > button.window-control.minimize {
   border-color: var(--kaki);
   background: var(--kaki); /* kaki: the action, or what needs you */
   color: var(--on-strong);
 }
-.wi-head > button.window-control.minimize:hover {
+.wi-head > button.window-control.minimize:hover, .sws-head > button.window-control.minimize:hover, .harness-agent-window-head > button.window-control.minimize:hover {
   background: var(--kaki-lift); /* kaki: the action, or what needs you */
   color: var(--on-strong);
 }
@@ -2166,7 +1931,7 @@ body {
   gap: var(--space-row);
 }
 .sys-release {
-  font-size: 1.25em;
+  font-size: var(--text-label);
   font-weight: var(--weight-strong);
   font-variant-numeric: tabular-nums;
 }
@@ -3055,7 +2820,6 @@ body {
     border-color: var(--kaki);
     color: var(--on-strong);
   }
-  #bar .bar-toggle { height: 40px; width: 44px; font-size: var(--text-heading); }
 
   #bar .brand {
     flex: 0 1 auto;
@@ -3554,7 +3318,7 @@ body {
   border-radius: var(--radius-small);
   background: var(--inset);
   color: var(--term-input-fg);
-  font: var(--text-small)/1 var(--font-ui);
+  font: var(--text-small)/var(--leading-none) var(--font-ui);
   cursor: pointer;
 }
 
@@ -3893,21 +3657,20 @@ body {
     min-width: 34px;
     padding: 0 var(--space-control);
   }
-  #bar .shape-cycle:hover,
-  #bar .bar-toggle:hover {
+  #bar .shape-cycle:hover {
     color: var(--fg);
     border-color: var(--muted);
   }
-  #bar .shape-cycle:active,
-  #bar .bar-toggle:active {
+  #bar .shape-cycle:active {
     background: var(--selected); /* the one you are on, have chosen, or are dropping onto */
     color: var(--fg);
   }
 }
 
 .prov {
-  margin-left: 0.35em;
-  font-size: 0.85em;
+  --prov-gap: 0.35em; /* from the word it qualifies, at its size */
+  margin-left: var(--prov-gap);
+  font-size: var(--text-small);
   color: var(--info);
   opacity: 0.85;
   cursor: help;
@@ -4005,10 +3768,10 @@ body {
 }
 
 .ramrpm { border: var(--edge) solid var(--line-2); border-radius: var(--radius-pill); background: var(--surface); color: var(--muted); padding: var(--space-row) var(--space-inline); font: var(--text-small) var(--font-mono); cursor: pointer; user-select: none; }
-.ramrpm { display: inline-flex; align-items: center; gap: 2px; }
+.ramrpm { display: inline-flex; align-items: center; gap: var(--meter-gap); }
 .ramrpm[hidden] { display: none; }
 /* The five segments: the face, and each popup row's own bar (.ramrpm-bar). */
-.ramrpm-bar { display: inline-flex; gap: 2px; }
+.ramrpm-bar { display: inline-flex; gap: var(--meter-gap); }
 :is(.ramrpm, .ramrpm-bar) i { display: block; width: 6px; height: 10px; border-radius: 1px; background: var(--line-2); }
 :is(.ramrpm, .ramrpm-bar) i.on { background: currentColor; }
 :is(.ramrpm, .ramrpm-bar)[data-band='ok'] { color: var(--ok); }
@@ -4032,7 +3795,6 @@ body {
    the choice it is. */
 .setup-surface-body { display: grid; gap: var(--space-paragraph); padding: var(--space-inset) 0; min-width: 0; }
 .setup-fine { color: var(--muted); }
-.setup-form, .setup-registration-identity { display: grid; gap: var(--space-paragraph); padding: var(--space-inset); border: var(--edge) solid var(--line); border-radius: var(--radius-small); }
 .wk-surface-content:has(.setup-github-workspace) > .sws-header {
   --sws-header-height: clamp(17rem, 32dvh, 20rem);
   display: grid;
@@ -4058,7 +3820,6 @@ body {
 .setup-github-terminal-actions[hidden] { display: none; }
 .wk-workbench-host [data-workbench-offer-type][data-scene-relevant='false'] { opacity: .48; }
 .wk-workbench-host [data-workbench-offer-type][data-scene-relevant='true'] .wk-card-heading { font-weight: var(--weight-bold); }
-.wk-workbench-host [data-registration-locked='true'] .wk-card-heading::after { content: '  🔒'; font-size: .8em; }
 .wk-workbench-host[data-workbench-profile='setup'] [data-complete='true'] { opacity: 1; }
 /* THE WALKTHROUGH (owner, 24 Nov; w926): Setup's steps down the selector as the prototype's run across
    the page. A numbered disc per step, joined to the next by a line; the step on screen kaki-edged on the
@@ -4079,7 +3840,7 @@ body {
 .setup-next-note { color: var(--current-head-fg); opacity: .7; white-space: nowrap; }
 .setup-next-note:empty { display: none; }
 /* Discreet: the header's own ink, no box; an arrow says where it goes. */
-.wk-surface-header .setup-next-go { min-height: 0; padding: 2px 6px; border: var(--edge) solid transparent; background: none; color: var(--current-head-fg); }
+.wk-surface-header .setup-next-go { min-height: 0; padding: var(--space-row); border: var(--edge) solid transparent; background: none; color: var(--current-head-fg); }
 .wk-surface-header .setup-next-go::after { content: ' →'; }
 .wk-surface-header .setup-next-go:hover, .wk-surface-header .setup-next-go:focus-visible { border-color: currentColor; }
 @media (max-width: 700px) { .setup-next-note { display: none; } }
@@ -4108,26 +3869,8 @@ body {
 .setup-provider-refresh { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-row) var(--space-inline); margin: var(--space-paragraph) 0 var(--space-paragraph); }
 .setup-provider-last-ran { margin: 0; font-size: var(--text-body); }
 /* A stone's detail is two sections, top to bottom: Yours (the steps), then The catalog. */
-.setup-provider-yours, .setup-provider-catalog { display: grid; gap: var(--space-paragraph); min-width: 0; }
-.setup-provider-catalog { margin-top: var(--space-subsection); padding-top: var(--space-inset); border-top: var(--edge) solid var(--line); }
 .setup-provider-eyebrow { margin: 0; color: var(--muted); font-size: var(--text-small); font-weight: var(--weight-strong); letter-spacing: var(--tracking-wide); text-transform: uppercase; }
-.setup-provider-facts { display: flex; flex-wrap: wrap; gap: var(--space-row) var(--space-inline); margin: 0; }
-.setup-provider-facts div { display: flex; gap: var(--space-inline); font-size: var(--text-body); }
-.setup-provider-facts dt { color: var(--muted); }
-.setup-provider-facts dd { margin: 0; color: var(--fg-strong); font-weight: var(--weight-strong); }
-.setup-provider-facts div[data-on='true'] dd { color: var(--ok); }
-.setup-provider-list-state { margin: 0; }
-.setup-provider-table { overflow-x: auto; max-width: 100%; }
-.setup-provider-models { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: var(--text-body); }
-.setup-provider-models th { text-align: left; padding: var(--space-row) var(--space-inline); color: var(--muted); font-weight: var(--weight-strong); border-bottom: var(--edge) solid var(--line-2); }
-.setup-provider-models td { padding: var(--space-inline); vertical-align: top; border-bottom: var(--edge) solid var(--line); overflow-wrap: anywhere; }
-.setup-provider-models th:nth-child(2) { width: 40%; }
-.setup-provider-use-for { display: block; color: var(--muted); }
-.setup-provider-models td b { color: var(--fg-strong); font-weight: var(--weight-strong); }
 /* Two names per model: the CLI's own name in bold, the id every launch uses beneath it. */
-.setup-provider-model-id { display: block; margin-top: var(--space-row); color: var(--muted); font-family: var(--mono, monospace); font-size: var(--text-small); overflow-wrap: anywhere; }
-.setup-provider-default { display: block; margin-top: var(--space-row); color: var(--muted); font-size: var(--text-small); }
-.setup-provider-tier { color: var(--muted); font-size: var(--text-small); letter-spacing: var(--tracking-wide); text-transform: uppercase; }
 /* The selected provider: a flat detail on the shared stone seat, on the Setup type baseline
    (14 body · 16 step · 20 title). Three numbered steps share one shape — the mark, the copy,
    then a control of one size — under a restrained kaki rule. The mark says done, current,
@@ -4135,8 +3878,6 @@ body {
    surface is the size container: the control sits beside the copy only when the detail is
    wide enough and otherwise takes its own line under the copy, never stretched. */
 .setup-provider { display: grid; gap: var(--space-subsection); max-width: 44rem; min-width: 0; padding-bottom: var(--space-inset); }
-.setup-provider-head { display: grid; gap: var(--space-row); }
-.setup-provider-head h2 { margin: 0; color: var(--fg-strong); font-size: var(--text-display); font-weight: var(--weight-strong); line-height: var(--leading-tight); }
 .setup-provider-from { margin: 0; color: var(--muted); font-size: var(--text-body); }
 .setup-provider-steps { --provider-rule: var(--line); display: grid; gap: 0; min-width: 0; margin: 0; padding: 0; list-style: none; }
 .setup-provider-step { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-paragraph) var(--space-inline); align-items: start; min-width: 0; padding: calc(var(--space-section) / 2) 0; border-top: var(--edge) solid var(--provider-rule); }
@@ -4165,28 +3906,12 @@ body {
 .setup-provider-command { color: var(--muted); font: var(--text-body) var(--font-mono); overflow-wrap: anywhere; }
 .setup-provider-control { display: flex; flex-wrap: wrap; gap: var(--space-inline); min-width: 0; grid-column: 2; }
 .setup-provider-control:empty { display: none; }
-.setup-provider-action { display: inline-flex; flex: 0 0 10rem; width: 10rem; min-height: var(--control-height); align-items: center; justify-content: center; box-sizing: border-box; padding-inline: var(--space-control); text-align: center; text-decoration: none; }
-.setup-provider-control > .setup-provider-action:disabled { border-color: var(--line); background: transparent; color: var(--muted); opacity: 1; }
 @container setup-stone-work-surface (min-width: 46rem) {
   .setup-provider-step { grid-template-columns: auto minmax(0, 1fr) auto; }
   .setup-provider-control { grid-column: auto; align-self: center; justify-content: flex-end; }
 }
-.setup-provider-completion { grid-column: 1 / -1; display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-subsection); min-width: 0; padding: var(--space-inset); border: var(--edge) solid var(--line); border-radius: var(--radius-small); }
-.setup-provider-completion-actions { display: flex; flex-wrap: wrap; gap: var(--space-inline); width: 100%; }
-.setup-provider-completion-actions > .wk-action { flex: 0 0 10rem; width: 10rem; min-height: var(--control-height); }
-.setup-provider-completion-actions > .setup-provider-done { flex: 1 1 100%; width: 100%; }
-.setup-provider-authentication-fields { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-subsection); width: 100%; min-width: 0; }
-.setup-provider-completion[hidden], .setup-provider-sign-in-title[hidden] { display: none; }
-.setup-provider-completion > .setup-provider-note { margin: 0; }
-.setup-provider-sign-in-title { display: grid; gap: var(--space-row); width: 100%; min-width: 0; color: var(--muted); font-size: var(--form-note); }
-.setup-provider-sign-in-title input { width: 100%; min-width: 0; min-height: var(--control-height); background: var(--inset); color: var(--fg); border: var(--edge) solid var(--line); border-radius: var(--radius-small); padding: 0 var(--space-control); font: inherit; font-size: var(--form-input); }
-.setup-provider-problem { margin: 0; }
-.setup-provider-problem[hidden] { display: none; }
 /* The native sign-in tile: headerless, with a bounded height so the surrounding
    setup controls remain reachable. Terminal output scrolls inside the tile. */
-.setup-provider-terminal { grid-column: 1 / -1; height: min(30rem, 50dvh); min-height: 0; overflow: hidden; border: var(--edge) solid var(--line); border-radius: var(--radius-small); background: var(--surface); }
-.setup-provider-terminal > .wk-terminal-host, .setup-provider-terminal .tile { height: 100%; min-height: 0; max-height: 100%; }
-.setup-provider-terminal .tile > .tile-head { display: none; }
 /* THE FIVE STEP MARKS (js/setup-steps-bar.js) — one drawing of Setup's progress, seated
    wherever it has to be read. It draws at ONE size and never reads its surroundings, so
    it is the same shape in a selector column and in a header; a consumer that needs
@@ -4202,32 +3927,6 @@ body {
 .setup-scan[data-state='scanning'] .setup-scan-word { color: var(--kaki-fill); }
 .setup-scan[data-state='failed'] .setup-scan-word { color: var(--bad-soft); }
 .setup-scan-word:empty { display: none; }
-/* THE SETUP HEADER ZONE. It sits in the work surface's own content box and adds no inset of
-   its own, so its state line and its picks begin on the same left edge as the surface's own
-   title and footer. A hairline divides the zone from the phalanx rather than a box: a box
-   spends kaki on a container, and kaki is what marks a chosen stone. The slot keeps its
-   fixed height, so the phalanx stays level from step to step whatever the state says.
-
-   The zone styles the zone and nothing else. It never reaches past its own slot to lay out
-   the phalanx below — the phalanx is the work surface's, identical on a surface that carries
-   a zone and one that does not, and a change up here must never move a stone down there.
-
-   The rule is drawn on the zone rather than on the slot, and the zone is one step shorter
-   than the slot it sits in. That leftover step is the clearance under the rule: it belongs
-   to the header's own box, so the line stands clear of the stones without the header ever
-   reaching down to space them. Hover takes the rule to kaki the way a fold's hairline does
-   (launch-forms.css, owner 2026-09-13) — the line lifts, nothing fills, and the words stay
-   put, because the zone is a region to read, not a control to press. */
-.sws-header:has(> .setup-zone) { box-sizing: border-box; }
-/* A SETTLED ZONE GOES BLANK, IT DOES NOT GO AWAY. The slot is the phalanx's spacing: it holds
-   the stones at the same height on every step, whether the zone above them has something to
-   say or nothing at all (owner, 2026-09-21). Only operation mode takes the slot away, which
-   is a different thing — there is no phalanx view to keep level. */
-.setup-zone-slot { display: flex; flex: 0 0 auto; align-items: flex-start; box-sizing: border-box; min-width: 0; block-size: var(--sws-header-height, clamp(6rem, 15dvh, 9rem)); overflow: hidden; }
-.setup-zone { display: grid; align-content: start; justify-items: start; gap: var(--space-section); box-sizing: border-box; width: 100%; min-width: 0; height: calc(100% - 20px); overflow: hidden; border-bottom: var(--edge) solid var(--line); padding: var(--space-inset) 0 0; transition: border-color var(--motion-quick) var(--ease); }
-:is(.sws-header, .setup-zone-slot):has(> .setup-zone):hover > .setup-zone { border-bottom-color: var(--kaki); }
-.setup-zone-state { min-height: calc(var(--form-input) * 1.4 * 2); max-width: 40rem; margin: 0; color: var(--fg-strong); font-size: var(--form-input); font-weight: var(--weight-regular); line-height: var(--leading-body); }
-.setup-zone-options { width: auto; }
 /* A NARROW LEANING SLAB. Five standing together are a bar read left to right; five circles
    were five separate things. The lean is one angle shared by every mark and never changes
    with state — only the fill moves, so the row cannot reflow as answers land. */
@@ -4683,7 +4382,7 @@ button.wk-card { cursor: pointer; }
   background: var(--inset);
   color: var(--fg);
   padding: var(--space-row) var(--space-control);
-  font: 16px/var(--leading-body) var(--font-ui);
+  font: var(--ios-no-zoom)/var(--leading-body) var(--font-ui);
   resize: none;
 }
 #phone .ph-launch-note {
@@ -4937,27 +4636,38 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 .hermes-card-summary { display: flex; flex: 1 1 16rem; flex-wrap: wrap; align-items: baseline; gap: var(--space-row) var(--space-inline); min-width: 0; }
 .hermes-card-summary span { color: var(--muted); overflow-wrap: anywhere; }
 /* ERABI stones, one size (ask.css's 140-wide rectangle), one row per card or form. */
-.hermes-stones { display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; }
+.hermes-stones { display: flex; flex-wrap: wrap; align-items: stretch; gap: var(--space-inline); }
 .hermes-settings h3 { margin: 0; font-size: var(--text-label); color: var(--fg-strong); }
 
 /* THE AGENT HARNESS WORKBENCH'S ACCOUNTS AND MODELS TILESPACES (KAN-236): account cards in the Hermes card's
    shape, their two tick lists side by side, and the Models tilespace's sections. */
 
-/* THE HARNESS STEP (setup-harness-surface.js): the prototype's thin bars, one per harness. */
-.setup-harness-body { display: flex; flex-direction: column; gap: 16px; padding: 4px 0; }
-.setup-harness-stack { display: flex; flex-direction: column; gap: 8px; max-width: 560px; }
-.setup-harness-bar { display: flex; flex-direction: column; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); }
-.setup-harness-bar.selected { border-color: var(--kaki); box-shadow: inset 3px 0 var(--kaki); }
-.setup-harness-bar.signed:not(.selected) { box-shadow: inset 3px 0 var(--ok-2); }
-.setup-harness-top { display: flex; align-items: center; gap: 10px; width: 100%; border: 0; background: none; padding: 0; font: inherit; color: inherit; text-align: left; cursor: pointer; }
-.setup-harness-top:disabled { cursor: default; }
-.setup-harness-name b { display: block; font-size: 14px; font-weight: 600; color: var(--fg-strong); }
-.setup-harness-name small { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; }
-.setup-harness-go { margin-left: auto; font-weight: 600; color: var(--link); }
-.setup-harness-bar.signed .setup-harness-go { color: var(--ok-2); }
-.setup-harness-top:disabled .setup-harness-go { color: var(--kaki); }
-.setup-harness-window { display: flex; flex-direction: column; gap: 10px; }
-.setup-harness-line { margin: 0; line-height: 1.5; }
+/* THE ONE HARNESS PANEL (harnesses-surface.js), Setup's and Settings' alike: name and state word, then its parts
+   at one spacing: Install or Update, Model services (the service row, then the model entries), Turn off. */
+.harness-panel { display: flex; flex-direction: column; gap: var(--space-section); max-inline-size: 48rem; min-width: 0; }
+.harness-panel-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-control); }
+.harness-panel-title { display: flex; flex-direction: column; gap: var(--space-row); }
+.harness-panel-title h2, .harness-panel-title p { margin: 0; }
+.harness-panel-state { margin-left: auto; font-weight: var(--weight-strong); color: var(--fg-strong); }
+.harness-panel-part { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-paragraph); min-width: 0; }
+.harness-panel-part > .setup-harness-window, .harness-panel-part > .harness-models, .harness-panel-part > p { align-self: stretch; }
+.harness-panel-part > .setup-provider-eyebrow { margin: 0; }
+.harness-panel .setup-harness-terminal { align-self: stretch; }
+/* Under a sign-in terminal: small stones, as wide as their words. */
+.harness-terminal-stones .ask-rect { width: auto; flex: none; }
+.harness-terminal-note { margin: 0; align-self: center; font-style: italic; }
+/* Settings' window on the surface: the Helpful Assistant's chat over the harness surface, put away with −. */
+.setup-surface:has(> .harness-agent-window) { position: relative; }
+.harness-agent-window { position: absolute; z-index: 5; inset-inline-end: 16px; inset-block-end: 16px; inline-size: min(440px, calc(100% - 32px)); block-size: min(560px, calc(100% - 32px)); display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--line-2); border-radius: 8px; box-shadow: var(--shadow-menu); overflow: hidden; }
+.harness-agent-window-head { display: flex; align-items: center; gap: var(--space-control); padding: var(--space-row) var(--space-control); border-block-end: 1px solid var(--line); }
+.harness-agent-window-head b { color: var(--fg-strong); }
+.harness-agent-window-head .transcript-toggle { margin-inline-start: auto; }
+.harness-agent-window .setup-irasshai-chat { flex: 1; min-height: 0; border: 0; border-radius: 0; }
+.harness-agent-window .setup-irasshai-chat > .tile-body[hidden], .harness-agent-window .setup-irasshai-chat > .wk-terminal-host[hidden] { display: none; }
+.harness-agent-window .setup-irasshai-chat .wk-hosted-tile > .tile-head { display: none; }
+/* A sign-in run's window: the line, the link, the code, the box and its stones. */
+.setup-harness-window { display: flex; flex-direction: column; gap: var(--space-control); }
+.setup-harness-line { margin: 0; line-height: var(--leading-body); }
 .setup-harness-line.bad { color: var(--kaki); }
 /* The Workspace step (setup-workspace-kickoff.js, KAN-809): the four doors; under them what a Workspace
    is, or the open door's blanks with the form's rule beside them; what was made; the Workspaces line. */
@@ -4980,7 +4690,7 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 .ws-diagram small, .ws-diagram figcaption { color: var(--muted); font-size: var(--text-small); }
 .ws-diagram-office { display: flex; flex-direction: column; gap: var(--space-control); padding: var(--space-control); border: var(--edge) dashed var(--line-2); border-radius: var(--radius-small); background: var(--inset); }
 .ws-diagram-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-inline); color: var(--fg-strong); }
-.ws-diagram-example { padding: 2px var(--space-inline); border-radius: var(--radius-small); background: var(--kaki-fill); color: var(--kaki-fill-ink); font-size: var(--text-small); font-weight: var(--weight-strong); text-transform: uppercase; letter-spacing: var(--tracking-wide); }
+.ws-diagram-example { padding: var(--space-row) var(--space-inline); border-radius: var(--radius-small); background: var(--kaki-fill); color: var(--kaki-fill-ink); font-size: var(--text-small); font-weight: var(--weight-strong); text-transform: uppercase; letter-spacing: var(--tracking-wide); }
 .ws-diagram-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-inline); }
 .ws-diagram-ws { padding: var(--space-row) var(--space-inline); border: var(--edge) solid var(--line-2); border-radius: var(--radius-small); background: var(--surface); }
 .ws-diagram-ws.open { border-color: var(--kaki); background: var(--selected); }
@@ -5005,20 +4715,23 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 .setup-workspace-done:empty, .setup-workspace-foot:empty { display: none; }
 .setup-workspace-link { background: none; border: 0; padding: 0; color: var(--link); text-decoration: underline; cursor: pointer; font: inherit; }
 .setup-harness-link { color: var(--link); word-break: break-all; }
-.setup-harness-row { display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; }
+.setup-harness-row { display: flex; flex-wrap: wrap; align-items: stretch; gap: var(--space-inline); }
 /* ERABI stones of one size: each 140 wide (ask.css), a long name on two lines, every stone in a row the same height. */
-.setup-harness-code { font-family: var(--font-mono); font-size: 18px; font-weight: 600; letter-spacing: .08em; color: var(--fg-strong); }
+.setup-harness-code { --harness-code-size: 18px; /* a sign-in code read off the screen and typed elsewhere */ font-family: var(--font-mono); font-size: var(--harness-code-size); font-weight: 600; letter-spacing: .08em; color: var(--fg-strong); }
 .setup-harness-input { flex: 1 1 180px; min-width: 0; }
-.setup-harness-terminal { min-height: 320px; }
-.setup-harness-note { margin: 0; font-size: 12px; line-height: 1.5; color: var(--muted); }
+/* The panel's terminal (sign-in, install, update): a fixed box the tile fills, its head hidden, so the
+   terminal's grid fits the box it is shown in. */
+.setup-harness-terminal { height: min(30rem, 50dvh); min-height: 0; overflow: hidden; border: var(--edge) solid var(--line); border-radius: var(--radius-small); background: var(--surface); }
+.setup-harness-terminal > .wk-terminal-host, .setup-harness-terminal .tile { height: 100%; min-height: 0; max-height: 100%; }
+.setup-harness-terminal .tile > .tile-head { display: none; }
 /* Hermes's two steps (form-steps.js) span the bar; the adding row is dashed, the same shape as a row it adds. */
 .hermes-settings .fs-step > .fs-step-body, .hermes-settings .fs-step:has(> .fs-step-head.fs-togglable) > .fs-step-body { grid-column: 1 / -1; }
 .hermes-settings .fs-step { grid-template-columns: minmax(0, 1fr); }
-.hermes-fine { font-size: 12px; }
+.hermes-fine { font-size: var(--text-body); }
 /* Hermes's lists are tables (owner, 25 Nov 2026): one row each, icons on the right, one Add line. */
 .hermes-table { width: 100%; border-collapse: collapse; }
-.hermes-table :is(th, td) { padding: 6px 8px; text-align: left; vertical-align: middle; overflow-wrap: break-word; }
-.hermes-options { display: grid; gap: 8px; }
+.hermes-table :is(th, td) { padding: var(--space-row) var(--space-inline); text-align: left; vertical-align: middle; overflow-wrap: break-word; }
+.hermes-options { display: grid; gap: var(--space-paragraph); }
 .hermes-table :is(th, td):first-child { padding-left: 0; }
 .hermes-table thead th { color: var(--muted); font-weight: normal; border-bottom: var(--edge) solid var(--line-2); }
 .hermes-table tbody th { color: var(--fg-strong); font-weight: var(--weight-strong); }
@@ -5031,7 +4744,7 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 .hermes-add-line { padding: 0; border: 0; background: none; color: var(--link); font: inherit; cursor: pointer; }
 .hermes-add-line:hover { text-decoration: underline; }
 .hermes-add-line:disabled { color: var(--muted); cursor: default; text-decoration: none; }
-.hermes-add-note { margin-left: 8px; color: var(--muted); }
+.hermes-add-note { margin-left: var(--space-inline); color: var(--muted); }
 /* Settings v2 Model services (KAN-870): the intro, the pick row, the form and the table are sections
    spaced alike; every field is one height; headings sit on their content. */
 .model-services-body { display: grid; gap: var(--space-subsection); padding: var(--space-inset) 0; min-width: 0; }
@@ -5042,7 +4755,6 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 /* In a narrow reading (a tile, a phone) each section stacks, its body under its name, as on Work items;
    the three tabs stay on one row. */
 .model-services { container: model-services / inline-size; }
-.model-services .setup-hermes-sources { grid-template-columns: repeat(auto-fit, minmax(88px, 1fr)); }
 @container model-services (max-width: 32rem) {
   .model-services .fs-step { grid-template-columns: minmax(0, 1fr); }
   .model-services .fs-step > .fs-step-body, .model-services .fs-step:has(> .fs-step-head.fs-togglable) > .fs-step-body { grid-column: 1; }
@@ -5057,7 +4769,7 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 .data-table thead th:first-child { width: 40%; }
 .data-table thead th.hermes-tools { width: 8.5rem; }
 .data-table-link { justify-self: start; text-align: left; }
-/* The harness page's two-tier model picker: the service stones, then a table per service on. */
+/* A harness's model entries: a table per service that is on. */
 .harness-models, .harness-models-body { display: grid; gap: var(--space-paragraph); min-width: 0; }
 .harness-models-body > p { margin: 0; }
 .harness-models-service { margin: var(--space-row) 0 0; color: var(--fg-strong); font-size: var(--text-body); font-weight: var(--weight-strong); }
@@ -5070,15 +4782,13 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
   .data-table td.hermes-tools { white-space: normal; }
   .data-table td.hermes-tools .data-table-link { display: block; margin-left: auto; }
 }
-/* The four ways: four equal stones across the bar, two by two when narrow. */
-.setup-harness-row.setup-harness-ways { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); }
-.setup-harness-ways .ask-rect { width: auto; flex: none; }
+/* A harness's service row: Erabi's own stones at their own size, wrapping (ask.css); never stretched. */
 .setup-harness-ways .ask-opt:disabled { opacity: .6; cursor: default; }
 /* Hermes's Ronin Gateway on the Settings page: always there, ticked, nothing to press. */
 .hermes-fixed { pointer-events: none; }
-/* The model service open on the Hermes bar: filled, so it reads at a glance in both themes (owner, 26 Nov 2026). */
-.setup-hermes-sources .ask-opt[aria-selected='true'] { background: var(--kaki-fill); border-color: var(--kaki-fill); color: var(--kaki-fill-ink); }
-.setup-hermes-sources .ask-opt[aria-selected='true'] .hermes-tick { color: var(--kaki-fill-ink); }
+/* The service a harness is on: filled, so it reads at a glance in both themes (owner, 26 Nov 2026). */
+:is(.setup-hermes-sources, .setup-harness-ways) .ask-opt[aria-selected='true'] { background: var(--kaki-fill); border-color: var(--kaki-fill); color: var(--kaki-fill-ink); }
+:is(.setup-hermes-sources, .setup-harness-ways) .ask-opt[aria-selected='true'] .hermes-tick { color: var(--kaki-fill-ink); }
 /* Available, not selected: a tick in the stone, never the kaki selected mark (owner, 25 Nov 2026). */
-.ask-opt .hermes-tick { color: var(--ok); font-weight: var(--weight-strong); margin-right: 6px; }
+.ask-opt .hermes-tick { color: var(--ok); font-weight: var(--weight-strong); margin-right: var(--space-row); }
 .ask-opt:has(> .hermes-tick) { flex-direction: row; align-items: center; justify-content: flex-start; }

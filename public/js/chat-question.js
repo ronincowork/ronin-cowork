@@ -5,8 +5,8 @@
  * even know it's there"). The card's `question` (src/asking.ts) is drawn as ERABI questions: a
  * choice per question the CLI asked, Approve or Keep planning under a plan, Yes or No under a
  * permission with the exact command. One press answers a single choice; several questions, or
- * checkboxes, go with Send. Ronin types the answer into the terminal and the tile stays on Chat.
- * Free text (the CLI's own "type something", an MCP form) keeps Answer in Terminal.
+ * checkboxes, go with Send. A one-of question also carries the CLI's implicit final answer,
+ * Write something: its required line is sent literally. The tile stays on Chat.
  */
 import { t } from './lexicon.js';
 import { ask } from './ask.js';
@@ -58,36 +58,80 @@ export function buildQuestion(question, { send, terminal = null }) {
     root.append(yesNo(t('question.yes', 'Yes'), t('question.no', 'No')));
   } else {
     const questions = question.questions || [];
-    // One question of one answer goes on the press; anything more waits for Send.
-    const onePress = questions.length === 1 && !questions[0].many;
-    const picks = questions.map((q, i) => {
+    const values = questions.map((q) => q.many ? [] : '');
+    const custom = questions.map(() => '');
+    const stage = el('div', 'chat-question-stage');
+    let at = 0;
+    const choiceAt = (i) => {
+      const q = questions[i];
+      const value = values[i];
+      if (q.many) {
+        const picked = value.filter((v) => v !== 'write').map(Number);
+        return value.includes('write') ? { choices: picked, text: custom[i].trim() } : picked;
+      }
+      return value === 'write' ? { text: custom[i].trim() } : value === '' ? null : Number(value);
+    };
+    const complete = (i) => {
+      const q = questions[i];
+      const value = values[i];
+      if (q.many) return !value.includes('write') || Boolean(custom[i].trim()); // no ticks is a valid answer
+      return value !== '' && (value !== 'write' || Boolean(custom[i].trim()));
+    };
+    const paint = () => {
+      stage.replaceChildren();
+      const i = at;
+      const q = questions[i];
+      if (!q) return;
       const fieldKey = `q${i}`;
+      const customRow = () => {
+        const input = el('input', 'chat-question-custom');
+        input.type = 'text';
+        input.value = custom[i];
+        input.placeholder = t('question.write_placeholder', 'Write your answer');
+        input.addEventListener('input', () => { custom[i] = input.value; });
+        return input;
+      };
       const one = ask([{ fields: [{
         key: fieldKey, label: q.header || t('question.answer', 'Answer'), many: q.many,
-        options: q.options.map((o, n) => ({ v: String(n), l: o.label, ...(o.description ? { sub: o.description } : {}) })),
-      }] }], {
+        options: [
+          ...q.options.map((o, n) => ({ v: String(n), l: o.label, ...(o.description ? { sub: o.description } : {}) })),
+          { v: 'write', l: t('question.write', 'Write something here'), row: customRow, required: true },
+        ],
+      }] }], { value: { [fieldKey]: values[i] },
         exposed: true, density: 'tight',
-        onChange: (now) => { if (onePress && now[fieldKey] !== '') void answer({ choices: [Number(now[fieldKey])] }); },
+        onChange: (now) => {
+          values[i] = now[fieldKey];
+          // A lone, ordinary one-of answer keeps the quick one-press path.
+          if (questions.length === 1 && !q.many && now[fieldKey] !== '' && now[fieldKey] !== 'write') void answer({ choices: [Number(now[fieldKey])] });
+        },
       });
-      root.append(el('p', 'chat-question-title', q.question), one.el);
-      return { q, one, fieldKey };
-    });
-    const actions = [];
-    if (!onePress) {
-      actions.push(createAction({ label: t('question.send', 'Send'), kind: 'primary', size: 'compact', action: () => {
-        const choices = picks.map(({ q, one, fieldKey }) => {
-          const v = one.value()[fieldKey];
-          return q.many ? v.map(Number) : v === '' ? null : Number(v);
-        });
-        if (choices.some((c) => c === null || (Array.isArray(c) && !c.length))) {
+      const actions = [];
+      if (i < questions.length - 1) {
+        actions.push(createAction({ label: t('question.next', 'Next'), kind: 'primary', size: 'compact', action: () => {
+          values[i] = one.value()[fieldKey];
+          if (!complete(i)) {
+            notice.textContent = t('question.unanswered', 'Answer this question first.');
+            return;
+          }
+          notice.textContent = '';
+          at += 1;
+          paint();
+        } }));
+      } else {
+        actions.push(createAction({ label: t('question.send', 'Send'), kind: 'primary', size: 'compact', action: () => {
+          values[i] = one.value()[fieldKey];
+          if (!questions.every((_, index) => complete(index))) {
           notice.textContent = t('question.unanswered', 'Answer each question first.');
           return;
-        }
-        void answer({ choices });
-      } }));
-    }
-    if (terminal) actions.push(createAction({ label: t('transcript.answer_in_terminal', 'Answer in Terminal'), size: 'compact', action: terminal }));
-    if (actions.length) root.append(createActionBar({ actions }).el);
+          }
+          void answer({ choices: questions.map((_, index) => choiceAt(index)) });
+        } }));
+      }
+      if (terminal) actions.push(createAction({ label: t('transcript.answer_in_terminal', 'Answer in Terminal'), size: 'compact', action: terminal }));
+      stage.append(el('p', 'chat-question-title', q.question), one.el, createActionBar({ actions }).el);
+    };
+    root.append(stage);
+    paint();
   }
   root.append(notice);
   return root;

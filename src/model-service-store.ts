@@ -19,7 +19,7 @@ export type AccountKind = 'personal_api' | 'ronin_api';
  *  Read at start-up and on Refresh, never polled; it informs New Agent and the Model services card, and blocks nothing. */
 export type GatewayStatus = 'stopped' | 'token_rejected' | 'unreachable';
 export interface ModelServiceRecord { id: string; name: string; provider: 'openai' | 'mistral' | 'custom'; baseUrl: string; wireApi?: 'chat' | 'responses'; models: string[]; modelNames?: Record<string, string>; modelInfo?: Record<string, { tier?: string; use_for?: string }>; gatewayStatus?: GatewayStatus; discoveredAt?: string; credentialEnv?: string; starterModelsPending?: true; kind?: AccountKind }
-/** `tier` and `use_for` are the Ronin Gateway's own words for its model entries; a named option has neither. */
+/** `tier` and `use_for` are the Ronin Gateway's own words for its model entries; a user's own model entry has neither. */
 export interface ModelEntry { id: string; name: string; connection: string; model: string; reasoning: string; approvals: 'off' | 'prompt'; tier?: string; use_for?: string }
 
 export interface ModelServiceStore { connections: ModelServiceRecord[]; setups: ModelEntry[] }
@@ -218,7 +218,7 @@ async function credentialEnvironment(): Promise<NodeJS.ProcessEnv> {
   const app = await readEnv(process.env.DOTENV_CONFIG_PATH || path.join(REPO_ROOT, '.env'));
   return { ...native, ...process.env, ...app };
 }
-/** THE RONIN GATEWAY'S MODEL OPTIONS ARE ITS OWN LIST (owner, 25 Nov 2026): one per model the office gateway
+/** THE RONIN GATEWAY'S MODEL ENTRIES ARE ITS OWN LIST (owner, 25 Nov 2026): one per model the office gateway
  *  last listed, with its supplied display name and model ID; id `<connection>/<model>`. Saved setups are the ones
  *  people name, on an API key or OpenRouter. */
 function withGatewayOptions(state: ModelServiceStore): ModelServiceStore {

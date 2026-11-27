@@ -1,72 +1,42 @@
-import { harnessModelEditor } from './harness-model-entries.js';
-import { modelServicePageRequest } from './model-services-surface.js';
-import { openWorkbenchTab } from './workspace.js';
 /* part of the ronin-cowork client — see js/README.md */
 /**
- * ONE MODEL PROVIDERS SURFACE, TWO SEATS. Ronin Setup's Model providers card and Ronin
- * Settings' Model providers card open this same surface: one definition under one type,
- * registered by both workbenches. Its first face is an inventory of equal stones on the
- * shared stone work surface — one per CLI the registry knows, each wearing its short
- * measured state, then any catalog provider no registry CLI serves — mounted straight on
- * the surface content so the stone seat owns every inset. The
- * footer keeps the catalog research date and this machine's measurement date available
- * behind a short disclosure.
- *
- * Choosing a stone opens that provider beside the rail, top to bottom:
- *   1. YOURS — the three numbered steps (install · authenticate with the native sign-in
- *      tile, Done and Close · ready), read from the runtime row alone
- *      (setup-harness-state.js). The sign-in tile is mounted through the workbench
- *      environment's `mountHarnessSetupSession` (harness-setup-session.js), so it works
- *      on either seat. An installed CLI's step says its version and, once Refresh has
- *      asked, the newest release its package source lists; an **Update** control runs the
- *      registry's update line in a tile as Install does — the owner's press, never Ronin's.
- *   2. THE CATALOG — the three measured facts, dated, then every model the CLI listed for
- *      this provider with its tier, the default marked.
- *
- * The Setup progress resource owns measurement. This surface paints the Campaign's dated
- * provider summary, which every reader takes from the record; the catalog rows come from the one
- * picker's read (form-steps.js), so this surface and every picker cannot disagree.
- *
- * MEASURING IS NOT A REASON TO WITHHOLD THE FRAME. The stones paint at once from the
- * recorded summary — the same read every other surface makes, and the catalog read this
- * one makes anyway — and the measure runs behind them, repainting when it lands. A probe
- * that asks five CLIs their version was sitting between the owner and the first frame
- * (gemini alone took 2.9s to answer, 2026-09-09); nothing measured ever stands there again.
+ * THE ONE HARNESS PANEL (owner, 27 Nov 2026; docs/architecture/harness-catalog.md, "One harness panel"). Setup's
+ * Harness step and Settings' harness surfaces mount this same code: the stones of harnesses
+ * (`createHarnessesSurface`), each wearing one state word (`harnessState`), and for the one pressed its panel
+ * (`mountHarnessPanel`): name and state; Install or Update; Model services, first the row of services the harness
+ * can use (Subscription, API key, Ronin Gateway, OpenRouter, Terminal as Backup),
+ * signing in where one needs it, then its model entries under it (harness-model-entries.js); Turn off or on.
+ * The place decides only where the Helpful Assistant opens (`openAgent`): Setup's work surface, Settings' window.
+ * Refresh all (`createRefreshAll`) is the one press that reads the CLIs' model lists.
  */
 import { t } from './lexicon.js';
-import { createSetupZone, setupStep } from './setup-zone.js';
+import { harnessModelEditor } from './harness-model-entries.js';
 import { request } from './request.js';
 import { WorkspaceKit } from './workspace-kit.js';
-import { createPhalanx } from './phalanx.js';
-import { dayTime, loadHarnessCatalog, modelLabel, harnessCatalog, tierWord } from './form-steps.js';
-import { mountHarnessAttachment, harnessFromRuntime, harnessPresentation, harnessReadiness } from './setup-harness-state.js';
+import { dayTime, loadHarnessCatalog, harnessCatalog } from './form-steps.js';
 import { createStatusMarker } from './status-marker.js';
-import { IRASSHAI_NAME } from './setup-journey.js';
+import { createPhalanx } from './phalanx.js';
+import { S } from './state.js';
+import { store } from './store.js';
+import { signInHandlers } from './events.js';
+import { sendPress } from './press.js';
+import { IRASSHAI, irasshaiIn } from './setup-journey.js';
+import { openWorkbenchTab } from './workspace.js';
+import { modelServicePageRequest } from './model-services-surface.js';
 
 const el = (tag, cls = '', text = null) => { const out = document.createElement(tag); if (cls) out.className = cls; if (text != null) out.textContent = String(text); return out; };
-
-/** The one type, on both workbenches. */
-export const PROVIDER_SURFACE_TYPE = 'setup.providers';
-
-export function harnessesSurfaceDefinition() {
-  return {
-    type: PROVIDER_SURFACE_TYPE,
-    header: 'surface',
-    groupKey: PROVIDER_SURFACE_TYPE,
-    label: () => t('setup_surface.providers', 'Harnesses'),
-    summary: () => harnessesSummary(harnessCatalog()),
-    create: (context) => createHarnessesSurface(context),
-  };
-}
-
-/** The card's line on both seats: the catalog's counts and this machine's. */
-export function harnessesSummary(catalog) {
-  if (!catalog?.loaded) return t('setup_surface.providers_summary_unread', 'Every harness and model Ronin offers, and what this machine has.');
-  const rows = catalog.rows;
-  const providers = new Set(rows.map((row) => row.provider)).size;
-  const activated = new Set(rows.filter((row) => row.operational).map((row) => row.provider)).size;
-  return t('setup_surface.providers_summary', '{providers} harnesses · {models} models · {activated} activated here', { providers, models: rows.length, activated });
-}
+const shortName = (provider) => String(provider?.label || provider?.id || '').replace(/ CLI$/, '');
+const action = (label, kind, onClick) => { const made = WorkspaceKit.primitives.createAction({ label, kind, action: onClick }); const out = made.el ?? made; out.classList.add('harness-action'); return out; };
+// Every service is an erabi stone (ask.js): `ask-opt ask-rect` with its name, in an `ask` row.
+const stone = (label, onClick, word = '') => {
+  const out = el('button', 'ask-opt ask-rect');
+  out.type = 'button';
+  out.append(el('span', 'ask-name', label));
+  if (word) out.append(el('small', 'ask-word', word));
+  out.addEventListener('click', () => { if (!out.disabled) onClick(); });
+  return out;
+};
+const stoneRow = () => { const row = el('div', 'ask setup-harness-row setup-harness-ways'); row.dataset.density = 'tight'; return row; };
 
 /** The recorded summary as a runtime: the record every reader takes, before any measure lands. */
 export const recordRuntime = () => {
@@ -74,117 +44,71 @@ export const recordRuntime = () => {
   const providers = Array.isArray(read.machine) ? read.machine : [];
   return {
     harnesses: providers,
-    activated_count: providers.filter((provider) => provider?.activated === true).length,
+    activated_count: providers.filter((provider) => provider?.activated === true || provider?.served === true).length,
     measured_at: read.measured_at || '',
     refreshed_at: read.refreshed_at || '',
   };
 };
+
+export const harnessFromRuntime = (runtime, key) => (Array.isArray(runtime?.harnesses) ? runtime.harnesses : []).find((provider) => provider?.id === key) || null;
+
+/* ---- the sign-in runs (src/harness-sign-in.ts), one reading for every panel and stone ---- */
+let signIn = { runs: [], failed: {}, ways: {} };
+let signInAsked = false;
+const signInListeners = new Set();
+const heardSignIn = (message) => { signIn = { runs: message.runs || [], failed: message.failed || {}, ways: message.ways || {} }; for (const fn of signInListeners) fn(); };
+signInHandlers.add(heardSignIn);
+const listenSignIn = (fn) => {
+  if (!signInAsked) { signInAsked = true; void request('/api/setup/sign-in', { cache: 'no-store' }).then((r) => { if (r.ok) heardSignIn(r.data); }); }
+  signInListeners.add(fn);
+  return () => signInListeners.delete(fn);
+};
+const runOf = (id) => signIn.runs.find((one) => one.provider === id) || null;
+
+/**
+ * THE STATE WORD (owner, 25 and 27 Nov 2026): one word per harness, on its stone and its panel alike. It names
+ * the state, not what to do. Active: its own sign-in or any model service gives it models.
+ */
+export function harnessState(provider) {
+  if (!provider) return '';
+  if (provider.install_open) return t('harness.installing', 'Installing');
+  if (!provider.installed) return t('harness.not_installed', 'Not installed');
+  if (provider.off) return t('harness.off', 'Off');
+  if (provider.login_open || runOf(provider.id)) return t('harness.signing_in', 'Signing in');
+  if (provider.activated || provider.served) return t('harness.active', 'Active');
+  return t('harness.no_service', 'No model service');
+}
 
 /** A catalog provider no registry CLI serves is a stone of its own, keyed by its vendor id. */
 const catalogOnly = (runtime) => {
   const known = new Set((runtime.harnesses || []).map((provider) => provider?.id));
   return (harnessCatalog().harnesses || []).filter((entry) => !known.has(entry.cli));
 };
+const modelCount = (vendor, n) => n === 1 ? t('setup_surface.provider_models_1', '{vendor} · 1 model', { vendor }) : t('setup_surface.provider_models_n', '{vendor} · {n} models', { vendor, n });
 
-/** THE STONES, one builder (owner, 2026-10-19): every CLI the runtime knows wearing its measured
- * state, then every catalog provider no CLI serves. The Settings surface, the Models workbench
- * and its selector cards all read this. */
+/** THE STONES, one builder: every CLI the runtime knows wearing its state word, then every catalog provider no
+ * CLI serves. The stones and the selector's cards read this. */
 export function harnessStones(runtime) {
   const rows = harnessCatalog().rows;
   const providers = (Array.isArray(runtime.harnesses) ? runtime.harnesses : []).filter((provider) => provider?.id);
-  const stoneOf = (id, label, secondary, state, activated, marker = null) => ({ id, label, secondary, state, marker, className: 'setup-provider-stone', attrs: { 'data-provider': id, 'data-activated': String(activated) } });
-  const items = [
+  const stoneOf = (id, label, secondary, state, active, marker = null) => ({ id, label, secondary, state, marker, className: 'setup-provider-stone', attrs: { 'data-provider': id, 'data-activated': String(active) } });
+  return [
     ...providers.map((provider) => {
       const own = rows.filter((row) => row.cli === provider.id);
       const vendor = own[0]?.provider_label || provider.from || '';
       const entry = (harnessCatalog().harnesses || []).find((candidate) => candidate.cli === provider.id);
-      return stoneOf(String(provider.id), provider.label || provider.id, own.length ? t('setup_surface.provider_models_n', '{vendor} · {n} models', { vendor, n: own.length }) : vendor, provider.id === 'hermes' ? (own.length ? 'Setups available' : 'Add a connection and setup') : harnessPresentation(provider).inventoryState, provider.activated === true, createStatusMarker(entry?.maturity));
+      return stoneOf(String(provider.id), shortName(provider), own.length ? modelCount(vendor, own.length) : vendor, harnessState(provider), provider.activated === true || provider.served === true, createStatusMarker(entry?.maturity));
     }),
     ...catalogOnly(runtime).map((entry) => ({
-      ...stoneOf(entry.provider, entry.label, entry.models.length ? t('setup_surface.provider_models_n', '{vendor} · {n} models', { vendor: entry.label, n: entry.models.length }) : '', entry.models.length ? t('setup_surface.no_cli_state', 'No CLI') : '', false, createStatusMarker(entry.maturity)),
+      ...stoneOf(entry.provider, entry.label, entry.models.length ? modelCount(entry.label, entry.models.length) : '', entry.models.length ? t('setup_surface.no_cli_state', 'No CLI') : '', false, createStatusMarker(entry.maturity)),
       disabled: entry.models.length === 0,
     })),
   ];
-  return items;
-}
-
-export function createHarnessesSurface(context) {
-  const out = WorkspaceKit.primitives.createSurface({ label: t('setup_surface.providers', 'Harnesses'), className: 'setup-surface setup-provider-surface' });
-  const notice = el('p', 'setup-fine setup-provider-notice'); notice.hidden = true;
-  const mikaAvailability = el('p', 'setup-fine setup-mika-availability');
-  let opened = String(context.detail?.provider || context.detail?.key || '');
-  let firstHarnessId = '';
-  let openFirstWhenReady = false;
-  const drawing = createHarnessDrawing(context, { repaint: () => repaint(), say: (text, bad) => say(text, bad) });
-  const stones = createPhalanx({
-    selectedId: opened,
-    className: 'setup-provider-stones',
-    renderDetail: (item, host) => drawing.paintHarness(item.id, host),
-    onSelectionChange: (id) => { opened = String(id || ''); if (!id) drawing.closed(); },
-  });
-  const controller = Object.freeze({
-    openFirst: () => {
-      if (firstHarnessId) stones.select(firstHarnessId, { focus: true });
-      else openFirstWhenReady = true;
-    },
-  });
-  context.environment?.onHarnessSurface?.(controller);
-  const refresh = createRefreshAll(drawing);
-  const zone = context.environment?.setupZones ? createSetupZone() : null;
-  /** Step 1 states one fact: whether any provider is Activated (integrations_authentications, KAN-768). */
-  const paintZone = (activated) => {
-    if (!zone) return;
-    // Ticked is the mark's own condition, so the zone and the card cannot disagree.
-    if (setupStep(context.environment, 'provider')?.answered) { zone.paint(); return; }
-    zone.paint(activated > 0
-      ? { state: 'Provider signed in and authenticated.', picks: [] }
-      : { state: 'No provider found on this machine.', picks: [{ label: 'Sign in a provider', action: () => controller.openFirst() }] });
-  };
-  stones.mount(out.content, { before: [...(zone ? [zone.el] : []), refresh.el], after: [mikaAvailability, notice] });
-  const say = (text, bad = false) => { notice.className = `${bad ? 'setup-notice bad' : 'setup-fine'} setup-provider-notice`; if (notice.textContent !== text) notice.textContent = text; notice.hidden = !text; };
-  /** The surface's frame from the drawing's runtime: the zone, the dates, the stones, the selector.
-   * Each part compares what it shows (KAN-414): the stones are the phalanx's kept rows, the zone's
-   * picks the kit list's, the selector's cards the Workbench's, and the lines write only on a change. */
-  const repaint = () => {
-    const runtime = drawing.runtime();
-    const activatedNow = Number(runtime.activated_count || 0);
-    paintZone(activatedNow);
-    refresh.paint();
-    mikaAvailability.hidden = activatedNow === 0;
-    const signedIn = activatedNow === 1
-      ? t('setup_surface.one_model_signed_in', '1 model signed in')
-      : activatedNow > 1 ? t('setup_surface.models_signed_in', '{count} models signed in', { count: activatedNow }) : '';
-    if (mikaAvailability.textContent !== signedIn) mikaAvailability.textContent = signedIn;
-    context.workbench?.refreshSelector?.();
-    const items = drawing.stones();
-    firstHarnessId = String(items[0]?.id || '');
-    say(items.length ? '' : t('setup_surface.no_catalog', 'No harnesses are in the catalog on this machine.'));
-    stones.setItems(items);
-    if (openFirstWhenReady && firstHarnessId) {
-      openFirstWhenReady = false;
-      stones.select(firstHarnessId, { focus: true });
-    }
-  };
-  const stopProgressRefresh = context.environment?.onSetupProgress?.(() => { void drawing.showRecord(); }) || (() => {});
-  return {
-    el: out.el,
-    show: async () => { await drawing.showRecord(); },
-    destroy: () => { stopProgressRefresh(); context.environment?.onHarnessSurface?.(null); drawing.destroy(); stones.destroy(); },
-  };
 }
 
 /**
- * REFRESH ALL — the one door that reads model lists (owner, 2026-09-25): every activated
- * CLI's own list, and the newest release of each, in one press. Never on a timer. The
- * line beside it says when it last ran, so the owner knows how fresh every list is.
- * Exported once (owner, 2026-10-20): Settings' provider surface and the Models workbench's
- * Model refresh surface press the same control over the same drawing; `paint()` is the
- * host's, called whenever the frame moves.
- */
-/**
- * ONE STEP, the shape every provider flow draws (the provider page's three, Model refresh's
- * three): a mark that says done, current, failed or its number; the label with its state
- * beside it; at most one short line; then its controls. `copy` takes any further lines.
+ * ONE STEP, the shape Refresh's steps draw: a mark that says done, current, failed or its number; the label
+ * with its state beside it; at most one short line; then its controls.
  */
 export function stepItem({ key, n, label, state = '', detail = '', status = '', done = false, current = false, failed = false }) {
   const item = el('li', 'setup-provider-step');
@@ -203,12 +127,9 @@ export function stepItem({ key, n, label, state = '', detail = '', status = '', 
 }
 
 /**
- * REFRESH ALL — one door, said as it runs: the CLIs' own model lists (and npm for their newest
- * releases). `onStep(key, state)` hears each step start and end (`lists` | `accounts`,
- * `running` | `done` | `failed`); a host that draws the steps listens.
+ * REFRESH ALL, the one press that reads model lists (owner, 2026-09-25): every activated CLI's own list and its
+ * newest release, then (`between`, KAN-236) each model service's list; never on a timer.
  */
-/** `between` (KAN-236): a step the Agent Harness workbench's Refresh runs after the harnesses — each
- * account's Discover; it resolves true when every account answered. Settings' surface passes none. */
 export function createRefreshAll(drawing, { onStep = () => {}, between = null } = {}) {
   const bar = el('div', 'setup-provider-refresh');
   const lastRan = el('p', 'setup-fine setup-provider-last-ran');
@@ -242,323 +163,20 @@ export function createRefreshAll(drawing, { onStep = () => {}, between = null } 
 }
 
 /**
- * THE PROVIDER DRAWING, exported once (owner, 2026-10-19): a provider's page — YOURS, the three
- * steps with the native sign-in tile, then THE CATALOG — and the frame read behind it (the record,
- * then any measure), drawn the same wherever a provider is read: the Settings and Setup surface
- * and the Models workbench call this. `repaint()` is the host's: it paints from `runtime()` and
- * `stones()` whenever the frame moves; `say(text, bad)` is the host's notice line.
+ * THE FRAME every harness surface reads: the record, then any measure. `repaint()` is the host's: it paints from
+ * `runtime()` and `stones()` whenever the frame moves; an open panel hears it too (`onFrame`).
  */
 export function createHarnessDrawing(context, { repaint, say = () => {} }) {
-  const action = (label, kind, onClick) => { const made = WorkspaceKit.primitives.createAction({ label, kind, action: onClick }); return made.el ?? made; };
-  const yesNo = (on) => (on ? t('setup_surface.yes', 'yes') : t('setup_surface.no', 'no'));
-  let alignedHarness = '';
-  let mounted = null;
   let runtime = { harnesses: [] };
-  const disposeMount = (destroy = true) => {
-    if (!mounted) return;
-    if (destroy) mounted.destroy?.(); else mounted.park?.();
-    mounted = null;
-  };
-  /** A path with the home directory folded to ~, for a line meant to be read. */
-  const homely = (path) => String(path || '').replace(/^\/home\/[^/]+|^\/Users\/[^/]+/, '~');
-  /**
-   * The Installed step's state: the version the CLI said and WHICH binary said it, then
-   * what Refresh last learned of the newest. The path is not decoration: a version without
-   * the file it came from let a correct reading look like a lie (2026-09-09).
-   */
-  const installedState = (provider) => {
-    // Not activated: nothing was asked of it, so there is nothing to say past Installed.
-    if (provider.activated !== true) return t('setup_surface.installed', 'Installed');
-    const version = provider.version || t('setup_surface.version_unknown', 'version not read');
-    const where = provider.path ? ' · ' + homely(provider.path) : '';
-    if (provider.latest) {
-      return (provider.update_available
-        ? t('setup_surface.installed_behind', 'Installed {version} · {latest} available', { version, latest: provider.latest })
-        : t('setup_surface.installed_current', 'Installed {version} · up to date', { version })) + where;
-    }
-    if (provider.askable === false) return t('setup_surface.installed_unaskable', 'Installed {version} · latest unknown: no package source to ask', { version }) + where;
-    return t('setup_surface.installed_version', 'Installed {version}', { version }) + where;
-  };
-  /* ---- 1 · YOURS: the three steps, exactly as the runtime row measures them ---- */
-  const paintYours = (provider, host) => {
-    const steps = harnessReadiness(provider);
-    const [install, auth, ready] = steps;
-    const card = el('article', 'setup-provider');
-    card.dataset.provider = provider.id;
-    const head = el('header', 'setup-provider-head');
-    head.append(el('h2', '', provider.label || provider.id));
-    if (provider.from) head.append(el('p', 'setup-provider-from', t('setup_surface.provider_from', 'From {vendor}', { vendor: provider.from })));
-    const flow = el('ol', 'setup-provider-steps');
-    // What the last press answered when it failed; the only way a server refusal is seen.
-    const problem = el('p', 'setup-notice bad setup-provider-problem'); problem.hidden = true;
-    const press = async (path, after = paint) => {
-      const result = await request(path, { method: 'POST', json: {} });
-      if (!result.ok) { problem.textContent = result.message; problem.hidden = false; return result; }
-      await after();
-      return result;
-    };
-    const closeSetup = () => {
-      const button = action(t('setup_surface.cancel', 'Cancel'), '', async () => {
-        button.disabled = true;
-        const path = `/api/setup/harnesses/${encodeURIComponent(provider.id)}/close`;
-        await press(path);
-        button.disabled = false;
-      });
-      button.dataset.endsEdit = '';
-      button.classList.add('setup-provider-action');
-      return button;
-    };
-    const completion = el('section', 'setup-provider-completion'); completion.hidden = true;
-    const finish = (path) => {
-      if (!completion.hidden) return;
-      completion.hidden = false;
-      // Done, right under the terminal (KAN-723). It records nothing but the sign-in itself: the
-      // CLI's own credentials are the record (owner, 24 Nov 2026: one CLI, one sign-in way).
-      const submit = action(t('setup_surface.done', 'Done'), 'primary', async () => {
-        submit.disabled = true;
-        const result = await request(path, { method: 'POST', json: {} });
-        if (!result.ok) { problem.textContent = result.message; problem.hidden = false; submit.disabled = false; return; }
-        mounted?.park?.();
-        await paint();
-        context.environment?.onHarnessChoice?.();
-      });
-      submit.dataset.endsEdit = '';
-      submit.classList.add('setup-provider-done');
-      const actions = el('div', 'setup-provider-completion-actions');
-      actions.append(submit, closeSetup());
-      completion.append(actions);
-    };
-    // One shape for all three steps: a mark that says done, current, or pending; the label
-    // with its measured state beside it; at most one short line; then a control of one size.
-    // Only the current step's control is the kaki primary.
-    const stepRow = (step, state) => {
-      const made = stepItem({ ...step, n: steps.indexOf(step) + 1, state });
-      if (step.command) made.copy.append(el('code', 'setup-provider-command', step.command));
-      flow.append(made.item);
-      return made;
-    };
-    const control = (step, label, onClick) => {
-      const made = action(label, step.current ? 'primary' : '', onClick);
-      made.classList.add('setup-provider-action');
-      return made;
-    };
-    // Only the current step owns a control. A done step is a quiet fact and a waiting
-    // step says what it waits for; neither carries a dead button.
-    const installRow = stepRow(install, install.status === 'installed'
-      ? installedState(provider)
-      : install.action === 'manual' ? t('setup_surface.manual_install', 'Manual install') : t('setup_surface.not_installed', 'Not installed'));
-    // Every step's text — the update running, the line Update runs, "usually updates
-    // itself", the switch's sentence — is the step's own `detail`/`command`, painted by
-    // stepRow in the text column. Nothing is appended to the grid but a terminal.
-    // Install and update share the same attachment and Close as sign-in. They open in the
-    // page exactly as a sign-in does: a temporary provider_setup session, mounted here, and
-    // the same Close ends it. Not the kaki primary (that is the current step's), so the
-    // label carries the news instead. A sign-in that is open owns the one attachment.
-    if ((provider.install_open || provider.update_open) && !provider.login_open) {
-      const terminal = el('div', 'setup-provider-terminal');
-
-      if (!provider.install_open) {
-        const close = closeSetup();
-        close.classList.add('setup-provider-update-close');
-        installRow.item.append(terminal, close);
-      }
-      if (provider.install_open) installRow.item.append(terminal);
-      if (provider.install_open) {
-        finish(`/api/setup/harnesses/${encodeURIComponent(provider.id)}/done`);
-        installRow.item.append(completion);
-      }
-      mounted = mountHarnessAttachment(context.environment, terminal, provider, context.workspace);
-      if (!mounted) terminal.append(el('p', 'setup-notice bad', t('setup_surface.login_attachment_missing', 'The native setup session is open but its terminal attachment is unavailable.')));
-    // Update is useful only when there is somewhere newer to move AND the provider is
-    // usable. Otherwise the row already says the complete fact: up to date, or not signed in.
-    } else if (install.status === 'installed' && provider.activated && provider.updatable && provider.update_available) {
-      const label = t('setup_surface.update_to', 'Update to {latest}', { latest: provider.latest });
-      const update = action(label, '', async () => {
-        update.disabled = true;
-        update.textContent = t('setup_surface.update_starting', 'Starting…');
-        const result = await request(`/api/setup/harnesses/${encodeURIComponent(provider.id)}/update`, { method: 'POST', json: {} });
-        if (!result.ok) {
-          problem.textContent = result.message;
-          problem.hidden = false;
-          update.textContent = label;
-          update.disabled = false;
-          return;
-        }
-        await paint();
-      });
-      update.classList.add('setup-provider-action', 'setup-provider-update');
-      installRow.controls.append(update);
-    }
-    if (install.current && install.action === 'manual' && install.manual) {
-      const link = el('a', 'wk-action setup-provider-action setup-provider-manual', install.manual.label);
-      link.href = install.manual.url; link.target = '_blank'; link.rel = 'noopener noreferrer';
-      installRow.controls.append(link);
-    } else if (install.current && install.action === 'install' && provider.installable && !provider.install_open) {
-      const installButton = control(install, t('setup_surface.install', 'Install'), async () => {
-        installButton.disabled = true;
-        const result = await request(`/api/setup/harnesses/${encodeURIComponent(provider.id)}/install`, { method: 'POST', json: {} });
-        if (!result.ok) { problem.textContent = result.message; problem.hidden = false; installButton.disabled = false; return; }
-        runtime = result.data.runtime;
-        await paintFrom();
-      });
-      installRow.controls.append(installButton);
-    }
-    const authRow = stepRow(auth, auth.status === 'recorded'
-      ? t('setup_surface.signed_in', 'Signed in')
-      : auth.status === 'open' ? t('setup_surface.sign_in_open', 'Sign-in open')
-        : auth.status === 'available' ? t('setup_surface.not_signed_in', 'Not signed in') : t('setup_surface.install_first', 'After install'));
-    if (auth.current && auth.action !== 'login_open' && !provider.install_open) {
-      const assisted = typeof context.environment?.onMikaHarnessGuide === 'function'
-        && typeof context.environment?.onMikaHarnessConnect === 'function';
-      if (assisted) {
-        const irasshai = context.environment.assistName?.() === IRASSHAI_NAME;
-        const operate = control(auth, irasshai ? t('setup_surface.authenticate_irasshai', 'Let the Helpful Assistant authenticate') : t('setup_surface.authenticate_mika', 'Let Mika authenticate'), () => context.environment.onMikaHarnessConnect({ provider, workspace: context.workspace }));
-        const guide = action(irasshai ? t('setup_surface.authenticate_guided_irasshai', 'Use the CLI with the Helpful Assistant') : t('setup_surface.authenticate_guided', 'Use the CLI with Mika'), '', async () => {
-          guide.disabled = true;
-          const result = await press(`/api/setup/harnesses/${encodeURIComponent(provider.id)}/login`);
-          if (result?.ok) await context.environment.onMikaHarnessGuide({ provider, setupSession: result.data?.attachment?.key || `provider_setup_${provider.id}`, workspace: context.workspace });
-          guide.disabled = false;
-        });
-        guide.classList.add('setup-provider-action');
-        authRow.controls.append(operate, guide);
-      } else {
-        authRow.controls.append(control(auth, t('setup_surface.authenticate', 'Authenticate'), () => press(`/api/setup/harnesses/${encodeURIComponent(provider.id)}/login`)));
-      }
-    } else if (auth.action === 'login_open') {
-      const terminal = el('div', 'setup-provider-terminal');
-      finish(`/api/setup/harnesses/${encodeURIComponent(provider.id)}/done`);
-      authRow.item.append(terminal, completion);
-      mounted = mountHarnessAttachment(context.environment, terminal, provider, context.workspace);
-      if (!mounted) terminal.append(el('p', 'setup-notice bad', t('setup_surface.login_attachment_missing', 'The native setup session is open but its terminal attachment is unavailable.')));
-    }
-    // THE SWITCH lives on the Ready step. Activated: Turn off, with the sentence that says
-    // exactly what it does and does not do. Off: Turn on. Neither touches a sign-in or a
-    // running tile, and both say so where the owner presses (owner, 2026-09-09).
-    const readyRow = stepRow(ready, ready.status === 'ready' ? t('setup_surface.ready_launch', 'Activated for Launch')
-      : ready.status === 'off' ? t('setup_surface.off', 'Off') : t('setup_surface.not_ready', 'Not yet'));
-    if (ready.status === 'ready') {
-      const turnOff = action(t('setup_surface.turn_off', 'Turn off'), '', () => press(`/api/setup/harnesses/${encodeURIComponent(provider.id)}/off`));
-      turnOff.classList.add('setup-provider-action', 'setup-provider-turn-off');
-      readyRow.controls.append(turnOff);
-    } else if (ready.status === 'off') {
-      const turnOn = control(ready, t('setup_surface.turn_on', 'Turn on'), () => press(`/api/setup/harnesses/${encodeURIComponent(provider.id)}/on`));
-      turnOn.classList.add('setup-provider-turn-on');
-      readyRow.controls.append(turnOn);
-    }
-    card.append(head, flow);
-    card.append(problem);
-    host.append(card);
-  };
-
-  /* ---- 2 · MODELS: what the CLI listed on the last Refresh all, with HQ's tier and line ---- */
-  /** The one line about a provider's list: when it was read and by which CLI version, or why there is none. */
-  const listState = (entry) => {
-    if (!entry?.activated) return '';
-    const list = entry.model_list;
-    if (!list) return t('setup_surface.models_not_read', 'Model list not read yet — press Refresh all harnesses.');
-    if (list.unavailable) return list.unavailable;
-    return t('setup_surface.models_read', 'Model list read {date} by {cli} {version}', { date: list.read_at, cli: entry.label || entry.id, version: list.by || '' }).trim();
-  };
-  // `models`: the two-tier picker (harness-model-entries.js) in place of the plain model table.
-  const paintCatalog = (rows, entry, host, label = '', { facts: withFacts = true, models = null } = {}) => {
-    const section = el('section', 'setup-provider-catalog');
-    section.append(el('h3', 'setup-provider-eyebrow', label || t('setup_surface.section_models', 'Models')));
-    if (!withFacts) return paintModels(rows, section, host);
-    const facts = el('dl', 'setup-provider-facts');
-    for (const [label, on] of [
-      [t('setup_surface.fact_installed', 'Installed'), entry?.installed === true],
-      [t('setup_surface.fact_signed_in', 'Signed in'), entry?.signed_in === true],
-      [t('setup_surface.fact_activated', 'Activated'), entry?.activated === true],
-    ]) { const fact = el('div'); fact.dataset.on = String(on); fact.append(el('dt', null, label), el('dd', null, yesNo(on))); facts.append(fact); }
-    section.append(facts);
-    const state = listState(entry);
-    if (state) section.append(el('p', 'setup-fine setup-provider-list-state', state));
-    if (models) { section.append(models); host.append(section); return; }
-    paintModels(rows, section, host);
-  };
-  /** The model table under a provider's page; the section is the caller's, appended to host here. */
-  const paintModels = (rows, section, host) => {
-    if (!rows.length) { section.append(el('p', 'setup-fine', t('setup_surface.no_models', 'The catalog lists no models for this harness.'))); host.append(section); return; }
-    const table = el('table', 'setup-provider-models');
-    const headRow = el('tr');
-    for (const text of [t('setup_surface.col_model', 'Model'), t('setup_surface.col_tier', 'Tier')]) headRow.append(el('th', null, text));
-    const thead = el('thead'); thead.append(headRow);
-    const body = el('tbody');
-    for (const row of rows) {
-      const line = el('tr');
-      line.dataset.model = row.model; line.dataset.tier = row.tier;
-      // Two names, both read: the CLI's own name in bold (the version is in it), and the id
-      // every launch uses beneath — the owner can tell Opus 5.5 from Opus 5 at a glance.
-      const name = el('td'); name.append(el('b', null, modelLabel(row)));
-      if (row.default) name.append(el('span', 'setup-provider-default', t('setup_surface.model_default_mark', 'the default')));
-      // A Ronin Gateway tier option (model `light`, tier light) is its name already; so is an id equal to it.
-      if (row.model !== 'native' && row.model !== row.tier && row.model !== modelLabel(row)) name.append(el('span', 'setup-provider-model-id', row.model));
-      if (row.model === 'native') name.append(el('span', 'setup-provider-default', t('setup_surface.native_description', 'The CLI chooses its own configured or current default model.')));
-      // The tier, and beneath it the model's own line from HQ's catalog: which is which, at a glance.
-      const tier = el('td'); tier.append(el('span', 'setup-provider-tier', tierWord(row.tier)));
-      if (row.model !== 'native' && row.use_for) tier.append(el('span', 'setup-provider-use-for', row.use_for));
-      line.append(name, tier);
-      body.append(line);
-    }
-    table.append(thead, body);
-    const scroll = el('div', 'setup-provider-table'); scroll.append(table);
-    section.append(scroll);
-    host.append(section);
-  };
-
-  const paintHarness = (id, host) => {
-    const provider = harnessFromRuntime(runtime, id);
-    const rows = harnessCatalog().rows.filter((row) => (provider ? row.cli === provider.id : row.provider === id));
-    if (!provider && !rows.length) { host.append(el('p', 'setup-notice bad', t('setup_surface.provider_missing', 'This harness is no longer in the harness catalog.'))); return null; }
-    // Hermes has no sign-in of its own: it runs on a model service, so its page is only Models.
-    const harness = harnessCatalog().harnesses.find(entry => entry.cli === id);
-    const openServices = (tab) => context.environment?.openModelServices ? context.environment.openModelServices(tab, context.workspace) : openWorkbenchTab(modelServicePageRequest(tab));
-    const editor = harness && harnessModelEditor(harnessCatalog(), harness, openServices);
-    if (id === 'hermes') {
-      if (editor) {
-        const models = el('section', 'setup-provider-catalog');
-        models.append(el('h3', 'setup-provider-eyebrow', t('setup_surface.section_models', 'Models')), editor.el);
-        host.append(models);
-      }
-      return () => { editor?.destroy(); };
-    }
-    const yours = el('section', 'setup-provider-yours');
-    yours.append(el('h3', 'setup-provider-eyebrow', t('setup_surface.section_yours', 'Yours')));
-    if (provider) paintYours(provider, yours);
-    else {
-      yours.append(el('h2', '', rows[0].provider_label), el('p', 'setup-fine', t('setup_surface.no_cli', 'No CLI in Ronin’s registry serves this harness, so it cannot be installed or signed in here.')));
-    }
-    host.append(yours);
-    paintCatalog(rows, provider, host, '', { models: editor?.el });
-    if (alignedHarness !== id) {
-      alignedHarness = id;
-      requestAnimationFrame(() => {
-        if (!host.isConnected || alignedHarness !== id) return;
-        const current = host.querySelector('.setup-provider-step[data-current="true"]');
-        host.scrollTop = current
-          ? host.scrollTop + current.getBoundingClientRect().top - host.getBoundingClientRect().top
-          : 0;
-      });
-    }
-    return () => { editor?.destroy(); disposeMount(); };
-  };
-
-  /** The frame from whatever `runtime` holds now: the record, or the measure once it lands.
-   * The open page's terminal and sign-in form are not torn down here: the page's own dispose
-   * does that when the phalanx redraws it, and a frame that leaves its stone's row unchanged
-   * (KAN-414) leaves the page, its live sign-in tile and any draft standing (KAN-472). */
+  const frames = new Set();
   const paintFrom = async () => {
-    context.environment.setupRuntime = runtime;
-    context.environment.onSetupRuntime?.(runtime);
+    if (context.environment) context.environment.setupRuntime = runtime;
+    context.environment?.onSetupRuntime?.(runtime);
     await repaint();
+    for (const fn of frames) fn();
   };
-  /** The first frame: the recorded summary, through the one picker's read, at once. */
-  const showRecord = async () => {
-    await loadHarnessCatalog();
-    runtime = recordRuntime();
-    await paintFrom();
-  };
-  /** Refresh all is the owner's press; a plain repaint reads the record. */
+  const showRecord = async () => { await loadHarnessCatalog(); runtime = recordRuntime(); await paintFrom(); };
+  /** Refresh all is the owner's press; a plain measure reads the record the server holds. */
   const measure = async (refresh = false) => {
     const result = refresh ? await request('/api/setup/harnesses/refresh', { method: 'POST', json: {} }) : await request('/api/setup/runtime', { cache: 'no-store' });
     if (!result.ok) { say(result.message, true); return false; }
@@ -567,18 +185,344 @@ export function createHarnessDrawing(context, { repaint, say = () => {} }) {
     await paintFrom();
     return true;
   };
-  /** After a press: repaint the record; Setup progress performs any completion scan. */
   const paint = async (refresh = false) => { await showRecord(); return measure(refresh); };
-  // Back from a browser sign-in: while a sign-in is open, coming back to this tab reads the
-  // runtime once, so the step can say the CLI is signed in (KAN-723). No timer.
+  // Back from a browser sign-in: coming back to this tab reads the runtime once while one is open (KAN-723). No timer.
   const onFocus = () => { if (runtime.harnesses?.some((row) => row.login_open)) void measure(); };
   window.addEventListener('focus', onFocus);
-  return {
-    paintHarness, paint, showRecord, measure,
-    /** The open page is gone: the next one scrolls to its current step afresh. */
-    closed: () => { alignedHarness = ''; },
+  const api = {
+    paint, showRecord, measure,
     runtime: () => runtime,
     stones: () => harnessStones(runtime),
-    destroy: () => { window.removeEventListener('focus', onFocus); disposeMount(); },
+    onFrame: (fn) => { frames.add(fn); return () => frames.delete(fn); },
+    paintHarness: (id, host, options = {}) => mountHarnessPanel(host, id, { drawing: api, context, ...options }),
+    destroy: () => { window.removeEventListener('focus', onFocus); frames.clear(); },
+  };
+  return api;
+}
+
+/** What Turn off does and does not do, said where it is pressed. */
+const TURN_OFF_SENTENCE = () => t('harness.turn_off_line', 'Turn off stops Ronin measuring, updating and launching it. Tiles already running are not touched, and every sign-in is kept.');
+/** Hermes keeps no sign-in of its own: it runs only on model services, so it has no Terminal. */
+const NO_TERMINAL = new Set(['hermes']);
+
+/**
+ * ONE HARNESS'S PANEL, drawn into `host`; returns its dispose. `openAgent()` is the place's: where the Helpful
+ * Assistant opens when a sign-in she helps with starts.
+ */
+export function mountHarnessPanel(host, id, { drawing, context = {}, openAgent = () => {} } = {}) {
+  const card = el('article', 'harness-panel');
+  card.dataset.provider = id;
+  host.append(card);
+  const base = `/api/setup/harnesses/${encodeURIComponent(id)}`;
+  const drafts = new Map();
+  let switching = '';
+  let problem = '';
+  let terminalHost = null;
+  let mounted = null;
+  let mountedKey = '';
+  let editor = null;
+  let disposed = false;
+  const openServices = (tab) => (context.environment?.openModelServices
+    ? context.environment.openModelServices(tab, context.workspace)
+    : openWorkbenchTab(modelServicePageRequest(tab)));
+  const tellHer = (text) => { if (irasshaiIn(S.sessions)) void sendPress(IRASSHAI, text); };
+  const press = async (path, json = {}) => {
+    const result = await request(path, { method: 'POST', json });
+    if (!result.ok) { problem = result.message; paint(); return result; }
+    problem = '';
+    await drawing.measure();
+    return result;
+  };
+  const catalogEntry = () => (harnessCatalog().harnesses || []).find((entry) => entry.cli === id) || null;
+  const newEditor = () => {
+    editor?.destroy();
+    const entry = catalogEntry();
+    // One API key per harness (owner, 27 Nov 2026): its own key login where it has one, else a key in the vault.
+    const own = harnessFromRuntime(drawing.runtime(), id)?.direct_sign_in === true;
+    editor = entry ? harnessModelEditor(harnessCatalog(), entry, openServices, { skip: own ? ['private_api'] : [] }) : null;
+    editor?.onChange(() => { if (!disposed) paint(); });
+  };
+
+  /** The one terminal on the panel: the sign-in, install or update session, kept across repaints. */
+  const terminalFor = (provider) => {
+    const key = provider.attachment?.key || '';
+    if (mounted && mountedKey === key) return terminalHost;
+    stopCopy(); copyRow = null;
+    mounted?.destroy?.();
+    terminalHost = el('div', 'setup-harness-terminal');
+    mountedKey = key;
+    const environment = context.environment;
+    mounted = key && typeof environment?.mountHarnessSetupSession === 'function'
+      ? environment.mountHarnessSetupSession({ host: terminalHost, provider, session: key, workspace: context.workspace, onClosed: () => { mounted = null; mountedKey = ''; } })
+      : null;
+    if (!mounted) terminalHost.append(el('p', 'setup-harness-line bad', t('harness.no_terminal', 'The terminal is open but cannot be shown here.')));
+    return terminalHost;
+  };
+  const dropTerminal = () => { stopCopy(); mounted?.destroy?.(); mounted = null; mountedKey = ''; terminalHost = null; copyRow = null; };
+
+  /* UNDER A SIGN-IN TERMINAL (owner, 27 Nov 2026): Copy code, Copy link and Go Back, from what the screen shows.
+   * Read only, but for the go-back key the screen names, sent for the person. A link the CLI hides until asked
+   * waits for the person to show it in the terminal. What was seen stays: a code that leaves the screen when the
+   * URL is shown is still the code. */
+  // A device code as sign-ins print it: two groups of four or five letters and digits (9Q3Z-9V69).
+  const CODE = /\b[A-Z0-9]{4,5}-[A-Z0-9]{4,5}\b/g;
+  const LINK = /https:\/\/[^\s<>"'│]+/g;
+  // The key the screen names for going back ("esc go back", "ctrl+b back").
+  const BACK = /\b(esc|ctrl\+[a-z])\s+(?:to\s+)?(?:go\s+)?back\b/i;
+  const keyOf = (name) => (name.toLowerCase() === 'esc' ? '\x1b' : String.fromCharCode(name.toLowerCase().charCodeAt(5) - 96));
+  const last = (text, pattern) => (text.match(pattern) || []).pop() || '';
+  let copyRow = null;
+  let stopCopy = () => {};
+  const copyStones = () => {
+    if (copyRow) return copyRow;
+    copyRow = el('div', 'ask setup-harness-row setup-harness-ways harness-terminal-stones'); copyRow.dataset.density = 'tight';
+    const said = el('p', 'setup-fine'); said.hidden = true;
+    let seen = { code: '', link: '', back: '' };
+    const copy = (value) => { void navigator.clipboard?.writeText(value).then(() => { said.textContent = t('setup_harness.copied', 'Copied.'); said.hidden = false; }, () => {}); };
+    const paintCopy = () => {
+      const code = stone(t('harness.copy_code', 'Copy code'), () => { if (seen.code) copy(seen.code); }, seen.code || t('harness.no_code', 'No code yet'));
+      code.disabled = !seen.code;
+      const link = stone(t('harness.copy_link', 'Copy link'), () => { if (seen.link) copy(seen.link); });
+      link.disabled = !seen.link;
+      const stones = [code, link];
+      if (seen.back) stones.push(stone(t('harness.go_back', 'Go Back'), () => { mounted?.send?.(keyOf(seen.back)); }));
+      // No link on screen yet: the person shows it in the terminal themselves (owner, 27 Nov 2026).
+      if (!seen.link) stones.push(el('p', 'setup-fine harness-terminal-note', t('harness.click_for_url', 'Note: click in the terminal to show the URL.')));
+      copyRow.replaceChildren(...stones, said);
+    };
+    const scan = () => {
+      const text = mounted?.screenText?.() || '';
+      const next = { code: last(text, CODE) || seen.code, link: last(text, LINK) || seen.link, back: text.match(BACK)?.[1] || '' };
+      if (next.code === seen.code && next.link === seen.link && next.back === seen.back) return;
+      seen = next;
+      paintCopy();
+    };
+    paintCopy();
+    scan();
+    stopCopy = mounted?.onOutput?.(scan) || (() => {});
+    return copyRow;
+  };
+
+  /** What the person must do now in a sign-in run, from what the CLI printed. */
+  const runWindow = (provider, run) => {
+    const box = el('div', 'setup-harness-window');
+    const line = run.paste === 'key' ? t('setup_harness.paste_key', 'Paste your API key. It goes straight to {cli}.', { cli: shortName(provider) })
+      : run.paste === 'code' ? t('setup_harness.paste_code', 'Open the link, sign in, and paste the code it gives you here.')
+        : t('setup_harness.enter_code', 'Open the link, sign in, and enter this code.');
+    box.append(el('p', 'setup-harness-line', run.sent ? t('setup_harness.sent', 'Sent. Finishing the sign-in…') : line));
+    if (run.link) { const link = el('a', 'setup-harness-link', run.link.replace(/^https:\/\//, '').replace(/[?#].*$/, '')); link.href = run.link; link.target = '_blank'; link.rel = 'noopener noreferrer'; box.append(link); }
+    if (run.code) box.append(el('span', 'setup-harness-code', run.code));
+    const row = el('div', 'ask setup-harness-row'); row.dataset.density = 'tight';
+    if (run.code) row.append(stone(t('setup_harness.copy', 'Copy'), () => { void navigator.clipboard?.writeText(run.code).catch(() => {}); }));
+    if (run.paste && !run.sent) {
+      const input = el('input', 'setup-harness-input');
+      input.type = run.paste === 'key' ? 'password' : 'text';
+      input.autocomplete = 'off';
+      input.placeholder = run.paste === 'key' ? t('setup_harness.key_hint', 'API key') : t('setup_harness.code_hint', 'Code');
+      input.value = drafts.get(run.provider) || '';
+      input.addEventListener('input', () => drafts.set(run.provider, input.value));
+      const send = stone(t('setup_harness.send', 'Send'), async () => {
+        send.disabled = true;
+        const result = await request(`${base}/sign-in/paste`, { method: 'POST', json: { text: input.value } });
+        if (result.ok) { drafts.delete(run.provider); tellHer(`${shortName(provider)} · Sent the ${run.paste}`); } else send.disabled = false;
+      });
+      input.addEventListener('keydown', (event) => { if (event.key === 'Enter') send.click(); });
+      row.append(input, send);
+    }
+    row.append(stone(t('setup_harness.cancel', 'Cancel'), async () => { const r = await request(`${base}/sign-in/cancel`, { method: 'POST', json: {} }); if (r.ok) tellHer(`${shortName(provider)} · Cancel sign-in`); }));
+    box.append(row);
+    return box;
+  };
+
+  /** A terminal on the panel with what ends it: Done records the sign-in (it re-measures), Cancel ends it. */
+  /** What ends a terminal: Done records the sign-in (it re-measures), Cancel ends it. */
+  const doneStone = () => stone(t('setup_surface.done', 'Done'), async () => { const r = await press(`${base}/done`); if (r.ok) mounted?.park?.(); });
+  const cancelStone = (provider) => stone(t('setup_surface.cancel', 'Cancel'), async () => { const r = await press(`${base}/close`); if (r.ok) tellHer(`${shortName(provider)} · Close sign-in`); });
+  const terminalWindow = (provider, { line = '', done = true, copy = false } = {}) => {
+    const box = el('div', 'setup-harness-window');
+    if (line) box.append(el('p', 'setup-harness-line', line));
+    box.append(terminalFor(provider));
+    // One line under the terminal: what the screen offers (Copy code, Copy link, its key) at the start, and
+    // what ends it (Done, Cancel) at the end.
+    // A sign-in's Done and Cancel stand in the service row where Terminal was (owner, 27 Nov 2026); under the
+    // terminal, what its screen offers. An install or update keeps its ends here.
+    if (copy) { if (mounted) box.append(copyStones()); return box; }
+    const row = el('div', 'ask setup-harness-row setup-harness-ways'); row.dataset.density = 'tight';
+    if (done) row.append(doneStone());
+    row.append(cancelStone(provider));
+    box.append(row);
+    return box;
+  };
+
+  /* ---- MODEL SERVICES, part 1: the row of services, signing in where one needs it ---- */
+  const servicesPart = (provider) => {
+    const part = el('section', 'harness-panel-part');
+    part.append(el('h3', 'setup-provider-eyebrow', t('harness.model_services', 'Model services')));
+    const run = runOf(id);
+    const cli = shortName(provider);
+    // Signed in on its own already: a new in-harness sign-in signs out every Agent on it (owner, w994).
+    const signedIn = provider.signed_in === true;
+    const current = signIn.ways[id] || '';
+    const warnFirst = (key, go) => () => {
+      if (signedIn && switching !== key) { switching = key; paint(); return; }
+      switching = '';
+      void go();
+    };
+    const start = (way) => async () => {
+      openAgent();
+      const result = await request(`${base}/sign-in`, { method: 'POST', json: { way, tell: IRASSHAI } });
+      if (!result.ok) { problem = result.message; paint(); return; }
+      problem = '';
+      void sendPress(IRASSHAI, `${cli} · Sign in with ${way === 'api_key' ? 'API key' : 'subscription'}`);
+    };
+    const row = stoneRow();
+    if (provider.direct_sign_in) {
+      const sub = stone(t('harness.subscription', 'Subscription'), warnFirst('subscription', start('subscription')));
+      sub.setAttribute('aria-selected', String(current === 'subscription'));
+      const key = stone(t('harness.api_key', 'API key'), warnFirst('api_key', start('api_key')));
+      key.setAttribute('aria-selected', String(current === 'api_key'));
+      if (run) { sub.disabled = true; key.disabled = true; }
+      row.append(sub, key);
+    }
+    if (editor) row.append(...editor.stones());
+    if (!NO_TERMINAL.has(id) && provider.login_open && !run) row.append(doneStone(), cancelStone(provider));
+    else if (!NO_TERMINAL.has(id)) {
+      // Terminal: the harness's own sign-in by hand, the backup to the others (owner, 27 Nov 2026).
+      const terminal = stone(t('harness.terminal', 'Terminal'), warnFirst('terminal', async () => {
+        const result = await press(`${base}/login`);
+        if (result.ok) tellHer(`${cli} · Terminal`);
+      }), row.children.length ? t('harness.backup', 'Backup') : ''); // the only way is no one's backup
+      terminal.setAttribute('aria-selected', 'false');
+      if (run) terminal.disabled = true;
+      row.append(terminal);
+    }
+    part.append(el('p', 'setup-harness-line', t('harness.services_line', 'Choose how {cli} gets its models. Sign in where a service needs it.', { cli })), row);
+    if (run) part.append(runWindow(provider, run));
+    else if (provider.login_open) part.append(terminalWindow(provider, { line: provider.sign_in_how || '', copy: true }));
+    const said = switching
+      ? t('harness.signed_in_already', 'Signing in again signs out every {cli} Agent until you finish. Press it again to go ahead.', { cli })
+      : current === 'subscription' ? t('harness.on_subscription', 'Signed in with your subscription.')
+        : current === 'api_key' ? t('harness.on_api_key', 'Signed in with an API key.')
+          : signedIn ? t('harness.signed_in', 'Signed in on this office.') : '';
+    if (said && !run && !provider.login_open) part.append(el('p', 'setup-harness-line', said));
+    const failed = signIn.failed[id] || '';
+    if (failed && !run) part.append(el('p', 'setup-harness-line bad', failed));
+    return part;
+  };
+
+  /* ---- MODEL SERVICES, part 2: the model entries of each service that is on ---- */
+  const entriesPart = () => {
+    const part = el('section', 'harness-panel-part');
+    part.append(el('h3', 'setup-provider-eyebrow', t('harness.model_entries', 'Model entries')));
+    if (editor) part.append(editor.entries);
+    else part.append(el('p', 'setup-fine', t('setup_surface.no_models', 'The catalog lists no models for this harness.')));
+    return part;
+  };
+
+  /** Install, or the installer open; then Update when a newer release is there, or the update open. */
+  const installPart = (provider) => {
+    const part = el('section', 'harness-panel-part');
+    if (provider.install_open) { part.append(terminalWindow(provider, { line: t('harness.install_open', 'Finish the installation in the terminal, then press Done.') })); return part; }
+    if (!provider.installed) {
+      const command = String(provider.install || '').trim();
+      if (command) part.append(el('code', 'setup-provider-command', command));
+      if (provider.installable) part.append(action(t('setup_surface.install', 'Install'), 'primary', () => press(`${base}/install`)));
+      else {
+        if (provider.blocked) part.append(el('p', 'setup-harness-line', provider.blocked));
+        const guide = id === 'hermes' ? 'https://github.com/NousResearch/hermes-agent/blob/main/website/docs/reference/cli-commands.md' : '';
+        if (guide) { const link = el('a', 'wk-action harness-action', t('harness.install_guide', 'Install guide')); link.href = guide; link.target = '_blank'; link.rel = 'noopener noreferrer'; part.append(link); }
+      }
+      return part;
+    }
+    if (provider.update_open) { part.append(terminalWindow(provider, { done: false, line: t('harness.update_open', 'Updating: when it has printed the new version, press Cancel. Tiles already running keep their version.') })); return part; }
+    if (provider.activated && provider.updatable && provider.update_available && provider.latest) {
+      part.append(action(t('setup_surface.update_to', 'Update to {latest}', { latest: provider.latest }), '', () => press(`${base}/update`)));
+      return part;
+    }
+    return null;
+  };
+
+  const paint = () => {
+    if (disposed) return;
+    const provider = harnessFromRuntime(drawing.runtime(), id);
+    const entry = catalogEntry();
+    const head = el('header', 'harness-panel-head');
+    const title = el('div', 'harness-panel-title');
+    title.append(el('h2', '', provider ? shortName(provider) : entry?.label || id));
+    const from = provider?.from || entry?.label || '';
+    if (from && provider) title.append(el('p', 'setup-provider-from', t('setup_surface.provider_from', 'From {vendor}', { vendor: from })));
+    head.append(title);
+    if (provider) head.append(el('span', 'harness-panel-state', harnessState(provider)));
+    const parts = [head];
+    if (!provider) {
+      parts.push(el('p', 'setup-fine', entry ? t('setup_surface.no_cli', 'No CLI in Ronin’s registry serves this harness, so it cannot be installed or signed in here.') : t('setup_surface.provider_missing', 'This harness is no longer in the harness catalog.')));
+      card.replaceChildren(...parts);
+      return;
+    }
+    const install = installPart(provider);
+    if (install) parts.push(install);
+    if (provider.off) {
+      const part = el('section', 'harness-panel-part');
+      part.append(el('p', 'setup-harness-line', t('harness.off_line', 'Turned off: Ronin is not using {cli}. Every sign-in is kept.', { cli: shortName(provider) })),
+        action(t('setup_surface.turn_on', 'Turn on'), 'primary', () => press(`${base}/on`)));
+      parts.push(part);
+    } else if (provider.installed && !provider.install_open) {
+      parts.push(servicesPart(provider), entriesPart());
+      const part = el('section', 'harness-panel-part');
+      part.append(el('p', 'setup-fine', TURN_OFF_SENTENCE()), action(t('setup_surface.turn_off', 'Turn off'), '', () => press(`${base}/off`)));
+      parts.push(part);
+    }
+    if (problem) parts.push(el('p', 'setup-harness-line bad', problem));
+    if (!provider.login_open && !provider.install_open && !provider.update_open && mounted) dropTerminal();
+    card.replaceChildren(...parts);
+    // The terminal was made before the panel was on the page: fit it to its box once it is, so the CLI draws
+    // at the size it is shown, not at whatever it guessed.
+    if (mounted) requestAnimationFrame(() => { if (!disposed) mounted?.fit?.(); });
+  };
+
+  newEditor();
+  // A run that ended has signed in or not: read the record again, which repaints.
+  let running = Boolean(runOf(id));
+  const stopSignIn = listenSignIn(() => {
+    const now = Boolean(runOf(id));
+    if (running && !now) void drawing.measure();
+    running = now;
+    paint();
+  });
+  const stopFrame = drawing.onFrame(() => { newEditor(); paint(); });
+  paint();
+  return () => { disposed = true; stopSignIn(); stopFrame(); dropTerminal(); editor?.destroy(); card.remove(); };
+}
+
+/**
+ * THE HARNESSES SURFACE, Setup's and Settings' alike: the stones; a pressed one opens its panel in place of them
+ * (phalanx.js, KAN-939). `openAgent(surfaceEl)` is the place's; `decorate` dresses a stone (Settings' drag).
+ */
+export function createHarnessesSurface(context, { label, className = '', openAgent = () => {}, decorate = (one) => one } = {}) {
+  const out = WorkspaceKit.primitives.createSurface({ label, className: `setup-surface setup-provider-surface harness-surface ${className}`.trim() });
+  const notice = el('p', 'setup-fine setup-provider-notice'); notice.hidden = true;
+  const say = (text, bad = false) => { notice.className = `${bad ? 'setup-notice bad' : 'setup-fine'} setup-provider-notice`; notice.textContent = text; notice.hidden = !text; };
+  const drawing = createHarnessDrawing(context, { repaint: () => repaint(), say });
+  const stones = createPhalanx({
+    className: 'setup-provider-stones',
+    renderDetail: (item, host) => drawing.paintHarness(item.id, host, { openAgent: () => openAgent(out.el) }),
+  });
+  stones.mount(out.content, { after: [notice] });
+  const repaint = () => {
+    context.workbench?.refreshSelector?.();
+    const items = drawing.stones();
+    say(items.length ? '' : t('setup_surface.no_catalog', 'No harnesses are in the catalog on this machine.'));
+    stones.setItems(items.map(decorate));
+  };
+  // A sign-in run moving turns its stone Signing in and back; Setup's progress moving reads the record again.
+  const stopSignIn = listenSignIn(() => repaint());
+  const stopProgress = context.environment?.onSetupProgress?.(() => { void drawing.measure(); }) || (() => {});
+  // Anyone's model service write (a key added, the gateway's list read) moves the services and their entries.
+  const stopServices = store.listen('model-services-changed', () => { void drawing.measure(); });
+  void drawing.paint();
+  return {
+    el: out.el,
+    show: async () => { await drawing.measure(); },
+    destroy: () => { stopSignIn(); stopProgress(); stopServices?.(); drawing.destroy(); stones.destroy(); },
   };
 }

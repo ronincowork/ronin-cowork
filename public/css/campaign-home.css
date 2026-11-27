@@ -4,7 +4,6 @@
   .ch-view {
     --ch-box: 2px;
     --ch-horizon-h: 290px;
-    --ch-horizon-ink: var(--kaki);
     --ch-glyph: 30px;
     --ch-glyph-epics: 18px; /* ◇ draws ~1.7× the ink of ⌂ at one size; this matches them (KAN-192) */
     --ch-glyph-epics-weight: .5px; /* and its outline is lighter than ⌂'s */
@@ -101,7 +100,7 @@
     border-radius: var(--ch-box) 0 0 var(--ch-box);
     background: var(--ch-tone); /* the door's colour names where it leads */
   }
-  .ch-door[data-door='models'], .ch-door[data-door='setup'] { --ch-tone: var(--kaki); }
+  .ch-door[data-door='setup'] { --ch-tone: var(--kaki); }
   .ch-door[data-door='workspaces'] { --ch-tone: var(--accent-2); }
   .ch-door[data-door='teams'] { --ch-tone: var(--ok-2); }
   .ch-door[data-door='help'] { --ch-tone: var(--define-line); }

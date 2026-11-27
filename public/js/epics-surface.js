@@ -392,7 +392,7 @@ function movedWords(epic, moved) {
  * flagged, its open item count small bottom right, its progress a colour line along the bottom edge
  * (epic-progress.js), pressed for the epic-stage and the counts. Ordered by orderEpics: flagged
  * first, then the most progressed; every stone the same height. A Workspace
- * question narrows them. A pressed stone shows that Epic's board beside the rail (createEpicBoard,
+ * question narrows them. A pressed stone opens that Epic's board in their place, with the − back (createEpicBoard,
  * with its Team's Launch); a dragged one places it whole in another tilespace. New Epic is the
  * selector's pill (createNewItem), not a stone.
  */

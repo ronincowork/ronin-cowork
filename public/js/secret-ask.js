@@ -97,7 +97,7 @@ export function buildSecretAsk(tile) {
   };
   const resetExpiry = () => { draft.date = draft.days = ''; expiry.set('expiry', ''); expiry.close(); };
   const notice = el('p', 'tile-secret-notice');
-  const SAVE = t('secret.save', 'Save');
+  const SAVE = t('secret.save', 'Save to Ronin key vault');
   const CANCEL = t('secret.cancel', 'Cancel');
   const save = createAction({ label: SAVE, kind: 'primary', size: 'compact', action: () => root.requestSubmit() });
   const cancel = createAction({ label: CANCEL, size: 'compact', action: () => void send(null) });
@@ -191,8 +191,8 @@ export function buildSecretAsk(tile) {
       settle('');
       show(!!ask);
       if (!ask) return;
-      title.textContent = t('secret.title', '{agent} asks for {name}', { agent: tile.sessionName?.textContent || tile.session, name: ask.name });
-      what.textContent = ask.for || t('secret.for_none', 'Saved as a file for this Agent to use. It never appears in chat.');
+      title.textContent = t('secret.title', '{agent} asks for {name}, for the Ronin key vault', { agent: tile.sessionName?.textContent || tile.session, name: ask.name });
+      what.textContent = ask.for || t('secret.for_none', 'Kept in the Ronin key vault for this Agent to use. It never appears in chat.');
     },
   };
   return view;

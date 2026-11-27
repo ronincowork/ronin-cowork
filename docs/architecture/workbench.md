@@ -9,17 +9,20 @@ It does not own feature data. It restores placement, creates independent surface
 instances, and calls the placed instance's `show()` synchronously. The surface owns the
 smallest reads needed to paint itself.
 
-`public/js/phalanx.js` owns the shared Phalanx collection interaction: stones at rest,
-a selected-stone rail beside its detail, focus return, Escape, and responsive geometry (at rest
-up to four stones across, fewer as the seat narrows).
-Consumers supply items and detail content; they do not recreate that movement privately.
-A row may carry `items`. In full density pressing such a stone goes one level down: its
-descendants become the rail's stones and the stone is the level's detail until one is
-pressed. At rest in full density `branches` draws those items under their stone
-(`'column'` stacks them; `'chart'` is one column per child with grandchildren stacked,
-folded into a count past `CHART_DEPTH` until pressed). There is one way back from any
-depth: Escape or the Return stone (small, on the inset) returns to the top view, nothing selected, in the
-density you were in. Switching density keeps the selection: a selected stone with items
+`public/js/phalanx.js` owns the shared Phalanx collection interaction: stones at rest, a
+pressed stone's detail opened on the surface in place of the stones, the kaki − at its top
+right (the item's and a document's control, owner 2026-11-27, KAN-939; there is no rail of
+stones down the side), focus return, Escape, and responsive geometry (at rest up to four
+stones across, fewer as the seat narrows). Consumers supply items and detail content; they
+do not recreate that movement or draw a close of their own.
+A row may carry `items`. In full density pressing such a stone goes one level down, over the
+one before: its descendants become the stones, under a head naming the level with its −, and
+a pressed one of them opens its detail over that level. At rest in full density `branches`
+draws those items under their stone (`'column'` stacks them; `'chart'` is one column per
+child with grandchildren stacked, folded into a count past `CHART_DEPTH` until pressed). The
+way back is one step at a time: the − or Escape closes an open detail to the stones it opened
+from and a level to the one before; `top()` goes all the way. The surface's header (`before`)
+shows only at the top with nothing open. Switching density keeps the selection: a selected stone with items
 becomes its level in full density, a level becomes its selected stone in compact, and
 the stone open at that level returns with it. Consumers never restyle the rest geometry.
 
@@ -32,7 +35,7 @@ An Epic has no page of its own (owner, 2026-11-23): the Epics phalanx's pressed 
 Team's Epics board without its strip of Epic stones, its one Launch opening the Team working it
 (the holding Agent or the lead in tilespace 1, the Epic in tilespace 2). One Workspace has its own page too, `#/workspace/<name>` (owner,
 2026-11-22; KAN-784): Work (its Teams or Epics) or Config (its record), the same surface a pressed
-Workspace stone opens beside the stones. Work Items
+Workspace stone opens in place of the stones. Work Items
 (`work-items`) stays on the Agent's workbench, filtered to the work items held by that
 Agent. **The Team page** (owner, 2026-10-18) is the old Team workbench opening on the
 lead's tile in workspace 1 with workspace 2 blank; its selector holds Commons, the Agents,
@@ -45,11 +48,11 @@ Work items read as phalanx stones (`createItemPhalanx` in `work-items-surface.js
 Agent's Work Items surface, a Team's Work items step on the Teams workbench and an opened
 member on the Team roster. Stones group by parent: each epic heads its group, then its
 items, each followed by its subtasks; items under no epic group under *No epic*. A stone
-shows the title, the holder, and id · kind · status with ⚑ when flagged. Pressing one moves
-the stones to the rail and renders its reading inside the same `sws-detail`: objective,
+shows the title, the holder, and id · kind · status with ⚑ when flagged. Pressing one opens
+its reading in place of the stones, inside the same `sws-detail`, the phalanx's − back: objective,
 priority, holder, parent, comments, attachments (each opens as a document beside it),
 links and history. It is a reading: changes go through the `item` tool. The stones supply
-no action callback, so the normal selection, rail, detail, Escape and focus-return
+no action callback, so the normal selection, detail, −, Escape and focus-return
 behavior applies; dragging a stone onto a tile hands the Agent the item's reference.
 
 ## Surfaces, profile, tenant, instance
@@ -146,40 +149,19 @@ status as its own reads return.
    ownership checks prevent stale responses from repainting replaced surfaces.
 
 **Ronin Home** (`campaign-home.js`; owner, 2026-10-19) stays a page, not a Workbench: Teams,
-Workspaces and Epics in a triangle (owner, 2026-11-02), with Models, Help and Settings smaller stones
+Workspaces and Epics in a triangle (owner, 2026-11-02), with Setup, Help and Settings smaller stones
 in a column inset on the right — each a link to a Workbench destination of its own,
-opened in the same tab. The link's href is the plain address (`#/models`), so hovering shows what a
+opened in the same tab. The link's href is the plain address (`#/setup`), so hovering shows what a
 person reads; a Ctrl/Cmd/Shift or middle press makes the tab id and launch state then and opens a new
 tab through `openWorkbenchTab` (`workbenchLink`, KAN-473; the bar's Teams crumb and New Agent's
 defaults links the same). The
-Teams door opens the Teams workbench (`#/cowork`, `cowork-view.js`; owner, 2026-10-20). Models and
-Workspaces are one shape (`door-workbenches.js`): the Kit Workbench on a profile of the
-door's surfaces, the door's surface seated in Workspace 1 on first open. Models seats its own
-stones of providers (`models-surface.js`, `models.stones`): a stone pressed opens the provider's
-page beside the rail; a stone dragged into a workspace, or the provider's selector card, places
-the provider there whole (`models.provider`), the page with no rail. The cards follow the Team page
-(owner, 2026-10-20): a provider's or a folder's card is an entity card like an Agent's
-(`wk-selector-entity`), the three admin doors dotted like New Agent, and the stones surface heads
-the selector as a solid card (Models, Workspaces) as the Teams card heads the Cowork selector. The Models stones carry
-no refresh door; the selector's second card, **Model refresh** (`models.refresh`, solid utility, after Models), does:
-its surface is the Refresh all control Settings' provider surface carries — the one `createRefreshAll` export, its
-last-ran line and notice — with its steps under it (owner, 2026-10-20). The third card,
-**Defaults** (`models.defaults`, solid utility, after Model refresh; owner, 2026-10-21), sets the model a new Agent,
-a new Team lead and Mika start on: ⚙ Configuration's own `models` section drawn alone (`buildMachineSettings(…, { only:
-'models' })`), each row saving itself — one record, two views. **The Harnesses workbench** (KAN-236; owner,
-2026-11-04) is this door under its new word on Home, opened in three tilespaces: the stones (now the **Harness**
-card) in tilespace 1, **Refresh** (`models.refresh` under its new word) in 2 and **Defaults** in 3; Model refresh's
-steps read Harnesses · Model services, the second asking each configured model service for its model list. The
-Accounts and Models (preset) cards and their routes are gone (owner, 2026-11-26; KAN-892): model services and their
-model entries are Settings' Model services card ([Model services](model_services_README.md), `/api/model-services`).
-The existing types, surfaces and stones are
-unchanged but for their words; the route id stays `models` so saved arrangements survive. Settings' Model
-Providers surface is untouched; all draw with the one drawing `harnesses-surface.js` exports
-(`createHarnessDrawing`, `createRefreshAll`, `harnessStones`) over the same record and measure. In Harnesses,
-Authenticate offers Mika operating the registry-owned native login command in the current tilespace, or the native
-`provider_setup_*` terminal with Mika reading it from the paired tilespace; Setup and Settings retain their direct
-Authenticate action. Mika is a startup invariant, including before the first owner provider is connected, so the
-two assisted choices do not depend on provider count. In every path the provider summary remains the readiness authority. Workspaces seats
+Teams door opens the Teams workbench (`#/cowork`, `cowork-view.js`; owner, 2026-10-20). Workspaces, Epics
+and Help are one shape (`door-workbenches.js`): the Kit Workbench on a profile of the door's surfaces, the door's
+surface seated in Workspace 1 on first open. Settings' harness cards come from the same file's `harnessKit`: the
+stones of harnesses (`models.stones`; a stone pressed opens its page in place of the stones, a stone dragged or a harness's
+selector card places it whole, `models.provider`), and **Refresh** (`models.refresh`), the one Refresh all press with
+its steps under it, Harnesses then Model services (`models-surface.js`, drawn with `harnesses-surface.js`).
+Workspaces seats
 its own stones of Workspaces (`workspaces-surface.js`, `workspaces.records`): a pressed one's page is the whole
 Workspace: Describe (its objective), Where it lives (its folder and its repositories, Desks or Direct each; Add a repository clones one into its `repos/`, KAN-809), and More;
 one read of the pinned folders per bench (`createRootsReading`, the detail route). Epics (owner, 2026-11-02;
@@ -298,18 +280,15 @@ Entry performs no form catalog read. It restores and places the requested form f
 
 ### Ronin Setup (`setup` profile)
 
-The Garden and selected journey surface seat immediately. Garden content, setup runtime,
-and small registration/GitHub completion facts hydrate the journey and discovery column
-independently.
+The selector and the step on screen seat immediately; the steps' ticks (`/api/setup/progress`)
+and each step's own reads hydrate independently.
 
 | Surface | Required data and owner |
 |---|---|
-| Garden | static garden catalog; selected scene only |
-| Register | registration and user-introduction records |
-| Harnesses | provider runtime/catalog owned by the shared provider surface |
-| Workspaces | `/api/workspaces` (the Workspaces stones, New Workspace among them) |
-| Installations | Desk record, installation catalog, and installed facts |
-| Password | authentication state owned by the shared Password surface |
+| Harness | the harness runtime (`/api/setup/runtime`) and sign-in runs (`/api/setup/sign-in`) |
+| Workspace | `/api/workspaces`, for the four doors and the Workspaces already made |
+| Team | the New Team form's reads |
+| Tour | static: `docs/getting-started/tour.md`'s parts, drawn |
 | Launch your own | no launch data until Agent or Team is selected; that embedded form then owns its reads |
 | Hosted: Team | the embedded New Team form owns its reads |
 | Tour | the Ronin Tour, `docs/getting-started/tour.md`, read when shown (`/api/file`) |
