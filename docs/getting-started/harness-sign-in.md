@@ -40,8 +40,8 @@ One signed in is filled when New Agent offers it; press it to turn it off or on.
 **Terminal** opens the harness's own sign-in on the panel. Follow what it asks, then press **Done**, or
 **Cancel** to close it. Under it, **Copy code** and **Copy link** copy what the terminal shows, and a key
 the screen offers (Grok's ctrl+q, **Quit**) is a stone too. A harness that hides its link until asked
-shows **Expose full URL** on Copy link: do that in the terminal, and Copy link works. **Done** and
-**Cancel** sit at the end of the same line.
+shows **Expose full URL** on Copy link: do that in the terminal, and Copy link works. While it is open,
+**Done** and **Cancel** stand in the row where **Terminal** was.
 
 A harness already signed in warns first: signing in again signs out every Agent on it until you
 finish. A second press goes ahead.

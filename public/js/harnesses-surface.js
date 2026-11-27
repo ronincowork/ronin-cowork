@@ -336,19 +336,22 @@ export function mountHarnessPanel(host, id, { drawing, context = {}, openAgent =
   };
 
   /** A terminal on the panel with what ends it: Done records the sign-in (it re-measures), Cancel ends it. */
+  /** What ends a terminal: Done records the sign-in (it re-measures), Cancel ends it. */
+  const doneStone = () => stone(t('setup_surface.done', 'Done'), async () => { const r = await press(`${base}/done`); if (r.ok) mounted?.park?.(); });
+  const cancelStone = (provider) => stone(t('setup_surface.cancel', 'Cancel'), async () => { const r = await press(`${base}/close`); if (r.ok) tellHer(`${shortName(provider)} · Close sign-in`); });
   const terminalWindow = (provider, { line = '', done = true, copy = false } = {}) => {
     const box = el('div', 'setup-harness-window');
     if (line) box.append(el('p', 'setup-harness-line', line));
     box.append(terminalFor(provider));
     // One line under the terminal: what the screen offers (Copy code, Copy link, its key) at the start, and
     // what ends it (Done, Cancel) at the end.
-    const foot = el('div', 'harness-terminal-foot');
-    if (copy && mounted) foot.append(copyStones());
-    const ends = el('div', 'harness-terminal-ends');
-    if (done) ends.append(action(t('setup_surface.done', 'Done'), 'primary', async () => { const r = await press(`${base}/done`); if (r.ok) mounted?.park?.(); }));
-    ends.append(action(t('setup_surface.cancel', 'Cancel'), '', async () => { const r = await press(`${base}/close`); if (r.ok) tellHer(`${shortName(provider)} · Close sign-in`); }));
-    foot.append(ends);
-    box.append(foot);
+    // A sign-in's Done and Cancel stand in the service row where Terminal was (owner, 27 Nov 2026); under the
+    // terminal, what its screen offers. An install or update keeps its ends here.
+    if (copy) { if (mounted) box.append(copyStones()); return box; }
+    const row = el('div', 'ask setup-harness-row setup-harness-ways'); row.dataset.density = 'tight';
+    if (done) row.append(doneStone());
+    row.append(cancelStone(provider));
+    box.append(row);
     return box;
   };
 
@@ -383,14 +386,15 @@ export function mountHarnessPanel(host, id, { drawing, context = {}, openAgent =
       row.append(sub, key);
     }
     if (editor) row.append(...editor.stones());
-    if (!NO_TERMINAL.has(id)) {
+    if (!NO_TERMINAL.has(id) && provider.login_open && !run) row.append(doneStone(), cancelStone(provider));
+    else if (!NO_TERMINAL.has(id)) {
       // Terminal: the harness's own sign-in by hand, the backup to the others (owner, 27 Nov 2026).
       const terminal = stone(t('harness.terminal', 'Terminal'), warnFirst('terminal', async () => {
         const result = await press(`${base}/login`);
         if (result.ok) tellHer(`${cli} · Terminal`);
       }), row.children.length ? t('harness.backup', 'Backup') : ''); // the only way is no one's backup
       terminal.setAttribute('aria-selected', 'false');
-      if (run || provider.login_open) terminal.disabled = true;
+      if (run) terminal.disabled = true;
       row.append(terminal);
     }
     part.append(el('p', 'setup-harness-line', t('harness.services_line', 'Choose how {cli} gets its models. Sign in where a service needs it.', { cli })), row);
