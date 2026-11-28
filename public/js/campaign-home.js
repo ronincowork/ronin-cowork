@@ -52,6 +52,8 @@ function SIDE() {
     // One Settings (owner, 26 Nov): what was Settings v2; the old one is gone.
     { key: 'settings', route: 'settings2', glyph: '⚙', name: t('campaign_home.settings', 'Settings'), is: t('campaign_home.settings_is', 'This office’s settings'), gated: false },
     ...(HOSTED ? [{ key: 'lounge', href: BUSINESS_LOUNGE, glyph: '◎', name: t('campaign_home.business_lounge', 'Business Lounge'), is: t('campaign_home.business_lounge_is', 'Your account, office and subscription, at Ronin HQ'), gated: false }] : []),
+    // Hosted, Sign out is the last stone, in this tab (owner, 28 Nov; KAN-983, KAN-984).
+    ...(HOSTED ? [{ key: 'signout', href: SIGN_OUT, here: true, glyph: '⏻', name: t('campaign_home.sign_out', 'Sign out'), gated: false }] : []),
   ];
 }
 
@@ -107,10 +109,12 @@ export function createCampaignHome() {
   // one model provider is activated the door is locked, no link, and says where the way in is.
   function stone(door, small) {
     const card = el('a', small ? 'ch-door ch-door-small' : 'ch-door');
-    if (door.href) { // a link out of Cowork: a new tab, nothing here changes
-      Object.assign(card, { href: door.href, target: '_blank', rel: 'noopener' });
+    if (door.href) { // a link out of Cowork: a new tab, nothing here changes; Sign out goes in this tab
+      card.href = door.href;
+      if (!door.here) Object.assign(card, { target: '_blank', rel: 'noopener' });
       card.dataset.door = door.key;
-      card.append(doorGlyph(door.glyph), el('h2', null, door.name), el('p', 'ch-is', door.is));
+      card.append(doorGlyph(door.glyph), el('h2', null, door.name));
+      if (door.is) card.append(el('p', 'ch-is', door.is));
       return card;
     }
     const locked = door.gated !== false && (!runtimeKnown || activatedCount < 1);
@@ -135,8 +139,6 @@ export function createCampaignHome() {
     // A member is offered only the workbenches the office lists for members (KAN-955); a link out stays.
     doors.replaceChildren(...OFFICE().filter((one) => isShown(one.route)).map((one) => stone(one, false)));
     side.replaceChildren(...SIDE().filter((one) => one.href || isShown(one.route)).map((one) => stone(one, true)));
-    // Hosted, one small Sign out link under the Business Lounge stone (KAN-983).
-    if (HOSTED) { const out = el('a', 'ch-sign-out', t('campaign_home.sign_out', 'Sign out')); out.href = SIGN_OUT; side.append(out); }
   }
 
   const updates = createReleaseUpdateController({ onChange: state => {

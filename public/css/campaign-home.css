@@ -14,6 +14,8 @@
     --ch-frame-w: calc(var(--ch-door-w) * 2 + var(--ch-office-gap));
     --ch-side-w: 168px;
     --ch-side-h: 104px;
+    /* The side stones (Setup, Settings, Business Lounge, Sign out): shorter than the row stone (owner, 28 Nov). */
+    --ch-side-small-h: 72px;
     --ch-side-glyph: 18px;
     --ch-caption-top: 144px;
     --ch-caption-x: 20px;
@@ -96,10 +98,6 @@
     gap: var(--space-inline);
     width: var(--ch-side-w);
   }
-
-  /* Hosted: Sign out, one small link under the Business Lounge stone (KAN-983). */
-  .ch-sign-out { align-self: flex-start; color: var(--muted); font-size: var(--text-small); }
-  .ch-sign-out:hover { color: var(--fg-strong); }
 
   .ch-door {
     --ch-edge-hover: color-mix(in srgb, var(--ch-tone) 45%, var(--line-3));
@@ -184,7 +182,7 @@
     transition-delay: var(--motion-quick);
   }
 
-  .ch-door-small { min-height: var(--ch-side-h); padding: var(--space-inline) var(--space-inline) var(--space-inline) var(--space-inset); }
+  .ch-door-small { min-height: var(--ch-side-small-h); padding: var(--space-inline) var(--space-inline) var(--space-inline) var(--space-inset); }
   .ch-door-small .ch-glyph { --ch-glyph: var(--ch-side-glyph); }
   .ch-door-small h2 { margin-top: var(--space-paragraph); font-size: var(--text-heading); }
   .ch-door-small .ch-is, .ch-door-small .ch-gate { position: static; opacity: 1; transform: none; margin-top: var(--space-row); padding-top: 0; border-top: 0; font-size: var(--text-small); }
