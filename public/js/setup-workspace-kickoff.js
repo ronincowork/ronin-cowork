@@ -13,7 +13,7 @@
  * Door 1 with GitHub not signed in asks Connect first, at the top, the rest greyed until it is connected. Doors 1–3 ask, in order: the kind, the name, what you are working on; the door's own question (doors 1
  * and 3 then how Agents work in the repositories, Desks or Direct); what every Agent in it should follow; then Create. Every answer is
  * on the Workspace record. With no door chosen, or the chosen one pressed again: on Setup's step, what
- * a Workspace is, and a link to yours. The same doors are New Workspace everywhere (owner, 26 Nov; KAN-900):
+ * a Workspace is (folded to its line once there is one), and yours as the Workspaces workbench's stones. The same doors are New Workspace everywhere (owner, 26 Nov; KAN-900):
  * Settings' and the Workspaces workbench's, which open the made one (`onMade`).
  *
  * The Helpful Assistant hears two things from here: Connect (its stone names her) asks her to sign in
@@ -27,7 +27,7 @@ import { subscribe } from './store.js';
 import { WorkspaceKit } from './workspace-kit.js';
 import { KINDS, kindWord, ruledRows } from './glyphs.js';
 import { openWorkspaceTab } from './workspace.js';
-import { repoModeRows, workspaceHandle } from './workspaces-surface.js';
+import { createWorkspaceStoneList, repoModeRows, workspaceHandle } from './workspaces-surface.js';
 import { sendComposerMessage } from './composer-rules.js';
 import { sendPress } from './press.js';
 import { IRASSHAI, IRASSHAI_NAME, askIrasshai, irasshaiLive } from './setup-irasshai.js';
@@ -90,7 +90,7 @@ function workspaceDiagram() {
 /**
  * @param workspacesRead  the Workspaces read (workspaces-read.js), read again on their push
  * @param environment     Setup's: its setup-progress push re-reads GitHub's sign-in
- * @param intro           Setup's step: with no door chosen, what a Workspace is, and the link to yours
+ * @param intro           Setup's step: with no door chosen, what a Workspace is, and yours as stones
  * @param onMade          New Workspace elsewhere (workspaces-surface.js): the made one's handle, to open it
  */
 export function createWorkspaceKickoff({ workspacesRead, environment, intro = false, onMade = null }) {
@@ -111,6 +111,8 @@ export function createWorkspaceKickoff({ workspacesRead, environment, intro = fa
 
   let door = '';
   let draft = blank();
+  let aboutOpen = false; // the folded explainer, kept open across repaints once pressed open
+  let stoneList = null; // your Workspaces' stones, made once there is one
   let github = { authenticated: false, account: '' };
   let mine = null; // every GitHub repository the sign-in reaches, read once signed in
   let cut = []; // owners whose group was cut short
@@ -267,14 +269,28 @@ export function createWorkspaceKickoff({ workspacesRead, environment, intro = fa
     if (!door && !intro) return;
     if (!door) {
       // The owner's words (25 Nov).
+      const title = t('setup_workspace.about_title', 'What is a Workspace?');
       const about = el('div', 'setup-workspace-about');
-      about.append(
-        el('h3', 'setup-workspace-about-title', t('setup_workspace.about_title', 'What is a Workspace?')),
+      const words = [
         el('p', null, t('setup_workspace.about_1', 'A Workspace is where you and your AI agents work together on a project.')),
         el('p', null, t('setup_workspace.about_2', 'It brings together your project’s files, repositories, plans, and instructions in one place. Every agent you launch in that Workspace knows what the project is about, where to find things, and what you’re trying to accomplish.')),
         el('p', null, t('setup_workspace.about_3', 'You can create multiple Workspaces, each with its own project and context. Your agents can work independently, collaborate within the same Workspace and coordinate across Workspaces.')),
-      );
-      blanks.append(about, workspaceDiagram());
+      ];
+      // ONCE THERE IS ONE (walkthrough 28 Nov, KAN-1001): the explainer folds to its one line, the Team's fold,
+      // and opens when pressed; open while there is none.
+      if (!workspacesRead.list().some((w) => !w.archived)) {
+        about.append(el('h3', 'setup-workspace-about-title', title), ...words);
+        blanks.append(about, workspaceDiagram());
+        return;
+      }
+      const fold = el('details', 'team-fold setup-workspace-fold');
+      fold.open = aboutOpen;
+      fold.addEventListener('toggle', () => { aboutOpen = fold.open; });
+      const body = el('div', 'team-fold-body');
+      about.append(...words);
+      body.append(about, workspaceDiagram());
+      fold.append(el('summary', 'team-fold-line', title), body);
+      blanks.append(fold);
       return;
     }
     if (door === 'lab') {
@@ -354,12 +370,12 @@ export function createWorkspaceKickoff({ workspacesRead, environment, intro = fa
     }));
     paintBlanks();
     const n = workspacesRead.list().filter((w) => !w.archived).length;
+    // YOURS, AS STONES (walkthrough 28 Nov, KAN-1001): the Workspaces workbench's own stones, a pressed one
+    // opening in place of them as it does there; made once and kept, so an open one stays open.
     foot.replaceChildren();
     if (n && intro) {
-      const link = el('button', 'setup-workspace-link', n === 1 ? t('setup_workspace.yours_one', 'You have 1 Workspace.') : t('setup_workspace.yours_n', 'You have {n} Workspaces.', { n })); link.type = 'button';
-      link.addEventListener('click', () => openWorkspaceTab('workspaces'));
-      foot.append(el('p', 'setup-workspace-yours', ''));
-      foot.lastChild.append(link);
+      stoneList ??= createWorkspaceStoneList({ workspacesRead });
+      foot.append(el('p', 'setup-workspace-yours', n === 1 ? t('setup_workspace.yours_one', 'You have 1 Workspace.') : t('setup_workspace.yours_n', 'You have {n} Workspaces.', { n })), stoneList.el);
     }
   }
 
@@ -375,5 +391,5 @@ export function createWorkspaceKickoff({ workspacesRead, environment, intro = fa
   paint();
   void readGithub();
   const stopSignIn = listenSignIn(() => paintBlanks());
-  return { el: root, destroy: () => { stopRead(); stopProgress(); stopHome(); stopSignIn(); } };
+  return { el: root, destroy: () => { stopRead(); stopProgress(); stopHome(); stopSignIn(); stoneList?.destroy(); } };
 }

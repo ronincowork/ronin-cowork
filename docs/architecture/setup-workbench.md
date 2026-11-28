@@ -154,8 +154,9 @@ within seven days, and after that she starts fresh from the facts and `~/ronin/l
 ## Workspaces
 
 The Workspace step defines what a Workspace is, so any Agent that picks it up knows (owner, 25 Nov;
-KAN-809). It is not the Workspaces page: the Workspaces already made are one link at its foot ("You
-have 5 Workspaces."). One question, **How are you starting?**, four doors (`setup-workspace-kickoff.js`);
+KAN-809). It is not the Workspaces page, but the Workspaces already made sit at its foot ("You have 5
+Workspaces.") as the Workspaces workbench's own stones (`createWorkspaceStoneList`), a pressed one opening
+in place of them as it does there (KAN-1001). One question, **How are you starting?**, four doors (`setup-workspace-kickoff.js`);
 a door pressed opens only its questions under it, then Create. After Create the doors are there
 again: people have several Workspaces, and one Workspace can hold several repositories.
 
@@ -181,7 +182,9 @@ follows it until one is typed) · the door's own question · for doors 1 and 3, 
 repositories (**Desks** unless they say **Direct**) · anything every Agent there should follow ·
 Create. Doors 2 and 3 end with an optional GitHub
 Connect while GitHub is not signed in. With no door chosen, or the chosen one pressed again, the space
-under the doors says what a Workspace is, with an illustrative example. After Create, one line: "Made
+under the doors says what a Workspace is, with an illustrative example: open while there is no
+Workspace, and once there is one folded to its line, **What is a Workspace?**, opening when pressed
+(the Team's fold, `team-fold`). After Create, one line: "Made
 <title>, in ~/ronin/<name>." and **Open it**.
 
 The same doors, without that explanation and the foot link, are **New Workspace** everywhere else:

@@ -4697,6 +4697,9 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 .setup-workspace-bad { color: var(--bad); }
 .setup-workspace-foot { display: flex; flex-direction: column; gap: var(--space-subsection); margin-top: var(--space-subsection); padding-top: var(--space-subsection); border-top: var(--edge) solid var(--line); }
 .setup-workspace-done:empty, .setup-workspace-foot:empty { display: none; }
+/* Your Workspaces' stones under the doors (KAN-1001): the step still scrolls as one page, not as a stone surface. */
+.setup-workspace-surface > .wk-surface-content:has(.sws) { display: block; overflow: auto; }
+.setup-workspace-fold { max-inline-size: 40rem; }
 .setup-workspace-link { background: none; border: 0; padding: 0; color: var(--link); text-decoration: underline; cursor: pointer; font: inherit; }
 .setup-harness-link { color: var(--link); word-break: break-all; }
 .setup-harness-row { display: flex; flex-wrap: wrap; align-items: stretch; gap: var(--space-inline); }
