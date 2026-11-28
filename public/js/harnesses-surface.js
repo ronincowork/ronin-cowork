@@ -375,8 +375,14 @@ export function mountHarnessPanel(host, id, { drawing, context = {}, openAgent =
         : current === 'api_key' ? t('harness.on_api_key', 'Signed in with an API key.')
           : signedIn ? t('harness.signed_in', 'Signed in on this office.') : '';
     if (said && !run && !provider.login_open) part.append(el('p', 'setup-harness-line', said));
+    // A sign-in that ended without signing in (KAN-991): a 5xx from the provider is said plainly, with its
+    // name; anything else is the CLI's own line. Pressing the same way again starts a fresh flow.
     const failed = signIn.failed[id] || '';
-    if (failed && !run) part.append(el('p', 'setup-harness-line bad', failed));
+    const status = failed.match(/\bstatus (5\d\d)\b/)?.[1] || '';
+    const failedLine = status && provider.from
+      ? t('harness.provider_timed_out', '{vendor}’s sign-in timed out ({status}). Start again.', { vendor: provider.from, status })
+      : failed;
+    if (failed && !run) part.append(el('p', 'setup-harness-line bad', failedLine));
     return part;
   };
 
