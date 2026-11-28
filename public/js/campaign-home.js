@@ -21,7 +21,7 @@ import { createReleaseUpdateController, packageReading } from './release-update-
 import { createSenmaida } from './senmaida.js';
 import { workbenchLink } from './workspace.js';
 import { folderWorkbenches, isShown } from './folder-workbenches.js';
-import { BUSINESS_LOUNGE, HOSTED } from './hosted.js';
+import { BUSINESS_LOUNGE, HOSTED, SIGN_OUT } from './hosted.js';
 
 const el = (tag, cls, text) => {
   const out = document.createElement(tag);
@@ -135,6 +135,8 @@ export function createCampaignHome() {
     // A member is offered only the workbenches the office lists for members (KAN-955); a link out stays.
     doors.replaceChildren(...OFFICE().filter((one) => isShown(one.route)).map((one) => stone(one, false)));
     side.replaceChildren(...SIDE().filter((one) => one.href || isShown(one.route)).map((one) => stone(one, true)));
+    // Hosted, one small Sign out link under the Business Lounge stone (KAN-983).
+    if (HOSTED) { const out = el('a', 'ch-sign-out', t('campaign_home.sign_out', 'Sign out')); out.href = SIGN_OUT; side.append(out); }
   }
 
   const updates = createReleaseUpdateController({ onChange: state => {

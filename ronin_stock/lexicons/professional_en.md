@@ -276,6 +276,7 @@ nothing paints exactly this.
 - **campaign_home.settings_is_hosted:** This Desk’s settings
 - **campaign_home.business_lounge:** Business Lounge
 - **campaign_home.business_lounge_is:** Your account, office and subscription, at Ronin HQ
+- **campaign_home.sign_out:** Sign out
 - **campaign_home.side_hosted:** Setup, Settings and the Business Lounge
 - **setup.open_settings:** Open Ronin Settings
 - **setup.open_setup:** Open Ronin Setup
