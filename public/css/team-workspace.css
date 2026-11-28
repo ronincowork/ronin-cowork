@@ -178,14 +178,28 @@
   .ac-status { margin: 0; color: var(--muted); font-size: var(--form-note); }
   .ac-status:empty { display: none; }
   .fs-reading.ac-behaviours { --fs-reading-key-w: var(--fs-key-w); } /* a behaviour's name is the key: a step's name column fits one, the reading key width fits a word */
-  /* ALL HANDS' ROSTER (w1146): the three questions over the groups; a group a line that opens to
-     its rows, a row a line pressed to open its Agent or item; one text size, even rows. */
-  .all-hands-list { display: flex; flex-direction: column; margin-top: var(--space-row); }
-  :is(.all-hands-group, .all-hands-row) { display: flex; align-items: baseline; gap: var(--space-inline); width: 100%; padding: var(--space-row) var(--space-inset); border: 0; border-bottom: var(--edge) solid var(--line); background: transparent; color: var(--fg); font: inherit; font-size: var(--text-body); text-align: left; cursor: pointer; }
-  .all-hands-group { color: var(--fg-strong); font-weight: var(--weight-strong); }
+  /* ALL HANDS' ROSTER (w1146; look KAN-978): the three questions over the groups; a group a band
+     that opens to its rows, a row a line pressed to open its Agent or item; one text size, even
+     rows. The pop is shape and fill, never a new colour: a group is an inset band with a kaki
+     edge (the brand), a chevron that turns as it opens and its count in a chip; a row takes the
+     office's one interaction fill (--selected) and a kaki edge where the pointer is. */
+  .all-hands-list { display: flex; flex-direction: column; gap: var(--space-row); margin-top: var(--space-paragraph); }
+  :is(.all-hands-group, .all-hands-row) { position: relative; display: flex; align-items: baseline; gap: var(--space-inline); width: 100%; padding: var(--space-row) var(--space-inset); border: 0; border-radius: var(--radius-small); background: transparent; color: var(--fg); font: inherit; font-size: var(--text-body); text-align: left; cursor: pointer; transition: background var(--motion-quick) var(--ease); }
+  :is(.all-hands-group, .all-hands-row)::before { content: ''; position: absolute; inset: var(--space-row) auto var(--space-row) 0; width: var(--edge-2); border-radius: var(--radius-pill); background: transparent; transition: background var(--motion-quick) var(--ease); }
+  .all-hands-group { margin-top: var(--space-paragraph); padding-block: var(--space-inline); background: var(--inset); color: var(--fg-strong); font-weight: var(--weight-strong); }
+  .all-hands-group:first-child { margin-top: 0; }
+  .all-hands-group::before { background: var(--kaki); /* kaki: the brand, the group's edge */ }
+  .all-hands-group-name { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+  .all-hands-group-name::before { content: '›'; display: inline-block; width: 1ch; margin-right: var(--space-inline); color: var(--kaki-lift); transition: transform var(--motion-quick) var(--ease); }
+  .all-hands-group[aria-expanded='true'] .all-hands-group-name::before { transform: rotate(90deg); }
+  .all-hands-count { flex: none; align-self: center; min-width: 2.5ch; padding: 0 var(--space-inline); border-radius: var(--radius-pill); background: var(--selected); color: var(--fg-strong); font-weight: var(--weight-strong); text-align: center; }
+  .all-hands-group[aria-expanded='false'] .all-hands-count { background: transparent; color: var(--muted); box-shadow: inset 0 0 0 var(--edge) var(--line-2); }
   .all-hands-row { padding-left: calc(var(--space-inset) * 2); }
-  :is(.all-hands-group, .all-hands-row):hover { background: var(--line); }
+  .all-hands-group:hover { background: var(--selected); }
+  .all-hands-row:hover { background: var(--selected); /* the one interaction fill: the row you are on */ }
+  .all-hands-row:hover::before { background: var(--kaki); /* kaki: the row you are on */ }
   .all-hands-name { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
-  :is(.all-hands-count, .all-hands-key) { color: var(--muted); }
-  .all-hands-empty { margin: 0; padding: var(--space-row) var(--space-inset); color: var(--muted); }
+  .all-hands-row:not(.flagged, .stopped):hover .all-hands-name { color: var(--fg-strong); }
+  .all-hands-key { color: var(--muted); }
+  .all-hands-empty { margin: 0; padding: var(--space-row) var(--space-inset) var(--space-row) calc(var(--space-inset) * 2); color: var(--muted); }
 }
