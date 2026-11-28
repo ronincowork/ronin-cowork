@@ -51,7 +51,10 @@ the record once at start and the page says so in `<html data-hosted="on">` (`pub
 `unreadable` counts as hosted). The account, billing, office lease and office are kept in the
 Business Lounge at Ronin HQ, so Cowork carries a link and no account code: Home's side stones gain
 **Business Lounge** (opens `https://hq.roninhosted.com/` in a new tab, for everyone in the office;
-each person lands in their own lounge). What is hidden when hosted: Home's Check for updates;
+each person lands in their own lounge), and under it one small **Sign out** link (KAN-983): a plain
+GET to the office's own OAuth2 Proxy, `/oauth2/sign_out?rd=https%3A%2F%2Fhq.roninhosted.com%2F%3Fsigned_out%3D1`,
+which clears the office's cookie and lands on HQ's sign-in page with `signed_out=1` (the contract is
+the hosted side's, w1154; Cowork writes no sign-out code). What is hidden when hosted: Home's Check for updates;
 in Settings, the Cloud Account and Password cards; in the Machine card, Configuration, Release & update and Log out. Settings stays for
 the Desk's own settings (Desk, Team and Agent defaults, Workspaces, Integrations, Jira, Feedback,
 and the Machine card's themes, archives, messages, help desk, keypad, health and hotwords).

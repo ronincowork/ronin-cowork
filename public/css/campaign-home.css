@@ -97,6 +97,10 @@
     width: var(--ch-side-w);
   }
 
+  /* Hosted: Sign out, one small link under the Business Lounge stone (KAN-983). */
+  .ch-sign-out { align-self: flex-start; color: var(--muted); font-size: var(--text-small); }
+  .ch-sign-out:hover { color: var(--fg-strong); }
+
   .ch-door {
     --ch-edge-hover: color-mix(in srgb, var(--ch-tone) 45%, var(--line-3));
     --ch-caption-line: color-mix(in srgb, var(--ch-tone) 28%, var(--line));
