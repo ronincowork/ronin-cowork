@@ -333,6 +333,7 @@ export function mountHarnessPanel(host, id, { drawing, context = {}, openAgent =
     // Signed in on its own already: a new in-harness sign-in signs out every Agent on it (owner, w994).
     const signedIn = provider.signed_in === true;
     const current = signIn.ways[id] || '';
+    editor?.setWay?.(current); // the entries' own heading says it (KAN-992)
     const warnFirst = (key, go) => () => {
       if (signedIn && switching !== key) { switching = key; paint(); return; }
       switching = '';

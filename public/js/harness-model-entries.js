@@ -129,9 +129,16 @@ export function harnessModelEditor(catalog, entry, openServices, { skip = [] } =
     });
   };
 
+  // The harness's own lists are headed by the way it is signed in (owner, 28 Nov; KAN-992), as the panel knows it.
+  let way = '';
+  let ownHead = null;
+  const ownWord = () => way === 'subscription' ? t('harness.in_harness_subscription', 'Subscription (in harness)')
+    : way === 'api_key' ? t('harness.in_harness_api_key', 'API key (in harness)')
+      : t('harness.in_harness', 'In harness');
   const paint = () => {
     const parts = [];
-    if (modelsOf('in-harness').length) parts.push(el('h4', 'harness-models-service', t('harness.in_harness', 'In harness')), table('in-harness'));
+    ownHead = null;
+    if (modelsOf('in-harness').length) { ownHead = el('h4', 'harness-models-service', ownWord()); parts.push(ownHead, table('in-harness')); }
     for (const group of ronin) {
       if (!group.id || !isOn(group.id)) continue;
       parts.push(el('h4', 'harness-models-service', group.name), table(group.id));
@@ -143,5 +150,6 @@ export function harnessModelEditor(catalog, entry, openServices, { skip = [] } =
     onChange();
   };
   paint();
-  return { stones, entries: box, onChange: (fn) => { onChange = fn; }, destroy: () => {} };
+  const setWay = (next) => { way = next || ''; if (ownHead) ownHead.textContent = ownWord(); };
+  return { stones, entries: box, setWay, onChange: (fn) => { onChange = fn; }, destroy: () => {} };
 }
