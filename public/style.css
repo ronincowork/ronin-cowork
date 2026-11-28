@@ -4610,6 +4610,24 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 .harness-panel .hermes-table thead th { color: var(--fg); font-weight: var(--weight-strong); }
 .harness-panel .hermes-table tbody :is(th, td) { color: var(--fg); font-weight: var(--weight-regular); }
 .harness-panel .data-table tr.data-table-off :is(th, td):not(.hermes-tools) { color: var(--muted); /* status: hidden */ }
+/* EACH SERVICE ITS OWN BLOCK (owner, 28 Nov): a service's name is a band (the inset ground and a kaki edge, as
+   All Hands' groups), its table sits under it aligned with the name, and a section's space parts it from the next
+   service, so In harness and Ronin Gateway never read as one list. */
+.harness-panel .harness-models-body { gap: 0; }
+.harness-panel .harness-models-service { position: relative; padding: var(--space-inline) var(--space-inset); border-radius: var(--radius-small); background: var(--inset); }
+.harness-panel .harness-models-service::before { content: ''; position: absolute; inset: var(--space-row) auto var(--space-row) 0; width: var(--edge-2); border-radius: var(--radius-pill); background: var(--kaki); /* kaki: the brand, the service's edge */ }
+.harness-panel .harness-models-service ~ .harness-models-service { margin-top: var(--space-section); }
+.harness-panel .harness-models-service + .hermes-table { margin-top: var(--space-row); }
+.harness-panel .hermes-table :is(th, td):first-child { padding-left: var(--space-inset); }
+.harness-panel .hermes-table thead th { color: var(--muted); font-weight: var(--weight-regular); border-bottom-color: var(--line); }
+.harness-panel .hermes-table td.hermes-tools { text-align: right; padding-right: var(--space-inset); }
+/* What comes after the tables is a control, not a line of text: the way to Settings, then a footer for Turn off,
+   ruled off from the panel, its sentence and its button on one line. */
+.harness-panel .harness-models-body > .hermes-add-line { justify-self: start; margin-top: var(--space-subsection); min-height: var(--control-height-small); padding: var(--space-row) var(--space-control); border: var(--edge) solid var(--line-2); border-radius: var(--radius-small); }
+.harness-panel .harness-models-body > .hermes-add-line:is(:hover, :focus-visible) { border-color: var(--kaki); text-decoration: none; }
+.harness-panel-part:has(> .setup-fine + .harness-action) { flex-direction: row; align-items: center; gap: var(--space-inset); padding-top: var(--space-subsection); border-top: var(--edge) solid var(--line); }
+.harness-panel-part:has(> .setup-fine + .harness-action) > .setup-fine { flex: 1 1 auto; align-self: center; color: var(--muted); }
+.harness-panel-part:has(> .setup-fine + .harness-action) > .harness-action { flex: none; min-height: var(--control-height-small); }
 .harness-panel .ask-word { color: var(--muted); }
 .harness-panel .ask-opt[aria-selected='true'] .ask-word { color: var(--kaki-fill-ink); }
 .harness-panel .wk-action { font-size: var(--text-body); }

@@ -344,8 +344,11 @@ larger line (`--text-heading`); the section headings (Model services, Model entr
 service's name over its table are strong body text, never capitals; every line, note, link, code,
 table cell and press is body text in `--fg`. Presses that are words (the sign-in link, Hide, Add or
 change) read as words and underline on hover, never link blue. Only a status keeps a colour: a
-fault (kaki), a hidden row (muted), the service it is on (the kaki fill). The rules sit under
-`.harness-panel` in `style.css`.
+fault (kaki), a hidden row (muted), the service it is on (the kaki fill). Each service under Model
+entries is its own block: its name a band (inset ground, kaki edge, as All Hands' groups), its table
+under it, a section's space before the next service. After the tables, Add or change is a small
+outlined control, and Turn off is a footer ruled off from the panel, its sentence and button on one
+line. The rules sit under `.harness-panel` in `style.css`.
 
 ### The state word
 
