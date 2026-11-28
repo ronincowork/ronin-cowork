@@ -60,12 +60,13 @@ signInHandlers.add(heardSignIn);
 const readSignIn = () => request('/api/setup/sign-in', { cache: 'no-store' }).then((r) => { if (r.ok) heardSignIn(r.data); });
 // A reconnect may have missed a run's end (KAN-989): read the runs again on every open after the first read.
 store.onOpen(() => { if (signInAsked) void readSignIn(); });
-const listenSignIn = (fn) => {
+export const listenSignIn = (fn) => {
   if (!signInAsked) { signInAsked = true; void readSignIn(); }
   signInListeners.add(fn);
   return () => signInListeners.delete(fn);
 };
-const runOf = (id) => signIn.runs.find((one) => one.provider === id) || null;
+export const runOf = (id) => signIn.runs.find((one) => one.provider === id) || null;
+export const failedOf = (id) => signIn.failed[id] || '';
 
 /**
  * COPY THAT ANSWERS (KAN-989): the clipboard where the page may write it (https, a hosted office), else the
@@ -80,6 +81,51 @@ async function copyText(value) {
   try { done = document.execCommand('copy'); } catch { done = false; }
   area.remove();
   return done;
+}
+
+/**
+ * What the person must do now in a sign-in run, from what the CLI printed: the link, the code with Copy, a box
+ * for a code or key with Send, and Cancel. A harness's panel and Setup's GitHub sign-in (KAN-997) mount the
+ * same one; `base` is the routes' root, `tellHer` tells the Helpful Assistant what was pressed.
+ */
+export function signInRunWindow(provider, run, { base, drafts = new Map(), tellHer = () => {} }) {
+  const box = el('div', 'setup-harness-window');
+  const line = run.paste === 'key' ? t('setup_harness.paste_key', 'Paste your API key. It goes straight to {cli}.', { cli: shortName(provider) })
+    : run.paste === 'code' ? t('setup_harness.paste_code', 'Open the link, sign in, and paste the code it gives you here.')
+      : t('setup_harness.enter_code', 'Open the link, sign in, and enter this code.');
+  box.append(el('p', 'setup-harness-line', run.sent ? t('setup_harness.sent', 'Sent. Finishing the sign-in…') : line));
+  if (run.link) { const link = el('a', 'setup-harness-link', run.link.replace(/^https:\/\//, '').replace(/[?#].*$/, '')); link.href = run.link; link.target = '_blank'; link.rel = 'noopener noreferrer'; box.append(link); }
+  if (run.code) box.append(el('span', 'setup-harness-code', run.code));
+  const row = el('div', 'ask setup-harness-row'); row.dataset.density = 'tight';
+  const said = el('p', 'setup-fine'); said.hidden = true;
+  const answer = (text, bad = false) => { said.textContent = text; said.className = bad ? 'setup-harness-line bad' : 'setup-fine'; said.hidden = false; };
+  if (run.code) row.append(stone(t('setup_harness.copy', 'Copy'), async () => {
+    answer(await copyText(run.code) ? t('setup_harness.copied', 'Copied.') : t('setup_harness.copy_failed', 'Copy did not work here: select it and copy it.'), false);
+  }));
+  if (run.paste && !run.sent) {
+    const input = el('input', 'setup-harness-input');
+    input.type = run.paste === 'key' ? 'password' : 'text';
+    input.autocomplete = 'off';
+    input.placeholder = run.paste === 'key' ? t('setup_harness.key_hint', 'API key') : t('setup_harness.code_hint', 'Code');
+    input.value = drafts.get(run.provider) || '';
+    input.addEventListener('input', () => drafts.set(run.provider, input.value));
+    const send = stone(t('setup_harness.send', 'Send'), async () => {
+      send.disabled = true;
+      const result = await request(`${base}/sign-in/paste`, { method: 'POST', json: { text: input.value } });
+      if (result.ok) { drafts.delete(run.provider); tellHer(`${shortName(provider)} · Sent the ${run.paste}`); } else send.disabled = false;
+    });
+    input.addEventListener('keydown', (event) => { if (event.key === 'Enter') send.click(); });
+    row.append(input, send);
+  }
+  // Cancel always answers: the server says what runs now, and the panel draws that (KAN-989).
+  row.append(stone(t('setup_harness.cancel', 'Cancel'), async () => {
+    const r = await request(`${base}/sign-in/cancel`, { method: 'POST', json: {} });
+    if (!r.ok) { answer(r.message, true); return; }
+    if (r.data?.state) heardSignIn(r.data.state);
+    tellHer(`${shortName(provider)} · Cancel sign-in`);
+  }));
+  box.append(row, said);
+  return box;
 }
 
 /**
@@ -264,47 +310,6 @@ export function mountHarnessPanel(host, id, { drawing, context = {}, openAgent =
     return copyRow;
   };
 
-  /** What the person must do now in a sign-in run, from what the CLI printed. */
-  const runWindow = (provider, run) => {
-    const box = el('div', 'setup-harness-window');
-    const line = run.paste === 'key' ? t('setup_harness.paste_key', 'Paste your API key. It goes straight to {cli}.', { cli: shortName(provider) })
-      : run.paste === 'code' ? t('setup_harness.paste_code', 'Open the link, sign in, and paste the code it gives you here.')
-        : t('setup_harness.enter_code', 'Open the link, sign in, and enter this code.');
-    box.append(el('p', 'setup-harness-line', run.sent ? t('setup_harness.sent', 'Sent. Finishing the sign-in…') : line));
-    if (run.link) { const link = el('a', 'setup-harness-link', run.link.replace(/^https:\/\//, '').replace(/[?#].*$/, '')); link.href = run.link; link.target = '_blank'; link.rel = 'noopener noreferrer'; box.append(link); }
-    if (run.code) box.append(el('span', 'setup-harness-code', run.code));
-    const row = el('div', 'ask setup-harness-row'); row.dataset.density = 'tight';
-    const said = el('p', 'setup-fine'); said.hidden = true;
-    const answer = (text, bad = false) => { said.textContent = text; said.className = bad ? 'setup-harness-line bad' : 'setup-fine'; said.hidden = false; };
-    if (run.code) row.append(stone(t('setup_harness.copy', 'Copy'), async () => {
-      answer(await copyText(run.code) ? t('setup_harness.copied', 'Copied.') : t('setup_harness.copy_failed', 'Copy did not work here: select it and copy it.'), false);
-    }));
-    if (run.paste && !run.sent) {
-      const input = el('input', 'setup-harness-input');
-      input.type = run.paste === 'key' ? 'password' : 'text';
-      input.autocomplete = 'off';
-      input.placeholder = run.paste === 'key' ? t('setup_harness.key_hint', 'API key') : t('setup_harness.code_hint', 'Code');
-      input.value = drafts.get(run.provider) || '';
-      input.addEventListener('input', () => drafts.set(run.provider, input.value));
-      const send = stone(t('setup_harness.send', 'Send'), async () => {
-        send.disabled = true;
-        const result = await request(`${base}/sign-in/paste`, { method: 'POST', json: { text: input.value } });
-        if (result.ok) { drafts.delete(run.provider); tellHer(`${shortName(provider)} · Sent the ${run.paste}`); } else send.disabled = false;
-      });
-      input.addEventListener('keydown', (event) => { if (event.key === 'Enter') send.click(); });
-      row.append(input, send);
-    }
-    // Cancel always answers: the server says what runs now, and the panel draws that (KAN-989).
-    row.append(stone(t('setup_harness.cancel', 'Cancel'), async () => {
-      const r = await request(`${base}/sign-in/cancel`, { method: 'POST', json: {} });
-      if (!r.ok) { answer(r.message, true); return; }
-      if (r.data?.state) heardSignIn(r.data.state);
-      tellHer(`${shortName(provider)} · Cancel sign-in`);
-    }));
-    box.append(row, said);
-    return box;
-  };
-
   /** A terminal on the panel with what ends it: Done records the sign-in (it re-measures), Cancel ends it. */
   /** What ends a terminal: Done records the sign-in (it re-measures), Cancel ends it. */
   const doneStone = () => stone(t('setup_surface.done', 'Done'), async () => { const r = await press(`${base}/done`); if (r.ok) mounted?.park?.(); });
@@ -368,7 +373,7 @@ export function mountHarnessPanel(host, id, { drawing, context = {}, openAgent =
       row.append(terminal);
     }
     part.append(el('p', 'setup-harness-line', t('harness.services_line', 'Choose how {cli} gets its models. Sign in where a service needs it.', { cli })), row);
-    if (run) part.append(runWindow(provider, run));
+    if (run) part.append(signInRunWindow(provider, run, { base, drafts, tellHer }));
     else if (provider.login_open) part.append(terminalWindow(provider, { line: provider.sign_in_how || '', copy: true }));
     const said = switching
       ? t('harness.signed_in_already', 'Signing in again signs out every {cli} Agent until you finish. Press it again to go ahead.', { cli })

@@ -15,7 +15,7 @@ import {
   githubRepositories,
 } from '../setup-runtime.js';
 import { installedAnswer } from './installed-api.js';
-import { cancelSignIn, pasteSignIn, signInState, startSignIn } from '../harness-sign-in.js';
+import { GITHUB, cancelSignIn, pasteSignIn, signInState, startGithubSignIn, startSignIn } from '../harness-sign-in.js';
 import { measureAndRecordHarnesses, readHarnessSummary, refreshHarnesses } from '../harness-summary.js';
 import type { HarnessSummary } from '../harness-catalog.js';
 
@@ -114,6 +114,15 @@ export function registerSetupRuntime(app: express.Express): void {
   });
   app.post('/api/setup/harnesses/:provider/sign-in/paste', (req, res) => {
     try { res.json({ ok: true, run: pasteSignIn(String(req.params.provider), String(req.body?.text ?? '')) }); }
+    catch (error) { res.status(400).json({ error: errMsg(error) }); }
+  });
+  // GitHub's sign-in on the same run (KAN-997): start, and cancel by the same door.
+  app.post('/api/setup/github/sign-in', async (req, res) => {
+    try { res.json({ ok: true, run: await startGithubSignIn(String(req.body?.tell ?? '')) }); }
+    catch (error) { res.status(400).json({ error: errMsg(error) }); }
+  });
+  app.post('/api/setup/github/sign-in/cancel', async (_req, res) => {
+    try { res.json({ ok: true, state: await cancelSignIn(GITHUB) }); }
     catch (error) { res.status(400).json({ error: errMsg(error) }); }
   });
   app.post('/api/setup/harnesses/:provider/sign-in/cancel', async (req, res) => {

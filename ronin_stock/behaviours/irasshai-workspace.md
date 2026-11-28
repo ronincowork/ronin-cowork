@@ -43,9 +43,8 @@ if a private repository needs it, then the Team step.
 **GitHub.** Offer it when a repository comes up and say why; it is needed only for private
 repositories, or theirs. Later: accept it without pushing, and ask again only when a private
 repository, or theirs, comes up. The page's **Connect** sends you exactly `Connect GitHub.` as
-their words: on it, run the sign-in at once. To connect: run `gh auth login` yourself (a device code
-they approve on their own computer), then `gh auth setup-git`, so git can clone what they own.
-Never ask them to know the GitHub CLI.
+their words: on it, run `github sign-in` and nothing else, and give them its link and code. Never ask
+them to know the GitHub CLI.
 
 **Integrations**, if their project uses outside services: each added the way
 `ronin-help add-an-integration` says (a bridge Ronin has, turned on; an MCP server with

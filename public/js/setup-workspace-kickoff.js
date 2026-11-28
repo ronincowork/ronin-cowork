@@ -31,6 +31,7 @@ import { repoModeRows, workspaceHandle } from './workspaces-surface.js';
 import { sendComposerMessage } from './composer-rules.js';
 import { sendPress } from './press.js';
 import { IRASSHAI, IRASSHAI_NAME, askIrasshai, irasshaiLive } from './setup-irasshai.js';
+import { failedOf, listenSignIn, runOf, signInRunWindow } from './harnesses-surface.js';
 
 /** WHAT THE PERSON MAKES REACHES HER (owner, 25 Nov; w979): at Create, one line to the Helpful
  *  Assistant, while she runs, as the person's [Button] line (press.js): the Workspace's handle and
@@ -158,6 +159,14 @@ export function createWorkspaceKickoff({ workspacesRead, environment, intro = fa
   const connectStone = (why) => question('connect', t('setup_workspace.github_ask', 'GitHub'), [
     { v: 'connect', l: t('setup_workspace.connect', 'Connect'), word: IRASSHAI_NAME, sub: why, ...(asking ? { off: asking } : {}) },
   ], '', () => void connect());
+  // While GitHub's sign-in runs (KAN-997), its link and code with Copy and Cancel, the harness panel's own window.
+  const GITHUB_SIGN_IN = { id: 'github', label: 'GitHub' };
+  const githubPart = (why) => {
+    const run = runOf('github');
+    if (run) return [signInRunWindow(GITHUB_SIGN_IN, run, { base: '/api/setup/github', tellHer: (text) => { void sendPress(IRASSHAI, text); } })];
+    const failed = failedOf('github');
+    return [connectStone(why), ...(failed ? [el('p', 'setup-harness-line bad', failed)] : [])];
+  };
 
   // WHAT IT IS (doors 1–3), in the owner's order (25 Nov): the kind, the name, what they are working on
   // (the name made from it until one is typed); then the door's own question; then what every Agent in
@@ -292,7 +301,7 @@ export function createWorkspaceKickoff({ workspacesRead, environment, intro = fa
     const { head, tail } = define();
     // GITHUB FIRST (owner, 25 Nov; walkthrough 28 Nov, KAN-996): signed in, nothing to say; not (almost always,
     // on a new office), Connect at the top of door 1, before the kind, the name and the rest.
-    if (door === 'git' && !github.authenticated) blanks.append(connectStone(t('setup_workspace.github_private', 'GitHub is not signed in on this machine. The Helpful Assistant signs you in, in her chat; then your repositories are listed here to pick. A public one can be pasted without it.')));
+    if (door === 'git' && !github.authenticated) blanks.append(...githubPart(t('setup_workspace.github_private', 'GitHub is not signed in on this machine. The Helpful Assistant signs you in, in her chat; then your repositories are listed here to pick. A public one can be pasted without it.')));
     blanks.append(...head);
     if (door === 'git') {
       if (github.authenticated && mine?.length) blanks.append(question('picked', t('setup_workspace.which_repos', 'Which repositories?'),
@@ -315,7 +324,7 @@ export function createWorkspaceKickoff({ workspacesRead, environment, intro = fa
     if (door === 'git' || door === 'scratch') blanks.append(question('mode', t('workspaces.repo_mode_ask', 'How do Agents work in it?'), repoModeRows(), draft.mode, (v) => { draft.mode = v; }));
     blanks.append(...tail);
     // GITHUB, OPTIONAL (owner, 25 Nov), at the foot of doors 2 and 3 while it is not signed in.
-    if ((door === 'existing' || door === 'scratch') && !github.authenticated) blanks.append(connectStone(t('setup_workspace.github_optional', 'Optional. So Agents can use GitHub for this project: pull requests, issues, a repository on GitHub. The Helpful Assistant signs you in, in her chat.')));
+    if ((door === 'existing' || door === 'scratch') && !github.authenticated) blanks.append(...githubPart(t('setup_workspace.github_optional', 'Optional. So Agents can use GitHub for this project: pull requests, issues, a repository on GitHub. The Helpful Assistant signs you in, in her chat.')));
     const line = el('div', 'setup-workspace-create');
     line.append(create.el);
     blanks.append(line);
@@ -355,5 +364,6 @@ export function createWorkspaceKickoff({ workspacesRead, environment, intro = fa
   });
   paint();
   void readGithub();
-  return { el: root, destroy: () => { stopRead(); stopProgress(); stopHome(); } };
+  const stopSignIn = listenSignIn(() => paintBlanks());
+  return { el: root, destroy: () => { stopRead(); stopProgress(); stopHome(); stopSignIn(); } };
 }
