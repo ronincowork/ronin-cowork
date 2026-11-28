@@ -115,10 +115,11 @@ export function registerWorkbenchCatalog() {
   add({ type: WORKBENCH_TYPES.helpPage, header: 'surface', label: () => t('help_outline.title', 'Help'), discover: () => [], create: ({ detail, environment }) => environment.helpPage(detail) });
   profiles.define(WORKBENCH_PROFILES.help, [WORKBENCH_TYPES.helpOutline, WORKBENCH_TYPES.helpMika, WORKBENCH_TYPES.helpPage]);
   // ALL HANDS (w1146): the phone's roster of every Agent and item as a card, so it goes in either
-  // surface; the selector is global (New Agent, New Team, Archived Agents, Epics, Find item, each
-  // over no Team); an Agent's tile and an Epic's record are placed by the roster and the stones (all-hands.js).
+  // surface; the selector is global (New Agent, New Team, Archived Agents, Teams, Epics, Find item,
+  // each over no Team); an Agent's tile, a Team and an Epic's record are placed by the roster and the
+  // stones (all-hands.js).
   add({ type: WORKBENCH_TYPES.allHandsRoster, header: 'surface', className: 'wk-selector-utility', label: () => t('all_hands.roster', 'All Hands'), summary: () => t('all_hands.roster_summary', 'Every Agent and item, by Team, Epic or Workspace'), create: ({ workspace, environment }) => environment.allHandsRoster(workspace) });
-  profiles.define(WORKBENCH_PROFILES.allHands, [WORKBENCH_TYPES.allHandsRoster, WORKBENCH_TYPES.newAgent, WORKBENCH_TYPES.newTeamForm, WORKBENCH_TYPES.archives, WORKBENCH_TYPES.epicRecords, WORKBENCH_TYPES.teamFindItem, WORKBENCH_TYPES.terminal, WORKBENCH_TYPES.epicRecord, BEHAVIOUR_SURFACE_TYPE]);
+  profiles.define(WORKBENCH_PROFILES.allHands, [WORKBENCH_TYPES.allHandsRoster, WORKBENCH_TYPES.newAgent, WORKBENCH_TYPES.newTeamForm, WORKBENCH_TYPES.archives, WORKBENCH_TYPES.roster, WORKBENCH_TYPES.epicRecords, WORKBENCH_TYPES.teamFindItem, WORKBENCH_TYPES.terminal, WORKBENCH_TYPES.team, WORKBENCH_TYPES.epicRecord, BEHAVIOUR_SURFACE_TYPE]);
   // SETTINGS V2 (owner, 2026-11-25; KAN-862, KAN-867): built beside Settings to compare; the old one goes once v2 is right.
   // The five agreed sections (MACHINE_SETTINGS_V2.md). Its own card types where its words differ from the Harnesses
   // door's; the surfaces under them are today's, reused. A harness's own card is placed by its stone, not offered.

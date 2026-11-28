@@ -44,7 +44,7 @@ not separate layout systems.
 | Teams collection | Teams, Agents, shared resources, and creation surfaces available in the selected Campaign context |
 | Team | that Team's Agents, Commons, Epics, New Agent, New Item (the Epics workbench's New form, started on Task) and Agent composition |
 | Agent | Self, Documents, Team membership, and Work Items: the work items the Agent holds across its Teams |
-| All Hands | its roster, New Agent, New Team, Archived Agents, Epics and Find item, each over no Team |
+| All Hands | its roster, New Agent, New Team, Archived Agents, Teams, Epics and Find item, each over no Team |
 | Setup | Harness, Workspace, Team and Tour, with the Ask Ronin panel |
 
 Adding another tenant or profile adds no layout implementation. Adding another surface
@@ -261,8 +261,9 @@ list's own tilespace is selected, what you press opens in the first empty tilesp
 two or four), else the one beside the list. Drag a row instead and it opens in the tilespace you
 drop it on, any of the four; under **Type: Epic**, an Epic's group drags as that Epic. The list is a card in
 the selector too, so it can be put in either tilespace. The selector is for the whole office:
-**New Agent**, **New Team**, **Archived Agents**, **Epics** and **Find item**, none of them tied
-to a Team.
+**New Agent**, **New Team**, **Archived Agents**, **Teams** (every Team as a stone, as on the Teams
+workbench), **Epics** (every open Epic as a stone) and **Find item**, none of them tied to a Team.
+Drag a Teams stone, or a Team's group under **Type: Team**, and that Team opens where you drop it.
 
 ## Short vocabulary check
 

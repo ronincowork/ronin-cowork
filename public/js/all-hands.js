@@ -6,7 +6,7 @@
  * to its rows and closes again; an Agent's row opens its tile, an item's row its reading (Find
  * item, loaded on it), in the selected surface (the other one when the roster's own is
  * selected). The roster is a selector card too, so it can be put in either surface. The selector
- * is global: New Agent, New Team, Archived Agents, Epics and Find item, each the catalog's own
+ * is global: New Agent, New Team, Archived Agents, Teams, Epics and Find item, each the catalog's own
  * surface over no Team.
  */
 import { WorkspaceKit } from './workspace-kit.js';
@@ -14,7 +14,9 @@ import { t } from './lexicon.js';
 import { doorWorkbench } from './door-workbenches.js';
 import { WORKBENCH_PROFILES, WORKBENCH_TYPES } from './workbench-catalog.js';
 import { subscribe as hear } from './store.js';
-import { membersOfTeam, subscribe, teamsFromState } from './team-controller.js';
+import { membersOfTeam, subscribe, teamByName, teamsFromState, UNASSIGNED } from './team-controller.js';
+import { createTeamRosterSurface } from './team-roster-surface.js';
+import { createTeamOne } from './team-one.js';
 import { onAgeTick, situationTitle } from './home.js';
 import { agentLabel, cardsByName, rosterGroups, rosterMark, rosterQuestions, rosterRowClass, ROSTER_CHOICE, sessionOf, situationOf } from './roster-lists.js';
 import { ask } from './ask.js';
@@ -73,8 +75,9 @@ function createAllHandsRoster({ open }) {
     const head = press(el('button', 'all-hands-group'), () => { if (closed.has(group.cardId)) closed.delete(group.cardId); else closed.add(group.cardId); remember(); paint(); });
     head.setAttribute('aria-expanded', String(isOpen));
     head.append(el('span', 'all-hands-group-name', group.label), el('span', 'all-hands-count', String(group.rows.length)));
-    // An Epic's group is that Epic: dragged, its record opens where it is dropped.
-    if (choice.type === 'epic' && choice.sort !== 'active' && group.id) draggable(head, WORKBENCH_TYPES.epicRecord, group.id, group.label);
+    // An Epic's group is that Epic, a Team's that Team: dragged, it opens where it is dropped.
+    if (choice.sort !== 'active' && choice.type === 'epic' && group.id) draggable(head, WORKBENCH_TYPES.epicRecord, group.id, group.label);
+    if (choice.sort !== 'active' && choice.type === 'team' && group.team && group.team !== UNASSIGNED) draggable(head, WORKBENCH_TYPES.team, group.team, group.label);
     return head;
   };
   const agentRow = (name, situation, lead) => {
@@ -134,7 +137,7 @@ export function createAllHandsView() {
   return doorWorkbench({
     id: 'allhands', profile: WORKBENCH_PROFILES.allHands, label: t('all_hands.title', 'All Hands'),
     seat: WORKBENCH_TYPES.allHandsRoster,
-    selectorFilter: (type) => type !== WORKBENCH_TYPES.terminal && type !== WORKBENCH_TYPES.epicRecord && type !== BEHAVIOUR_SURFACE_TYPE,
+    selectorFilter: (type) => ![WORKBENCH_TYPES.terminal, WORKBENCH_TYPES.team, WORKBENCH_TYPES.epicRecord, BEHAVIOUR_SURFACE_TYPE].includes(type),
     environment: ({ bench }) => {
       const epicsRead = createEpicsRead(() => '');
       const place = (type, id, detail = {}) => bench().place(type, id, detail);
@@ -190,6 +193,21 @@ export function createAllHandsView() {
             archives[id] = { el: surface.el, room: buildArchives({ connect: (name) => place(WORKBENCH_TYPES.terminal, id, { key: name }) }, host) };
           }
           return { el: archives[id].el, show: () => void archives[id].room.enter() };
+        },
+        // TEAMS (owner, 28 Nov): every Team as the Teams workbench's stones, a pressed one's view in
+        // their place; a dragged stone, or a Team's group in the roster, places that Team whole.
+        // The view is team-one.js's standing-alone one (createTeamOne), hearing its own pushes.
+        roster: () => {
+          const views = new Map();
+          const stones = createTeamRosterSurface({ teamDetail: (name) => { if (!views.has(name)) views.set(name, createTeamOne(name)); return views.get(name); } });
+          return keep({ el: stones.el, show: () => stones.render(), destroy: () => { for (const view of views.values()) view.destroy(); stones.destroy(); } });
+        },
+        teams: () => [],
+        team: (_workspace, detail = {}) => {
+          const surface = WorkspaceKit.primitives.createSurface({ label: teamByName(detail.key)?.title || detail.key, className: 'league-team-edit' });
+          const view = createTeamOne(detail.key, { say: (state, message) => surface.setState(state, message) });
+          surface.content.append(view.el);
+          return keep({ el: surface.el, show: () => view.render(), destroy: () => view.destroy() });
         },
         epics: () => [],
         epicRecords: () => keep(createEpicStones({ epicsRead, workbench: bench() })),
