@@ -54,7 +54,11 @@ Business Lounge at Ronin HQ, so Cowork carries a link and no account code: Home'
 each person lands in their own lounge), and after it a **Sign out** stone, opening in the same tab
 (KAN-983, KAN-984): a plain GET to the office's own `/sign-out` (KAN-984), which the kohai serves behind the guard: it asks HQ to end
 the person's WorkOS sessions, ends the office's cookie and lands on HQ's 'You are signed out' page (the contract is
-the hosted side's, w1154; Cowork writes no sign-out code). What is hidden when hosted: Home's Check for updates;
+the hosted side's, w1154; Cowork writes no sign-out code). **Signed out elsewhere** (KAN-988): when the
+session ends, the sign-in guard answers a fetch with an HTML 401 or 403 (Cowork's own are JSON), and the
+page reloads once (`public/js/request.js`) so the guard's navigation takes the person to sign-in; a closed
+live connection makes one plain read first (`public/js/store.js`), so a refused reconnect does the same.
+What is hidden when hosted: Home's Check for updates;
 in Settings, the Cloud Account and Password cards; in the Machine card, Configuration, Release & update and Log out. Settings stays for
 the Desk's own settings (Desk, Team and Agent defaults, Workspaces, Integrations, Jira, Feedback,
 and the Machine card's themes, archives, messages, help desk, keypad, health and hotwords).

@@ -1,4 +1,5 @@
 /* part of the ronin-cowork client — see js/README.md */
+import { checkSession } from './request.js';
 /*
  * NO POLLING FOR DATA. Nothing here asks the server for a resource on a clock: every
  * resource arrives by push into this store, the page's one source of truth (owner,
@@ -154,6 +155,7 @@ export function createStore({
       if (socket !== ws) return; // a socket renew() already replaced
       cancel(silence);
       for (const fn of closers) fn();
+      checkSession(); // hosted: a refused reconnect means the session ended; the guard's 401/403 reloads once (KAN-988)
       retry = later(connect, RECONNECT_MS); // keep the feed alive
     };
     return ws;
