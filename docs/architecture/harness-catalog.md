@@ -200,6 +200,14 @@ What this machine *has* is measured, not derived on every read. The Campaign rec
 - `measureAndRecordHarnesses` — the machine facts; the recorded lists and `refreshed_at`
   ride along unchanged. At every Ronin start, after **Cancel** on a sign-in (a sign-in closed
   without Done may still have left a credential file), and after Turn off / on.
+- **After a sign-in** (Done, or a sign-in run that ends signed in; KAN-995): Claude Code and Codex write their
+  list file only once they have run, so each signed-in one with no file yet is started once, Native, no prompt,
+  as a hidden child under a pseudo-terminal (`src/model-list-fetch.ts`), never in tmux. One watch on the folder
+  the file lands in; when it lands, or after 45 s, its own process group is stopped and the page is told to read
+  again. Measured: Claude 1.1 s, Codex 6.2 s. Claude's first-run onboarding, a theme and the folder's trust are
+  seeded first (`claudeAhead`, src/launch-ahead.ts), as every Claude launch does. Codex's own app-server helper,
+  which it detaches, keeps running. Until a list is there, HQ's rows stand in, and with none the entries say the
+  models are on their way.
 - `refreshHarnesses` — the same facts, then every activated CLI's command-printed list read again and
   the Ronin Gateway's list. **HQ drives it** (owner, 2026-11-27; KAN-972): HQ moves the CLIs on
   a hosted office, and the park then calls `POST /api/setup/harnesses/refresh` over the unit's

@@ -14,17 +14,29 @@ const readText = (file: string) => readFile(file, 'utf8').catch((e: NodeJS.Errno
 
 /** Claude: the folder is trusted in ~/.claude.json, and the hooks ride --settings. */
 async function claude(cwd: string): Promise<string[]> {
+  await claudeAhead(cwd);
+  return ['--settings', path.join(REPO_ROOT, 'hostside', 'claude-asking.json')];
+}
+
+/**
+ * Claude's first-run questions answered for the office (owner, 28 Nov 2026; KAN-995): onboarding done, a
+ * theme, and the folder trusted. Without them a first start stops at the theme picker, so neither the
+ * owner's first Agent nor the hidden start that writes Claude's model list gets past it.
+ */
+export async function claudeAhead(cwd: string): Promise<void> {
   const file = path.join(process.env.CLAUDE_CONFIG_DIR || homedir(), '.claude.json');
   const text = await readText(file);
   const state = text ? JSON.parse(text) : {};
   const projects = state.projects ??= {};
-  if (projects[cwd]?.hasTrustDialogAccepted !== true) {
+  const onboarded = state.hasCompletedOnboarding === true && typeof state.theme === 'string';
+  if (!onboarded || projects[cwd]?.hasTrustDialogAccepted !== true) {
+    state.hasCompletedOnboarding = true;
+    state.theme ??= 'dark';
     projects[cwd] = { ...projects[cwd], hasTrustDialogAccepted: true };
     // Whole or not at all: running Claudes read this file too.
     await writeFile(`${file}.ronin`, JSON.stringify(state, null, 2));
     await rename(`${file}.ronin`, file);
   }
-  return ['--settings', path.join(REPO_ROOT, 'hostside', 'claude-asking.json')];
 }
 
 // The hooks in the Codex home's hooks.json. Codex asks the person to trust a new hook

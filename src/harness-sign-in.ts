@@ -13,6 +13,7 @@ import { broadcastEvent } from './ws/events.js';
 import { enqueueMessage } from './message-queue.js';
 import { readHarnessSummary, refreshHarnesses } from './harness-summary.js';
 import { checkGithub } from './facts.js';
+import { fetchMissingModelLists } from './model-list-fetch.js';
 
 export type SignInWay = 'subscription' | 'api_key';
 
@@ -125,6 +126,8 @@ async function ended(provider: string, entry: { run: SignInRun; child: ChildProc
     // Measured again, model lists read: the facts and Setup's tick follow on their own.
     await refreshHarnesses().catch((error) => console.error('[sign-in] measure:', error));
     await readWays().catch(() => {});
+    // Signed in with no list file yet: the CLI is started once, hidden, to write it (KAN-995).
+    if (ok) void fetchMissingModelLists();
   }
   push();
   if (entry.tell) {
