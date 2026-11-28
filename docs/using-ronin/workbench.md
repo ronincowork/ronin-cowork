@@ -227,14 +227,14 @@ or Chat. Notes and the full record stay on the desk.
 
 ## On a phone
 
-A phone opens on one list of every Agent or item in the office. Three buttons across the top
-choose what it shows:
+A phone opens on one list of every Agent or item in the office. Buttons across the top choose
+what it shows:
 
 | Button | What it does |
 |---|---|
-| **Type** | What the list is grouped by: **Team**, **Epic** or **Workspace** |
 | **Kind** | What each row is: **Agent**, **Lead** (Agents who lead a Team) or **Item** |
 | **Sort** | **By type**: one card per Team, Epic or Workspace. **By active**: one card each for **Flagged**, **Active** (working now), **Recently active** (finished in the last ten minutes) and **Everyone else**, in that order |
+| **Type** | Shown only with **By type**: what the list is grouped by, **Team**, **Epic** or **Workspace** |
 
 Press a card to open it in place, with its rows underneath; press it again to close it. More
 than one can be open. An open Team card also has **Docs** (the Team's documents) and **＋ Launch
@@ -252,7 +252,7 @@ attachments (each opens in Docs). Back returns to where you came from.
 ## All Hands
 
 **All Hands** (on Home the broad slab under Teams, Epics and Workspaces, the office-wide way in; `#/allhands`) is the phone's list on a desk, as a workbench with
-two tilespaces. Tilespace 1 opens on the same list, with the same **Type**, **Kind** and **Sort**;
+two tilespaces. Tilespace 1 opens on the same list, with the same **Kind**, **Sort** and (By type) **Type**;
 every group starts open and closes when pressed (it remembers the ones you closed); Tilespace 2
 starts empty. Each row carries the same mark as an Agent's card on a Team's selector: ⚑ when
 flagged, the working dot (hollow just finished), muted when stopped. Press an Agent and its tile

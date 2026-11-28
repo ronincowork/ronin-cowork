@@ -5,10 +5,10 @@
  * sent this document because the request came from one (src/index.ts), so the first frame the
  * browser paints is already the mobile bar.
  *
- * ONE LIST IS THE FRONT DOOR (plan ronin_cowork/phone-lists, KAN-818): three questions across
- * the top — Type (the grouping: Team, Epic, Workspace), Kind (each row: Agent, Lead, Item) and
- * Sort (By type: one card per Team, Epic or Workspace; By active: one card each for Flagged,
- * Active, Recently active, Everyone else). A card pressed opens in place to its rows; pressed
+ * ONE LIST IS THE FRONT DOOR (plan ronin_cowork/phone-lists, KAN-818): questions across
+ * the top (roster-lists.js) — Kind (each row: Agent, Lead, Item), Sort (By type: one card per
+ * Team, Epic or Workspace; By active: one card each for Flagged, Active, Recently active,
+ * Everyone else) and, only By type, Type (the grouping: Team, Epic, Workspace). A card pressed opens in place to its rows; pressed
  * again it closes; several stay open. An Agent's row opens its tile, an item's row its item
  * screen. Screens, one at a time: the list · a Team's Docs · an item · an Agent's tile ·
  * Feedback. On the tile the head is hidden and the bar carries the head's reading toggle and メ
@@ -20,7 +20,7 @@ import { guard, showFailure } from './errors.js';
 import { sayWhenUnreachable, sessionsHandlers } from './events.js';
 import { connect, subscribe as hear } from './store.js';
 import { membersOfTeam, subscribe, teamByName, teamsFromState, UNASSIGNED } from './team-controller.js';
-import { agentLabel, cardsByName, readable, rosterGroups, rosterMark, rosterQuestions, rosterRowClass, situationOf, teamLabel, teamsOfItem } from './roster-lists.js';
+import { agentLabel, cardsByName, readable, rosterGroups, rosterMark, rosterQuestions, rosterRowClass, rosterShown, situationOf, teamLabel, teamsOfItem } from './roster-lists.js';
 import { loadProjects, onAgeTick, projectData, situationTitle } from './home.js';
 import { buildDocs } from './docs.js';
 import { createTerminalTileHost } from './terminal-tile-host.js';
@@ -135,8 +135,9 @@ export async function buildPhone() {
     value: { type: choice.type, kind: choice.kind, sort: choice.sort },
     density: 'tight',
     className: 'ph-questions',
-    onChange: (next) => { choice = { ...choice, ...next }; remember(); paintList(); },
+    onChange: (next) => { choice = { ...choice, ...next }; remember(); questions.show(rosterShown(choice)); paintList(); },
   });
+  questions.show(rosterShown(choice));
   const listScreen = el('div', 'ph-list-screen');
   const list = el('div', 'ph-list');
   listScreen.append(questions.el, list);

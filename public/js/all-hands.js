@@ -2,7 +2,7 @@
 /**
  * ALL HANDS (w1146): the phone's one roster as a two-surface workbench, a door of its own at
  * #/allhands. Workspace 1 opens on the roster of every Agent and item, asked the phone's three
- * questions (roster-lists.js: Type, Kind, Sort); Workspace 2 starts empty. A group pressed opens
+ * questions (roster-lists.js: Kind, Sort, and Type when sorting by type); Workspace 2 starts empty. A group pressed opens
  * to its rows and closes again; an Agent's row opens its tile, an item's row its reading (Find
  * item, loaded on it), in the selected surface (the other one when the roster's own is
  * selected). The roster is a selector card too, so it can be put in either surface. The selector
@@ -18,7 +18,7 @@ import { membersOfTeam, subscribe, teamByName, teamsFromState, UNASSIGNED } from
 import { createTeamRosterSurface } from './team-roster-surface.js';
 import { createTeamOne } from './team-one.js';
 import { onAgeTick, situationTitle } from './home.js';
-import { agentLabel, cardsByName, rosterGroups, rosterMark, rosterQuestions, rosterRowClass, ROSTER_CHOICE, sessionOf, situationOf } from './roster-lists.js';
+import { agentLabel, cardsByName, rosterGroups, rosterMark, rosterQuestions, rosterRowClass, rosterShown, ROSTER_CHOICE, sessionOf, situationOf } from './roster-lists.js';
 import { ask } from './ask.js';
 import { splitItemTitle } from './item-title.js';
 import { createWarmTerminalPool } from './team-terminal-pool.js';
@@ -63,8 +63,9 @@ function createAllHandsRoster({ open }) {
   };
   const questions = ask([{ group: '', fields: rosterQuestions() }], {
     value: { type: choice.type, kind: choice.kind, sort: choice.sort }, density: 'tight',
-    onChange: (next) => { choice = { ...choice, ...next }; remember(); paint(); },
+    onChange: (next) => { choice = { ...choice, ...next }; remember(); questions.show(rosterShown(choice)); paint(); },
   });
+  questions.show(rosterShown(choice));
   const list = el('div', 'all-hands-list');
   surface.content.append(questions.el, list);
   const rows = createKeyedList({ key: (row) => row.key, shows: (row) => row.shows, draw: (row) => row.draw() });

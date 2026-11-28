@@ -159,7 +159,7 @@ Teams door opens the Teams workbench (`#/cowork`, `cowork-view.js`; owner, 2026-
 and Help are one shape (`door-workbenches.js`): the Kit Workbench on a profile of the door's surfaces, the door's
 surface seated in Workspace 1 on first open. All Hands (`#/allhands`, `all-hands.js`, w1146) is a door workbench of
 the same shape: profile `allhands`, its roster (`allhands.roster`) seated in Workspace 1 and Workspace 2 empty. The
-roster draws the phone list's one reading (`roster-lists.js`: Type, Kind, Sort); a row places `session.terminal` or
+roster draws the phone list's one reading (`roster-lists.js`: Kind, Sort, and Type only By type); a row places `session.terminal` or
 `team.find-item` (keyed by the item) in the selected workspace, the other one when the roster's own is selected. Its
 selector offers the roster and the catalog's own New Agent, New Team, Archived Agents, Teams (`cowork.team-roster`, a stone's Team by `createTeamOne`; a dragged stone or Team group places `team.profile`), Epics (`epics.records`) and Find
 item, each given an environment over no Team. Its look (KAN-978) is shape and fill on the office's tokens, no new

@@ -107,8 +107,8 @@ below describes implementation ownership; use the surface index above to find a 
 | `composer-rules.js` | `sendComposerMessage`, `settleComposer` — HTTP message send and box settlement |
 | `dvr.js` | `dvrStep` — the unlocked input rule, pure |
 | `ansi.js` | `ANSI_RE` — its own module so the tape's pure logic loads outside a browser |
-| `phone.js` | THE MOBILE DOCUMENT's entry module — `mobile.html` boots it, never `main.js`: one list (Type · Kind · Sort, cards opening to their rows; the reading is `roster-lists.js`) → an Agent's tile, an item or a Team's Docs, hash-routed (`#/s/<agent>` `#/i/<item>` `#/d/<team>`); the server sends that document at `/m`, and at `/` to a phone |
-| `roster-lists.js` | `rosterGroups`, `rosterQuestions`, `situationOf` — the one roster reading (Type · Kind · Sort over every Agent and open item, from the store) the phone's list and All Hands both draw |
+| `phone.js` | THE MOBILE DOCUMENT's entry module — `mobile.html` boots it, never `main.js`: one list (Kind · Sort · Type, cards opening to their rows; the reading is `roster-lists.js`) → an Agent's tile, an item or a Team's Docs, hash-routed (`#/s/<agent>` `#/i/<item>` `#/d/<team>`); the server sends that document at `/m`, and at `/` to a phone |
+| `roster-lists.js` | `rosterGroups`, `rosterQuestions`, `situationOf` — the one roster reading (Kind · Sort · Type over every Agent and open item, from the store) the phone's list and All Hands both draw |
 | `all-hands.js` | `createAllHandsView` — All Hands at `#/allhands` (w1146): the roster in Workspace 1, Workspace 2 empty; a row opens its Agent's tile or its item (Find item) in the selected surface; the selector global (New Agent, New Team, Archived Agents, Teams, Epics, Find item) |
 | `keysrow.js` | `buildKeysRow` — Esc/Tab/Shift-Tab/arrows/⤓ docked on every coarse tile's composer |
 | `tilementions.js` | `insertMention`, `MENTION_MIME` — a session name into this tile's composer, from the menu or a drag |

@@ -1,10 +1,10 @@
 /* part of the ronin-cowork client — see js/README.md */
 /**
  * THE ROSTER LISTS (plan ronin_cowork/phone-lists, KAN-818; w1146): the one reading behind the
- * phone's front door and the All Hands workbench's roster. Three questions — Type (the grouping:
- * Team, Epic, Workspace), Kind (each row: Agent, Lead, Item) and Sort (By type: one group per Team,
- * Epic or Workspace; By active: one group each for Flagged, Active, Recently active, Everyone
- * else) — answered from the store alone. Each consumer draws the groups its own way.
+ * phone's front door and the All Hands workbench's roster. Its questions — Kind (each row: Agent,
+ * Lead, Item), Sort (By type: one group per Team, Epic or Workspace; By active: one group each for
+ * Flagged, Active, Recently active, Everyone else) and, only By type, Type (the grouping: Team,
+ * Epic, Workspace) — answered from the store alone. Each consumer draws the groups its own way.
  */
 import { get as held } from './store.js';
 import { membersOfTeam, teamByName, teamsFromState, UNASSIGNED, unassignedSessions } from './team-controller.js';
@@ -25,14 +25,17 @@ export function agentLabel(session) {
 }
 export const sessionOf = (name) => (S.sessions || []).find((one) => one.name === name) || { name };
 
-/** The three questions, as Erabi fields (ask.js). */
+/** The questions, as Erabi fields (ask.js): Kind, then Sort, then Type, which means something
+ * only when sorting by type (owner, 28 Nov); `rosterShown` says which are drawn. */
 export function rosterQuestions() {
   return [
-    { key: 'type', label: t('phone.type', 'Type'), options: [{ v: 'team', l: t('phone.type_team', 'Team') }, { v: 'epic', l: t('phone.type_epic', 'Epic') }, { v: 'workspace', l: t('phone.type_workspace', 'Workspace') }] },
     { key: 'kind', label: t('phone.kind', 'Kind'), options: [{ v: 'agent', l: t('phone.kind_agent', 'Agent') }, { v: 'lead', l: t('phone.kind_lead', 'Lead') }, { v: 'item', l: t('phone.kind_item', 'Item') }] },
     { key: 'sort', label: t('phone.sort', 'Sort'), options: [{ v: 'type', l: t('phone.sort_type', 'By type') }, { v: 'active', l: t('phone.sort_active', 'By active') }] },
+    { key: 'type', label: t('phone.type', 'Type'), options: [{ v: 'team', l: t('phone.type_team', 'Team') }, { v: 'epic', l: t('phone.type_epic', 'Epic') }, { v: 'workspace', l: t('phone.type_workspace', 'Workspace') }] },
   ];
 }
+/** The questions drawn for a choice: Type only while sorting by type. */
+export const rosterShown = (choice) => (choice.sort === 'active' ? ['kind', 'sort'] : ['kind', 'sort', 'type']);
 export const ROSTER_CHOICE = Object.freeze({ type: 'team', kind: 'agent', sort: 'type' });
 
 const NO_GROUP = ''; // the group id of "no Epic" / "no Workspace"
@@ -158,7 +161,9 @@ export function situationOf(row, cardOf) {
  * row once, by name.
  */
 export function rosterGroups(choice, cardOf = cardsByName()) {
-  const groups = readGroups(choice.type, choice.kind).map((group) => ({ ...group, cardId: `${choice.type}:${group.id}` }));
+  // By active asks no Type: the rows are read by Workspace, the grouping that holds every Agent.
+  const type = choice.sort === 'active' ? 'workspace' : choice.type;
+  const groups = readGroups(type, choice.kind).map((group) => ({ ...group, cardId: `${type}:${group.id}` }));
   if (choice.sort !== 'active') return groups;
   const seen = new Map();
   for (const group of groups) for (const row of group.rows) if (!seen.has(row.key)) seen.set(row.key, row);
