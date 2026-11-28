@@ -95,7 +95,7 @@ export function buildQuestion(question, { send, terminal = null }) {
         key: fieldKey, label: q.header || t('question.answer', 'Answer'), many: q.many,
         options: [
           ...q.options.map((o, n) => ({ v: String(n), l: o.label, ...(o.description ? { sub: o.description } : {}) })),
-          { v: 'write', l: t('question.write', 'Write something here'), row: customRow, required: true },
+          ...(q.freeText === false ? [] : [{ v: 'write', l: t('question.write', 'Write something here'), row: customRow, required: true }]),
         ],
       }] }], { value: { [fieldKey]: values[i] },
         exposed: true, density: 'tight',
@@ -128,7 +128,9 @@ export function buildQuestion(question, { send, terminal = null }) {
         } }));
       }
       if (terminal) actions.push(createAction({ label: t('transcript.answer_in_terminal', 'Answer in Terminal'), size: 'compact', action: terminal }));
-      stage.append(el('p', 'chat-question-title', q.question), one.el, createActionBar({ actions }).el);
+      const words = renderMarkdownDocument(q.question);
+      words.classList.add('chat-question-title');
+      stage.append(words, one.el, createActionBar({ actions }).el);
     };
     root.append(stage);
     paint();
