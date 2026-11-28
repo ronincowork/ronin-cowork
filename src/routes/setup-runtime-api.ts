@@ -116,9 +116,9 @@ export function registerSetupRuntime(app: express.Express): void {
     try { res.json({ ok: true, run: pasteSignIn(String(req.params.provider), String(req.body?.text ?? '')) }); }
     catch (error) { res.status(400).json({ error: errMsg(error) }); }
   });
-  app.post('/api/setup/harnesses/:provider/sign-in/cancel', (req, res) => {
-    cancelSignIn(String(req.params.provider));
-    res.json({ ok: true });
+  app.post('/api/setup/harnesses/:provider/sign-in/cancel', async (req, res) => {
+    try { res.json({ ok: true, state: await cancelSignIn(String(req.params.provider)) }); }
+    catch (error) { res.status(400).json({ error: errMsg(error) }); }
   });
 
   app.post('/api/setup/harnesses/:provider/login', async (req, res) => {

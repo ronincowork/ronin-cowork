@@ -124,11 +124,17 @@ export function pasteSignIn(provider: string, text: string): SignInRun {
   return entry.run;
 }
 
-/** Stops the run by its own process; nothing is recorded. */
-export function cancelSignIn(provider: string): void {
+/**
+ * Stops the run by its own process; nothing is recorded. It always answers with the state, run or
+ * none, so a page still drawing a run that already ended (a failed sign-in whose push it missed)
+ * is put right by the press itself (KAN-989).
+ */
+export async function cancelSignIn(provider: string): Promise<Awaited<ReturnType<typeof signInState>>> {
   const entry = runs.get(provider);
-  if (!entry) return;
-  runs.delete(provider);
-  entry.child.kill();
+  if (entry) {
+    runs.delete(provider);
+    entry.child.kill();
+  }
   push();
+  return signInState();
 }

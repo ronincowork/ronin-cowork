@@ -57,12 +57,30 @@ let signInAsked = false;
 const signInListeners = new Set();
 const heardSignIn = (message) => { signIn = { runs: message.runs || [], failed: message.failed || {}, ways: message.ways || {} }; for (const fn of signInListeners) fn(); };
 signInHandlers.add(heardSignIn);
+const readSignIn = () => request('/api/setup/sign-in', { cache: 'no-store' }).then((r) => { if (r.ok) heardSignIn(r.data); });
+// A reconnect may have missed a run's end (KAN-989): read the runs again on every open after the first read.
+store.onOpen(() => { if (signInAsked) void readSignIn(); });
 const listenSignIn = (fn) => {
-  if (!signInAsked) { signInAsked = true; void request('/api/setup/sign-in', { cache: 'no-store' }).then((r) => { if (r.ok) heardSignIn(r.data); }); }
+  if (!signInAsked) { signInAsked = true; void readSignIn(); }
   signInListeners.add(fn);
   return () => signInListeners.delete(fn);
 };
 const runOf = (id) => signIn.runs.find((one) => one.provider === id) || null;
+
+/**
+ * COPY THAT ANSWERS (KAN-989): the clipboard where the page may write it (https, a hosted office), else the
+ * text selected and copied the old way; either way the press says what happened.
+ */
+async function copyText(value) {
+  try { await navigator.clipboard.writeText(value); return true; } catch { /* not allowed here: the old way */ }
+  const area = document.createElement('textarea');
+  area.value = value; area.setAttribute('readonly', ''); area.style.position = 'fixed'; area.style.opacity = '0';
+  document.body.append(area); area.select();
+  let done = false;
+  try { done = document.execCommand('copy'); } catch { done = false; }
+  area.remove();
+  return done;
+}
 
 /**
  * THE STATE WORD (owner, 25 and 27 Nov 2026): one word per harness, on its stone and its panel alike. It names
@@ -221,7 +239,7 @@ export function mountHarnessPanel(host, id, { drawing, context = {}, openAgent =
     copyRow = el('div', 'ask setup-harness-row setup-harness-ways harness-terminal-stones'); copyRow.dataset.density = 'tight';
     const said = el('p', 'setup-fine'); said.hidden = true;
     let seen = { code: '', link: '', back: '' };
-    const copy = (value) => { void navigator.clipboard?.writeText(value).then(() => { said.textContent = t('setup_harness.copied', 'Copied.'); said.hidden = false; }, () => {}); };
+    const copy = (value) => { void copyText(value).then((done) => { said.textContent = done ? t('setup_harness.copied', 'Copied.') : t('setup_harness.copy_failed', 'Copy did not work here: select it and copy it.'); said.hidden = false; }); };
     const paintCopy = () => {
       const code = stone(t('harness.copy_code', 'Copy code'), () => { if (seen.code) copy(seen.code); }, seen.code || t('harness.no_code', 'No code yet'));
       code.disabled = !seen.code;
@@ -256,7 +274,11 @@ export function mountHarnessPanel(host, id, { drawing, context = {}, openAgent =
     if (run.link) { const link = el('a', 'setup-harness-link', run.link.replace(/^https:\/\//, '').replace(/[?#].*$/, '')); link.href = run.link; link.target = '_blank'; link.rel = 'noopener noreferrer'; box.append(link); }
     if (run.code) box.append(el('span', 'setup-harness-code', run.code));
     const row = el('div', 'ask setup-harness-row'); row.dataset.density = 'tight';
-    if (run.code) row.append(stone(t('setup_harness.copy', 'Copy'), () => { void navigator.clipboard?.writeText(run.code).catch(() => {}); }));
+    const said = el('p', 'setup-fine'); said.hidden = true;
+    const answer = (text, bad = false) => { said.textContent = text; said.className = bad ? 'setup-harness-line bad' : 'setup-fine'; said.hidden = false; };
+    if (run.code) row.append(stone(t('setup_harness.copy', 'Copy'), async () => {
+      answer(await copyText(run.code) ? t('setup_harness.copied', 'Copied.') : t('setup_harness.copy_failed', 'Copy did not work here: select it and copy it.'), false);
+    }));
     if (run.paste && !run.sent) {
       const input = el('input', 'setup-harness-input');
       input.type = run.paste === 'key' ? 'password' : 'text';
@@ -272,8 +294,14 @@ export function mountHarnessPanel(host, id, { drawing, context = {}, openAgent =
       input.addEventListener('keydown', (event) => { if (event.key === 'Enter') send.click(); });
       row.append(input, send);
     }
-    row.append(stone(t('setup_harness.cancel', 'Cancel'), async () => { const r = await request(`${base}/sign-in/cancel`, { method: 'POST', json: {} }); if (r.ok) tellHer(`${shortName(provider)} · Cancel sign-in`); }));
-    box.append(row);
+    // Cancel always answers: the server says what runs now, and the panel draws that (KAN-989).
+    row.append(stone(t('setup_harness.cancel', 'Cancel'), async () => {
+      const r = await request(`${base}/sign-in/cancel`, { method: 'POST', json: {} });
+      if (!r.ok) { answer(r.message, true); return; }
+      if (r.data?.state) heardSignIn(r.data.state);
+      tellHer(`${shortName(provider)} · Cancel sign-in`);
+    }));
+    box.append(row, said);
     return box;
   };
 
