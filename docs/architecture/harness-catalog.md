@@ -339,6 +339,14 @@ the fix is fewer modules, not another. The client gets one model and one panel.
 panel's main section is **Model services**, never "authentication" or "sign-in" (owner, 27 Nov).
 Signing in is only what some services need on the way.
 
+**How it reads (owner, 28 Nov; KAN-990).** One text size, one ink: the harness's name is the one
+larger line (`--text-heading`); the section headings (Model services, Model entries) and a
+service's name over its table are strong body text, never capitals; every line, note, link, code,
+table cell and press is body text in `--fg`. Presses that are words (the sign-in link, Hide, Add or
+change) read as words and underline on hover, never link blue. Only a status keeps a colour: a
+fault (kaki), a hidden row (muted), the service it is on (the kaki fill). The rules sit under
+`.harness-panel` in `style.css`.
+
 ### The state word
 
 One function, `harnessState(provider)`, gives every harness one word, used on the stone, the panel
