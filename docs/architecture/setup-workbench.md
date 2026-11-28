@@ -159,7 +159,9 @@ have 5 Workspaces."). One question, **How are you starting?**, four doors (`setu
 a door pressed opens only its questions under it, then Create. After Create the doors are there
 again: people have several Workspaces, and one Workspace can hold several repositories.
 
-1. **From a Git repository**: their GitHub repositories (once signed in) and pasted Git URLs, many;
+1. **From a Git repository**: every GitHub repository the sign-in reaches (once signed in), grouped by owner, the account
+   first and then each organization by name, a stone naming just the repository (newest 100 per owner; a group cut
+   short says so; KAN-999), and pasted Git URLs, many;
    each cloned into `repos/<repo>` (`POST /api/workspaces/<name>/repos`).
 2. **An existing project, not in Git**: where it comes from (Google Drive, WordPress, Shopify,
    Netlify, files from their computer), each an integration row with its folder `files/<source>`.

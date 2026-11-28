@@ -169,7 +169,7 @@ export function registerSetupRuntime(app: express.Express): void {
   });
 
   app.get('/api/setup/github/repos', async (_req, res) => {
-    try { res.json({ ok: true, repos: await githubRepositories() }); }
+    try { res.json({ ok: true, ...await githubRepositories() }); }
     catch (error) { res.status(400).json({ error: errMsg(error) }); }
   });
 

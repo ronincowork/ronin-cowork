@@ -112,7 +112,8 @@ export function createWorkspaceKickoff({ workspacesRead, environment, intro = fa
   let door = '';
   let draft = blank();
   let github = { authenticated: false, account: '' };
-  let mine = null; // their GitHub repositories, read once signed in
+  let mine = null; // every GitHub repository the sign-in reaches, read once signed in
+  let cut = []; // owners whose group was cut short
   let asking = ''; // what Connect answered
   const has = (name) => workspacesRead.list().some((w) => w.name === name && !w.archived);
   const urls = () => [...new Set([...draft.picked, ...draft.pasted.split(/\s+/).map((one) => one.trim()).filter(Boolean)])];
@@ -133,6 +134,7 @@ export function createWorkspaceKickoff({ workspacesRead, environment, intro = fa
     if (github.authenticated && !mine) {
       const list = await request('/api/setup/github/repos', { cache: 'no-store' });
       mine = list.ok ? list.data.repos || [] : [];
+      cut = list.ok ? list.data.cut || [] : [];
     }
     if (github.authenticated) asking = '';
     paintBlanks();
@@ -312,9 +314,20 @@ export function createWorkspaceKickoff({ workspacesRead, environment, intro = fa
     }
     into.append(...head);
     if (door === 'git') {
-      if (github.authenticated && mine?.length) into.append(question('picked', t('setup_workspace.which_repos', 'Which repositories?'),
-        mine.map((repo) => ({ v: repo.url, l: repo.name, ...(repo.private ? { word: t('workspaces.private', 'private') } : {}) })), draft.picked,
-        (v) => { draft.picked = v || []; }, { many: true }));
+      // Grouped by owner, the account first, then each organization (KAN-999): a stone is the repository's own
+      // name, its owner the group's heading. Each group's picks are its own; together they are draft.picked.
+      if (github.authenticated && mine?.length) {
+        into.append(el('p', 'setup-workspace-ask', t('setup_workspace.which_repos', 'Which repositories?')));
+        for (const owner of [...new Set(mine.map((repo) => repo.owner || repo.name.split('/')[0]))]) {
+          const repos = mine.filter((repo) => (repo.owner || repo.name.split('/')[0]) === owner);
+          const urls = new Set(repos.map((repo) => repo.url));
+          const heading = cut.includes(owner) ? t('setup_workspace.repos_cut', '{owner}: the newest 100; paste any other below', { owner }) : owner;
+          into.append(question(`picked-${owner}`, heading,
+            repos.map((repo) => ({ v: repo.url, l: repo.short || repo.name, ...(repo.private ? { word: t('workspaces.private', 'private') } : {}) })),
+            draft.picked.filter((url) => urls.has(url)),
+            (v) => { draft.picked = [...draft.picked.filter((url) => !urls.has(url)), ...(v || [])]; }, { many: true }));
+        }
+      }
       into.append(textBox(github.authenticated ? t('setup_workspace.or_paste', 'Or paste Git URLs, one per line') : t('setup_workspace.paste', 'Git URLs, one per line'), draft.pasted,
         (v) => { draft.pasted = v; }, t('workspace_add.repository_placeholder', 'https://… or git@… ; owner/repo for GitHub'), 2));
     }
