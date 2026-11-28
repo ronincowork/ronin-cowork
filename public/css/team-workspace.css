@@ -202,4 +202,14 @@
   .all-hands-row:not(.flagged, .stopped):hover .all-hands-name { color: var(--fg-strong); }
   .all-hands-key { color: var(--muted); }
   .all-hands-empty { margin: 0; padding: var(--space-row) var(--space-inset) var(--space-row) calc(var(--space-inset) * 2); color: var(--muted); }
+  /* ALL HANDS' SELECTOR (owner, 28 Nov): three groups, All Hands · Teams · Epics · Workspaces, then
+     Find item, then New Agent · New Team · Archived Agents; one gap before each later group, none
+     before New Team here. The All Hands card first and coloured, the priority: the Home slab's
+     wash of its tone (campaign-home.css). */
+  [data-workbench-profile='allhands'] .wk-workbench-selector-cards .wk-selector-group-after { margin-top: 0; }
+  [data-workbench-profile='allhands'] .wk-workbench-selector-cards :is([data-workbench-offer-type='team.find-item'], [data-workbench-offer-type='session.new-agent']) { margin-top: var(--space-paragraph); }
+  [data-workbench-profile='allhands'] .wk-workbench-selector-cards [data-workbench-offer-type='allhands.roster'] {
+    border-color: color-mix(in srgb, var(--ok-2) 30%, var(--line-2));
+    background: linear-gradient(90deg, color-mix(in srgb, var(--ok-2) 14%, var(--surface)), color-mix(in srgb, var(--ok-2) 4%, var(--surface)) 70%);
+  }
 }

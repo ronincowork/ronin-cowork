@@ -6,7 +6,8 @@
  * to its rows and closes again; an Agent's row opens its tile, an item's row its reading (Find
  * item, loaded on it), in the selected surface (the other one when the roster's own is
  * selected). The roster is a selector card too, so it can be put in either surface. The selector
- * is global: New Agent, New Team, Archived Agents, Teams, Epics and Find item, each the catalog's own
+ * is global, in three groups — All Hands (coloured, the priority), Teams, Epics, Workspaces; Find
+ * item; New Agent, New Team, Archived Agents — each the catalog's own
  * surface over no Team.
  */
 import { WorkspaceKit } from './workspace-kit.js';
@@ -27,6 +28,9 @@ import { createNewTeamFormView } from './new-team-form.js';
 import { buildArchives } from './archives.js';
 import { createEpicRecord, createEpicStones, createEpicsRead } from './epics-surface.js';
 import { createFindItem } from './team-find-item.js';
+import { createWorkspaceRecord, createWorkspaceStones, workspaceOffers } from './workspaces-surface.js';
+import { createWorkspacesRead } from './workspaces-read.js';
+import { loadCampaigns } from './campaigns.js';
 import { openWorkbenchTab } from './workspace.js';
 import { BEHAVIOUR_SURFACE_TYPE } from './behaviour-surface.js';
 import { SURFACE_DRAG } from './workbench.js';
@@ -79,6 +83,7 @@ function createAllHandsRoster({ open }) {
     // An Epic's group is that Epic, a Team's that Team: dragged, it opens where it is dropped.
     if (choice.sort !== 'active' && choice.type === 'epic' && group.id) draggable(head, WORKBENCH_TYPES.epicRecord, group.id, group.label);
     if (choice.sort !== 'active' && choice.type === 'team' && group.team && group.team !== UNASSIGNED) draggable(head, WORKBENCH_TYPES.team, group.team, group.label);
+    if (choice.sort !== 'active' && choice.type === 'workspace' && group.id) draggable(head, WORKBENCH_TYPES.workspaceRecord, group.id, group.label);
     return head;
   };
   const agentRow = (name, situation, lead) => {
@@ -137,10 +142,11 @@ export function createAllHandsView() {
   const teamDefaults = (name) => ({ destination: 'team', param: name, mode: 'replace', state: { count: 2, selected: 'workspace1', seats: { workspace1: { type: WORKBENCH_TYPES.commons, tab: 'team-configuration' }, workspace2: WorkspaceKit.contract.DISMISSED_WORKSPACE } } });
   return doorWorkbench({
     id: 'allhands', profile: WORKBENCH_PROFILES.allHands, label: t('all_hands.title', 'All Hands'),
-    seat: WORKBENCH_TYPES.allHandsRoster,
-    selectorFilter: (type) => ![WORKBENCH_TYPES.terminal, WORKBENCH_TYPES.team, WORKBENCH_TYPES.epicRecord, BEHAVIOUR_SURFACE_TYPE].includes(type),
+    seat: WORKBENCH_TYPES.allHandsRoster, loaded: loadCampaigns, // the Workspaces stones read the Campaign
+    selectorFilter: (type) => ![WORKBENCH_TYPES.terminal, WORKBENCH_TYPES.team, WORKBENCH_TYPES.epicRecord, WORKBENCH_TYPES.workspaceRecord, BEHAVIOUR_SURFACE_TYPE].includes(type),
     environment: ({ bench }) => {
       const epicsRead = createEpicsRead(() => '');
+      const workspacesRead = createWorkspacesRead();
       const place = (type, id, detail = {}) => bench().place(type, id, detail);
       const seatFor = (id) => {
         if (!terminals[id]) {
@@ -214,6 +220,11 @@ export function createAllHandsView() {
         epicRecords: () => keep(createEpicStones({ epicsRead, workbench: bench() })),
         epicRecord: (_workspace, detail) => keep(createEpicRecord(detail.key, { epicsRead })),
         findItem: (_workspace, detail) => keep(createFindItem(detail?.key)),
+        // WORKSPACES (owner, 28 Nov): the Workspaces workbench's stones, a pressed one's page in
+        // their place; a dragged stone, or a Workspace's group in the roster, places it whole.
+        workspaces: () => workspaceOffers(workspacesRead),
+        workspaceRecords: () => keep(createWorkspaceStones({ workspacesRead, workbench: bench(), recordType: WORKBENCH_TYPES.workspaceRecord })),
+        workspaceRecord: (_workspace, detail) => keep(createWorkspaceRecord(detail.key, { workspacesRead })),
       };
     },
     destroy: () => {

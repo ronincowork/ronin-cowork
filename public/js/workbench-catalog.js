@@ -119,7 +119,14 @@ export function registerWorkbenchCatalog() {
   // each over no Team); an Agent's tile, a Team and an Epic's record are placed by the roster and the
   // stones (all-hands.js).
   add({ type: WORKBENCH_TYPES.allHandsRoster, header: 'surface', className: 'wk-selector-utility', label: () => t('all_hands.roster', 'All Hands'), summary: () => t('all_hands.roster_summary', 'Every Agent and item, by Team, Epic or Workspace'), create: ({ workspace, environment }) => environment.allHandsRoster(workspace) });
-  profiles.define(WORKBENCH_PROFILES.allHands, [WORKBENCH_TYPES.allHandsRoster, WORKBENCH_TYPES.newAgent, WORKBENCH_TYPES.newTeamForm, WORKBENCH_TYPES.archives, WORKBENCH_TYPES.roster, WORKBENCH_TYPES.epicRecords, WORKBENCH_TYPES.teamFindItem, WORKBENCH_TYPES.terminal, WORKBENCH_TYPES.team, WORKBENCH_TYPES.epicRecord, BEHAVIOUR_SURFACE_TYPE]);
+  // Its selector in three groups (owner, 28 Nov): All Hands, Teams, Epics, Workspaces; Find item;
+  // New Agent, New Team, Archived Agents (the gaps and the All Hands card's colour are team-workspace.css's, by offer type).
+  profiles.define(WORKBENCH_PROFILES.allHands, [
+    WORKBENCH_TYPES.allHandsRoster, WORKBENCH_TYPES.roster, WORKBENCH_TYPES.epicRecords, WORKBENCH_TYPES.workspaceRecords,
+    WORKBENCH_TYPES.teamFindItem,
+    WORKBENCH_TYPES.newAgent, WORKBENCH_TYPES.newTeamForm, WORKBENCH_TYPES.archives,
+    WORKBENCH_TYPES.terminal, WORKBENCH_TYPES.team, WORKBENCH_TYPES.epicRecord, WORKBENCH_TYPES.workspaceRecord, BEHAVIOUR_SURFACE_TYPE,
+  ]);
   // SETTINGS V2 (owner, 2026-11-25; KAN-862, KAN-867): built beside Settings to compare; the old one goes once v2 is right.
   // The five agreed sections (MACHINE_SETTINGS_V2.md). Its own card types where its words differ from the Harnesses
   // door's; the surfaces under them are today's, reused. A harness's own card is placed by its stone, not offered.

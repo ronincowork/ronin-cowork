@@ -44,7 +44,7 @@ not separate layout systems.
 | Teams collection | Teams, Agents, shared resources, and creation surfaces available in the selected Campaign context |
 | Team | that Team's Agents, Commons, Epics, New Agent, New Item (the Epics workbench's New form, started on Task) and Agent composition |
 | Agent | Self, Documents, Team membership, and Work Items: the work items the Agent holds across its Teams |
-| All Hands | its roster, New Agent, New Team, Archived Agents, Teams, Epics and Find item, each over no Team |
+| All Hands | All Hands (its roster), Teams, Epics, Workspaces; Find item; New Agent, New Team, Archived Agents; each over no Team |
 | Setup | Harness, Workspace, Team and Tour, with the Ask Ronin panel |
 
 Adding another tenant or profile adds no layout implementation. Adding another surface
@@ -259,11 +259,13 @@ flagged, the working dot (hollow just finished), muted when stopped. Press an Ag
 opens in the selected tilespace; press an item and it opens there on **Find item**. When the
 list's own tilespace is selected, what you press opens in the first empty tilespace on screen (with
 two or four), else the one beside the list. Drag a row instead and it opens in the tilespace you
-drop it on, any of the four; under **Type: Epic**, an Epic's group drags as that Epic. The list is a card in
-the selector too, so it can be put in either tilespace. The selector is for the whole office:
-**New Agent**, **New Team**, **Archived Agents**, **Teams** (every Team as a stone, as on the Teams
-workbench), **Epics** (every open Epic as a stone) and **Find item**, none of them tied to a Team.
-Drag a Teams stone, or a Team's group under **Type: Team**, and that Team opens where you drop it.
+drop it on, any of the four; under **Type: Epic**, an Epic's group drags as that Epic. The selector is for
+the whole office, in three groups. First **All Hands** (the list itself, coloured as the one to
+start from, so it can be put in any tilespace), **Teams** (every Team as a stone, as on the Teams
+workbench), **Epics** (every open Epic as a stone) and **Workspaces** (every Workspace as a stone,
+as on the Workspaces workbench); then **Find item**; then **New Agent**, **New Team** and
+**Archived Agents**. None of them is tied to a Team. Drag a stone, or under **Type** a Team's,
+Epic's or Workspace's group, and it opens where you drop it.
 
 ## Short vocabulary check
 

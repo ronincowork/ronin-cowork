@@ -161,8 +161,9 @@ surface seated in Workspace 1 on first open. All Hands (`#/allhands`, `all-hands
 the same shape: profile `allhands`, its roster (`allhands.roster`) seated in Workspace 1 and Workspace 2 empty. The
 roster draws the phone list's one reading (`roster-lists.js`: Kind, Sort, and Type only By type); a row places `session.terminal` or
 `team.find-item` (keyed by the item) in the selected workspace, the other one when the roster's own is selected. Its
-selector offers the roster and the catalog's own New Agent, New Team, Archived Agents, Teams (`cowork.team-roster`, a stone's Team by `createTeamOne`; a dragged stone or Team group places `team.profile`), Epics (`epics.records`) and Find
-item, each given an environment over no Team. Its look (KAN-978) is shape and fill on the office's tokens, no new
+selector, in three groups, offers the roster (coloured, the priority), Teams (`cowork.team-roster`, a stone's Team by `createTeamOne`; a dragged stone or Team group places `team.profile`), Epics (`epics.records`), Workspaces (`workspaces.records`, a dragged stone or Workspace group places `workspaces.record`); Find
+item; and the catalog's own New Agent, New Team and Archived Agents; each given an environment over no Team. The groups'
+gaps and the roster card's colour key on `[data-workbench-profile='allhands']` and the offer type (team-workspace.css). Its look (KAN-978) is shape and fill on the office's tokens, no new
 colour: a group is an `--inset` band with a kaki edge, a chevron that turns open and its count in a chip; a row takes
 `--selected` and a kaki edge on hover; the shared `roster-row` mark is untouched. On Home the slab wears its green
 (`--ok-2`, Teams') as a wash, a glyph tile, a broader edge and a hover arrow (`team-workspace.css`, `campaign-home.css`).
