@@ -4,7 +4,7 @@ import path from 'node:path';
 import { AGENTS, discoverExecutable, launchArgv, listAgentAvailability } from './agents.js';
 import { updateSection } from './machine-state.js';
 import { listHarnesses, type ModelList, type HarnessSummary } from './harness-catalog.js';
-import { activatedAt, offAt, harnessSignedIn } from './harness-summary.js';
+import { activatedAt, offAt, harnessSignedIn, withCurrentModels } from './harness-summary.js';
 import { rootDir } from './resources.js';
 import { runCommand } from './send.js';
 import { execFile as run, SpawnBrokerError } from './spawn-broker.js';
@@ -109,6 +109,8 @@ export async function setupRuntimeAnswer(
   servedBy: readonly string[] = [],
 ): Promise<SetupRuntimeAnswer> {
   const entries = listHarnesses();
+  // model_list is each CLI's list as of this ask (KAN-995): the park reports it to HQ as cli_models.
+  const lists = (await withCurrentModels(summary)).models;
   const providers = await Promise.all(AGENTS.map(async (agent): Promise<SetupHarnessState> => {
     const entry = entries.find((row) => row.cli === agent.id);
     const session = sessionName(agent.id);
@@ -144,7 +146,7 @@ export async function setupRuntimeAnswer(
       off: offSince !== null,
       off_at: offSince,
       version,
-      model_list: activated ? summary.models?.[agent.id] ?? null : null,
+      model_list: activated ? lists?.[agent.id] ?? null : null,
       login_command: [agent.cmd, ...(agent.operations.setup ?? [])].join(' '),
       // One attachment per provider: sign-in, then install. The same Close ends both;
       // installation remains visible after the binary appears.

@@ -193,14 +193,14 @@ What this machine *has* is measured, not derived on every read. The Campaign rec
 | `off` | installed CLI ids the owner turned off; the sign-in is kept |
 | `activated_count` | the size of `operational` — a provider with nothing to launch does not count |
 | `versions` | what each operational/activated CLI said to the registry's `operations.version` argv, per CLI id; an installed but unactivated CLI is not run |
-| `models` | per CLI id, its own model list as the last refresh read it: `{ read_at, by, rows: [{ id, name }] }` in the CLI's order, `by` the CLI version installed at the read; or `{ read_at, by, rows: [], unavailable }` saying why there is none. Never guessed, never inferred from the catalog |
+| `models` | per CLI id whose list only a command prints (Grok, OpenCode), its last answer as the refresh read it; a list the CLI keeps in a file (Claude Code, Codex) or Ronin's own store (Hermes) is not kept here but read at every ask, `GET /api/harness-catalog`, a launch and `GET /api/setup/runtime`'s `model_list` (KAN-995). Each list: `{ read_at, by, rows: [{ id, name }] }` in the CLI's order, `by` the CLI version installed at the read; or `{ read_at, by, rows: [], unavailable }` saying why there is none. Never guessed, never inferred from the catalog |
 
 `src/harness-summary.ts` has two writers and one record:
 
 - `measureAndRecordHarnesses` — the machine facts; the recorded lists and `refreshed_at`
   ride along unchanged. At every Ronin start, after **Cancel** on a sign-in (a sign-in closed
   without Done may still have left a credential file), and after Turn off / on.
-- `refreshHarnesses` — the same facts, then every activated CLI's own list read again and
+- `refreshHarnesses` — the same facts, then every activated CLI's command-printed list read again and
   the Ronin Gateway's list. **HQ drives it** (owner, 2026-11-27; KAN-972): HQ moves the CLIs on
   a hosted office, and the park then calls `POST /api/setup/harnesses/refresh` over the unit's
   socket (`ronin_cloud` office_kohai); the park reports `GET /api/setup/runtime`'s

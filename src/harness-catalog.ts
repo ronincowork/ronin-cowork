@@ -291,7 +291,9 @@ const factsOf = (m: CatalogModel): ModelFacts | undefined => {
  * by tier. Providers this machine can launch come first; the registry's order holds within
  * each group. A provider whose CLI has no Agent page has no rows at all.
  */
-export async function harnessRows(summary: HarnessSummary | null, catalog?: ModelCatalog): Promise<HarnessRows[]> {
+export async function harnessRows(recorded: HarnessSummary | null, catalog?: ModelCatalog): Promise<HarnessRows[]> {
+  // Each CLI's list as of this ask (KAN-995); a late import, since the measure imports this file.
+  const summary = await (await import('./harness-summary.js')).withCurrentModels(recorded);
   const models = catalog ?? await readModelCatalog();
   const operational = new Set(summary?.operational ?? []);
   const turnedOff = new Set(summary?.off ?? []);
