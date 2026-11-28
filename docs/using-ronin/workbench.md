@@ -242,8 +242,8 @@ New Agent** under its rows. The phone remembers the three choices and which card
 
 An Agent sits under an Epic when it holds the Epic or an item under it, so it can appear under
 more than one. An Agent's Workspace is its Team's; an item's is that of whoever holds its Epic.
-An item's row shows its holder's situation. An Agent with no ⚑ or dot says, in muted words where
-the mark sits, when it last worked: **just now**, or how long ago, as **3h ago** or **2d ago**.
+An item's row shows its holder's situation. An Agent that is none of these (not flagged, working, just
+finished or stopped) says, in muted words where the mark sits, when it last worked: **just now**, or how long ago, as **3h ago** or **2d ago**.
 
 Press an Agent to open its tile; back returns to the list. Press an item to open it on its own
 screen: the same reading as on a desk, with its status to move, its Agents (each opens that

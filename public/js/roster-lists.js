@@ -144,13 +144,13 @@ export function rosterMark(words = '') {
   return mark;
 }
 /**
- * LAST ACTIVE (owner, 28 Nov; KAN-982): an Agent with no mark (not flagged, working or just
- * finished) says how long ago its last turn ended, the card's `at` that agentSituation reads:
+ * LAST ACTIVE (owner, 28 Nov; KAN-982): an Agent with no situation (not flagged, working, just
+ * finished or stopped) says how long ago its last turn ended, the card's `at` that agentSituation reads:
  * 'just now', else humanAge's '3h ago'. '' while it has a mark or no turn yet. The age clock
  * (onAgeTick) that already redraws the rows keeps it current.
  */
 export function lastWorked(card, situation, now = Date.now()) {
-  if (['flagged', 'working', 'ready'].includes(situation)) return '';
+  if (situation) return ''; // flagged, working, ready and stopped keep their own look (owner, 28 Nov)
   const at = Date.parse(card?.at || '');
   if (!Number.isFinite(at)) return '';
   const ms = Math.max(0, now - at);
