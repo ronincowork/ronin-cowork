@@ -15,6 +15,7 @@ import {
   githubRepositories,
 } from '../setup-runtime.js';
 import { installedAnswer } from './installed-api.js';
+import { fetchMissingModelLists } from '../model-list-fetch.js';
 import { GITHUB, cancelSignIn, pasteSignIn, signInState, startGithubSignIn, startSignIn } from '../harness-sign-in.js';
 import { measureAndRecordHarnesses, readHarnessSummary, refreshHarnesses } from '../harness-summary.js';
 import type { HarnessSummary } from '../harness-catalog.js';
@@ -146,6 +147,7 @@ export function registerSetupRuntime(app: express.Express): void {
       const result = await completeHarnessLogin(String(req.params.provider));
       // Done activates a provider: the owner's press, so its model list is read now (owner, 2026-09-25).
       res.json({ ok: true, closed: true, activation_recorded: true, activated_at: result.activated_at, attachment: null, runtime: await answer(await refreshHarnesses()) });
+      void fetchMissingModelLists(); // a CLI with no list file yet writes one (KAN-995)
     } catch (error) {
       res.status(409).json({ error: errMsg(error) });
     }
