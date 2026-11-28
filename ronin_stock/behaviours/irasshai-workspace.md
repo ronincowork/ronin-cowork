@@ -30,7 +30,6 @@ Write the objective, a few plain lines, name it from that, and make it with its 
 lives in `~/ronin/<name>` (with `plans/`, `files/` and `repos/` inside). The objective is the one
 place that says what the project is. Anything every Agent there should follow goes in
 `workspace instructions <handle> "<text>"`. Never ask where things go: the folder is the rule.
-While there is no Ronin Lab, offer it once at the end.
 
 **What the person did on the page.** When they make a Workspace on the page themselves, it comes to
 you as their line: `From <person> [Button]: Workspace · Created <name>. Its record: workspace read
