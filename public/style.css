@@ -4188,7 +4188,8 @@ button.wk-card { cursor: pointer; }
   gap: var(--space-row);
   padding: var(--space-inline);
 }
-#phone .ph-card {
+/* Under the shared roster mark's flagged look (workspace-kit.css .roster-row): no id weight. */
+:where(#phone) .ph-card {
   display: block;
   padding: var(--space-paragraph) var(--space-inline);
   border: var(--edge) solid var(--line-2);
@@ -4212,7 +4213,7 @@ button.wk-card { cursor: pointer; }
   align-items: baseline;
   gap: var(--space-inline);
 }
-#phone .ph-card-name {
+:where(#phone) .ph-card-name {
   min-width: 0;
   color: var(--fg-strong);
   font-size: var(--text-label);
@@ -4271,28 +4272,8 @@ button.wk-card { cursor: pointer; }
 #phone .ph-item {
   padding: var(--space-inline);
 }
-/* A row's situation (KAN-665), as the desktop pill says it: the flagged look (⚑ and amber), one
-   Chat dot after the name while working (a hollow ring when just finished), muted ink when
-   stopped. An item's row carries its holder's. */
-#phone .ph-row.flagged {
-  border-color: color-mix(in srgb, var(--warn) 55%, transparent); /* status: a person is needed */
-  background: color-mix(in srgb, var(--warn) 12%, transparent); /* status: a person is needed */
-}
-#phone .ph-row.flagged :is(.ph-card-name, .ph-row-flag, .home-job) { color: var(--warn); }
-/* At the card's right edge, one column down the list (KAN-673). */
-#phone .ph-row:is(.working, .ready) .ph-card-line::after {
-  content: '';
-  flex: none;
-  align-self: center;
-  box-sizing: border-box;
-  width: 6px;
-  height: 6px;
-  border: var(--edge) solid var(--kaki);
-  border-radius: 50%;
-  background: var(--kaki); /* kaki: the Chat's working dot */
-}
-#phone .ph-row.ready .ph-card-line::after { background: transparent; }
-#phone .ph-row.stopped :is(.ph-card-name, .home-job) { color: var(--muted); }
+/* A row's situation (⚑, the working dot, muted when stopped) is the shared roster mark
+   (workspace-kit.css .roster-row); an item's row carries its holder's. */
 #phone .ph-empty {
   padding: var(--space-inset) var(--space-inset);
   color: var(--muted);

@@ -39,6 +39,7 @@ import { createAgentCompositionSurface } from './agent-composition.js';
 import { createTeamEpics } from './team-epics.js';
 import { createFindItem } from './team-find-item.js';
 import { createTeamBody } from './team-one.js';
+import { rosterRowClass } from './roster-lists.js';
 import { createEpicRecord, createEpicsRead, createNewItem } from './epics-surface.js';
 
 const el = (tag, cls, text) => {
@@ -345,7 +346,7 @@ export function createCoworkView(options = {}) {
       // pressed, it opens as ever. Working adds the kit's dot after the name; stopped dims it
       // (KAN-665). The title says it in words.
       const label = mika ? t('mika.name', 'Mika') : agentTitle(member);
-      return { key: member.name, label, className: `team-agent-card${reading.situation ? ` ${reading.situation}` : ''}`,
+      return { key: member.name, label, className: `team-agent-card ${rosterRowClass(reading.situation)}`,
         mark: member.team_lead ? '人' : null,
         title: situationTitle(label, reading.situation),
         summary: reading.step, metadata: reading.lines,

@@ -123,6 +123,21 @@ function readGroups(type, kind) {
   return type === 'team' ? out : out.filter((one) => one.rows.length);
 }
 
+/**
+ * A ROW'S SITUATION, DRAWN THE ONE WAY (KAN-665, KAN-776; KAN-977): the Team selector's Agent
+ * card, the phone's rows and All Hands' rows wear `rosterRowClass(situation)`; a row ends with
+ * `rosterMark()` at its right, a card uses its heading. workspace-kit.css (.roster-row) draws
+ * the mark once for all three: ⚑ when flagged, the Chat's dot while working (a hollow ring just
+ * finished), nothing otherwise; the name (`roster-name`) muted when stopped.
+ */
+export const rosterRowClass = (situation) => `roster-row${situation ? ` ${situation}` : ''}`;
+export function rosterMark() {
+  const mark = document.createElement('span');
+  mark.className = 'roster-mark';
+  mark.setAttribute('aria-hidden', 'true');
+  return mark;
+}
+
 /** The cards Home reads (`home`), by Agent name: what a row's situation is read from. */
 export const cardsByName = () => new Map((held('home') || []).map((card) => [card.name, card]));
 

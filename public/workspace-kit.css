@@ -106,24 +106,27 @@
   .wk-surface-header.wk-mika-handle:active { cursor: grabbing; }
 
   .team-agent-card .wk-card-summary { color: var(--fg-strong); font-weight: var(--weight-strong); }
-  /* A FLAGGED AGENT (KAN-521): ⚑ in its mark and the amber the roster chip uses for a flagged item. */
-  .team-agent-card.flagged {
-    border-color: color-mix(in srgb, var(--warn) 55%, transparent); /* status: an Agent holds a flagged item */
-    background: color-mix(in srgb, var(--warn) 12%, transparent); /* status: an Agent holds a flagged item */
+  /* A ROSTER ROW'S SITUATION, DRAWN ONCE (KAN-521, KAN-665, KAN-673, KAN-776; KAN-977): the Team
+     selector's Agent card, the phone's rows and All Hands' rows all wear `roster-row` and its
+     situation (roster-lists.js rosterRowClass). The mark sits at the right edge, one column down
+     the list: on a card its heading's ::after, on a row its `roster-mark`. Flagged: ⚑ and the
+     amber the roster chip uses for a flagged item. Working: one of the Chat's dots; Ready (its turn
+     just ended) the same dot as a hollow ring. Stopped (its pane died): muted ink, no mark. */
+  .roster-row.flagged {
+    border-color: color-mix(in srgb, var(--warn) 55%, transparent); /* status: a person is needed */
+    background: color-mix(in srgb, var(--warn) 12%, transparent); /* status: a person is needed */
   }
-  .team-agent-card.flagged .wk-card-heading, .team-agent-card.flagged .wk-card-mark { color: var(--warn); }
-  /* Its ⚑ on the right of the name, where the working dot sits (owner, KAN-776). */
-  .team-agent-card.flagged .wk-card-heading::after { content: '⚑'; flex: none; margin-left: auto; padding-left: var(--space-row); }
-  /* WORKING (KAN-665): one of the Chat's dots after the name; Ready (its turn just ended) the
-     same dot as a hollow ring. Stopped (its pane died): muted ink, no icon. Idle: the plain pill.
-     The dot sits at the pill's right edge, one column down the list (KAN-673). */
-  .team-agent-card .wk-card-heading { display: flex; align-items: center; }
-  .team-agent-card:is(.working, .ready) .wk-card-heading::after {
-    content: ''; flex: none; box-sizing: border-box; width: 6px; height: 6px; margin-left: auto; padding: 0;
+  .roster-row .wk-card-heading { display: flex; align-items: center; }
+  .roster-mark { display: flex; flex: none; align-self: center; align-items: center; margin-left: auto; }
+  .roster-row :is(.roster-mark, .wk-card-heading)::after { flex: none; margin-left: auto; }
+  .roster-row.flagged :is(.roster-mark, .wk-card-heading)::after { content: '⚑'; padding-left: var(--space-row); }
+  .roster-row:is(.working, .ready) :is(.roster-mark, .wk-card-heading)::after {
+    content: ''; box-sizing: border-box; width: 6px; height: 6px; padding: 0;
     border: var(--edge) solid var(--kaki); border-radius: 50%; background: var(--kaki); /* kaki: the Chat's working dot */
   }
-  .team-agent-card.ready .wk-card-heading::after { background: transparent; }
-  .team-agent-card.stopped .wk-card-heading, .team-agent-card.stopped .wk-card-mark { color: var(--muted); }
+  .roster-row.ready :is(.roster-mark, .wk-card-heading)::after { background: transparent; }
+  .roster-row.flagged :is(.roster-name, .roster-mark, .wk-card-heading, .wk-card-mark, .home-job) { color: var(--warn); }
+  .roster-row.stopped :is(.roster-name, .wk-card-heading, .wk-card-mark, .home-job) { color: var(--muted); }
   .league-team-agent.flagged, .league-team-member.flagged > .league-team-member-toggle {
     background: color-mix(in srgb, var(--warn) 12%, transparent); /* status: an Agent holds a flagged item */
   }

@@ -252,10 +252,14 @@ attachments (each opens in Docs). Back returns to where you came from.
 ## All Hands
 
 **All Hands** (on Home the broad slab under Teams, Epics and Workspaces, the office-wide way in; `#/allhands`) is the phone's list on a desk, as a workbench with
-two tilespaces. Tilespace 1 opens on the same list, with the same **Type**, **Kind** and **Sort**
-and its groups opening and closing in place; Tilespace 2 starts empty. Press an Agent and its tile
+two tilespaces. Tilespace 1 opens on the same list, with the same **Type**, **Kind** and **Sort**;
+every group starts open and closes when pressed (it remembers the ones you closed); Tilespace 2
+starts empty. Each row carries the same mark as an Agent's card on a Team's selector: ⚑ when
+flagged, the working dot (hollow just finished), muted when stopped. Press an Agent and its tile
 opens in the selected tilespace; press an item and it opens there on **Find item**. When the
-list's own tilespace is selected, what you press opens in the other one. The list is a card in
+list's own tilespace is selected, what you press opens in the first empty tilespace on screen (with
+two or four), else the one beside the list. Drag a row instead and it opens in the tilespace you
+drop it on, any of the four; under **Type: Epic**, an Epic's group drags as that Epic. The list is a card in
 the selector too, so it can be put in either tilespace. The selector is for the whole office:
 **New Agent**, **New Team**, **Archived Agents**, **Epics** and **Find item**, none of them tied
 to a Team.

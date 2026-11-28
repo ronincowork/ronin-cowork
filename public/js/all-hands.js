@@ -16,7 +16,7 @@ import { WORKBENCH_PROFILES, WORKBENCH_TYPES } from './workbench-catalog.js';
 import { subscribe as hear } from './store.js';
 import { membersOfTeam, subscribe, teamsFromState } from './team-controller.js';
 import { onAgeTick, situationTitle } from './home.js';
-import { agentLabel, cardsByName, rosterGroups, rosterQuestions, ROSTER_CHOICE, sessionOf, situationOf } from './roster-lists.js';
+import { agentLabel, cardsByName, rosterGroups, rosterMark, rosterQuestions, rosterRowClass, ROSTER_CHOICE, sessionOf, situationOf } from './roster-lists.js';
 import { ask } from './ask.js';
 import { splitItemTitle } from './item-title.js';
 import { createWarmTerminalPool } from './team-terminal-pool.js';
@@ -27,6 +27,7 @@ import { createEpicRecord, createEpicStones, createEpicsRead } from './epics-sur
 import { createFindItem } from './team-find-item.js';
 import { openWorkbenchTab } from './workspace.js';
 import { BEHAVIOUR_SURFACE_TYPE } from './behaviour-surface.js';
+import { SURFACE_DRAG } from './workbench.js';
 
 const el = (tag, cls, text) => {
   const out = document.createElement(tag);
@@ -40,12 +41,24 @@ const opposite = (id) => ({ workspace1: 'workspace2', workspace2: 'workspace1', 
 function createAllHandsRoster({ open }) {
   const { createSurface, createKeyedList } = WorkspaceKit.primitives;
   const surface = createSurface({ label: t('all_hands.roster', 'All Hands'), className: 'all-hands-roster' });
-  // This viewer's three answers and open groups, remembered as the phone remembers its own.
+  // This viewer's three answers and the groups they closed, remembered as the phone remembers its
+  // own. Every group opens expanded (owner, 28 Nov): closed only once pressed closed.
   const choiceKey = 'ronin.all-hands.roster';
-  let choice = { ...ROSTER_CHOICE, open: [] };
+  let choice = { ...ROSTER_CHOICE, closed: [] };
   try { choice = { ...choice, ...(JSON.parse(localStorage.getItem(choiceKey) || '{}') || {}) }; } catch {}
-  const opened = new Set(Array.isArray(choice.open) ? choice.open : []);
-  const remember = () => { try { localStorage.setItem(choiceKey, JSON.stringify({ ...choice, open: [...opened] })); } catch {} };
+  const closed = new Set(Array.isArray(choice.closed) ? choice.closed : []);
+  const remember = () => { try { localStorage.setItem(choiceKey, JSON.stringify({ type: choice.type, kind: choice.kind, sort: choice.sort, closed: [...closed] })); } catch {} };
+  // ANYTHING DRAGS (owner, 28 Nov): a row, or an Epic's group, dropped on a work surface opens
+  // there, as the selector's cards and the Epic stones do (the kit's SURFACE_DRAG drop).
+  const draggable = (node, type, key, label) => {
+    node.draggable = true;
+    node.addEventListener('dragstart', (event) => {
+      event.dataTransfer.setData(SURFACE_DRAG, JSON.stringify({ type, detail: { key } }));
+      event.dataTransfer.setData('text/plain', label);
+      event.dataTransfer.effectAllowed = 'copy';
+    });
+    return node;
+  };
   const questions = ask([{ group: '', fields: rosterQuestions() }], {
     value: { type: choice.type, kind: choice.kind, sort: choice.sort }, density: 'tight',
     onChange: (next) => { choice = { ...choice, ...next }; remember(); paint(); },
@@ -57,25 +70,27 @@ function createAllHandsRoster({ open }) {
 
   const press = (node, act) => { node.type = 'button'; node.addEventListener('click', act); return node; };
   const groupRow = (group, isOpen) => {
-    const head = press(el('button', 'all-hands-group'), () => { if (opened.has(group.cardId)) opened.delete(group.cardId); else opened.add(group.cardId); remember(); paint(); });
+    const head = press(el('button', 'all-hands-group'), () => { if (closed.has(group.cardId)) closed.delete(group.cardId); else closed.add(group.cardId); remember(); paint(); });
     head.setAttribute('aria-expanded', String(isOpen));
     head.append(el('span', 'all-hands-group-name', group.label), el('span', 'all-hands-count', String(group.rows.length)));
+    // An Epic's group is that Epic: dragged, its record opens where it is dropped.
+    if (choice.type === 'epic' && choice.sort !== 'active' && group.id) draggable(head, WORKBENCH_TYPES.epicRecord, group.id, group.label);
     return head;
   };
   const agentRow = (name, situation, lead) => {
     const label = agentLabel(sessionOf(name));
-    const row = press(el('button', `all-hands-row${situation ? ` ${situation}` : ''}`), () => open({ kind: 'agent', name }));
+    const row = press(el('button', `all-hands-row ${rosterRowClass(situation)}`), () => open({ kind: 'agent', name }));
     row.title = situationTitle(label, situation);
     if (lead) row.append(el('span', 'home-job lead', '人'));
-    row.append(el('span', 'all-hands-name', label));
-    if (situation === 'flagged') row.append(el('span', 'all-hands-flag', '⚑'));
+    row.append(el('span', 'all-hands-name roster-name', label), rosterMark());
+    draggable(row, WORKBENCH_TYPES.terminal, name, label);
     return { node: row, shows: JSON.stringify([name, label, lead, situation]) };
   };
   const itemRow = (item, situation) => {
-    const row = press(el('button', `all-hands-row${situation ? ` ${situation}` : ''}`), () => open({ kind: 'item', id: item.id }));
-    const words = el('span', 'all-hands-name', splitItemTitle(item.title || item.id).shortTitle);
-    row.append(words, el('span', 'all-hands-key', [item.id, item.kind, item.status].filter(Boolean).join(' · ')));
-    if (situation === 'flagged') row.append(el('span', 'all-hands-flag', '⚑'));
+    const row = press(el('button', `all-hands-row ${rosterRowClass(situation)}`), () => open({ kind: 'item', id: item.id }));
+    const words = el('span', 'all-hands-name roster-name', splitItemTitle(item.title || item.id).shortTitle);
+    row.append(words, el('span', 'all-hands-key', [item.id, item.kind, item.status].filter(Boolean).join(' · ')), rosterMark());
+    draggable(row, WORKBENCH_TYPES.teamFindItem, item.id, words.textContent);
     return { node: row, shows: JSON.stringify([item.id, item.title, item.kind, item.status, situation]) };
   };
   const paint = () => {
@@ -83,7 +98,7 @@ function createAllHandsRoster({ open }) {
     const lead = leads();
     const out = [];
     for (const group of rosterGroups(choice, cardOf)) {
-      const isOpen = opened.has(group.cardId);
+      const isOpen = !closed.has(group.cardId);
       out.push({ key: `g:${group.cardId}`, shows: JSON.stringify([group.label, group.rows.length, isOpen]), draw: () => groupRow(group, isOpen) });
       if (!isOpen) continue;
       if (!group.rows.length) out.push({ key: `e:${group.cardId}`, shows: '', draw: () => el('p', 'all-hands-empty', t('phone.no_rows', 'Nobody here yet.')) });
@@ -133,10 +148,15 @@ export function createAllHandsView() {
       };
       return {
         allHandsRoster: (workspace) => keep(createAllHandsRoster({
-          // A result opens in the selected surface; the roster's own selected, in the other one.
+          // A result opens in the selected surface. The roster's own selected, it opens in the first
+          // empty surface on screen (two or four), else the one beside the roster, else any other
+          // on screen; a drag puts it exactly where it is dropped.
           open: (hit) => {
             const selected = bench().selected();
-            const at = bench().typeAt(selected) === WORKBENCH_TYPES.allHandsRoster ? opposite(selected) : selected;
+            const shown = bench().visibleIds().filter((id) => bench().typeAt(id) !== WORKBENCH_TYPES.allHandsRoster);
+            const at = bench().typeAt(selected) === WORKBENCH_TYPES.allHandsRoster
+              ? shown.find((id) => bench().isDefault(id)) || shown.find((id) => id === opposite(selected)) || shown[0] || opposite(selected)
+              : selected;
             if (hit.kind === 'agent') place(WORKBENCH_TYPES.terminal, at, { key: hit.name });
             else place(WORKBENCH_TYPES.teamFindItem, at, { key: hit.id });
             bench().select?.(at);

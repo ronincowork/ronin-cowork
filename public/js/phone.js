@@ -20,7 +20,7 @@ import { guard, showFailure } from './errors.js';
 import { sayWhenUnreachable, sessionsHandlers } from './events.js';
 import { connect, subscribe as hear } from './store.js';
 import { membersOfTeam, subscribe, teamByName, teamsFromState, UNASSIGNED } from './team-controller.js';
-import { agentLabel, cardsByName, readable, rosterGroups, rosterQuestions, situationOf, teamLabel, teamsOfItem } from './roster-lists.js';
+import { agentLabel, cardsByName, readable, rosterGroups, rosterMark, rosterQuestions, rosterRowClass, situationOf, teamLabel, teamsOfItem } from './roster-lists.js';
 import { loadProjects, onAgeTick, projectData, situationTitle } from './home.js';
 import { buildDocs } from './docs.js';
 import { createTerminalTileHost } from './terminal-tile-host.js';
@@ -145,7 +145,7 @@ export async function buildPhone() {
   const agentRow = (name, situation) => {
     const session = (S.sessions || []).find((one) => one.name === name) || { name };
     const lead = teamsFromState().some((team) => membersOfTeam(team.name).some((member) => member.name === name && member.team_lead));
-    const card = el('a', `ph-card ph-row${situation ? ` ${situation}` : ''}`);
+    const card = el('a', `ph-card ph-row ${rosterRowClass(situation)}`);
     card.href = sessionHash(name);
     card.title = situationTitle(agentLabel(session), situation);
     const line = el('div', 'ph-card-line');
@@ -156,21 +156,19 @@ export async function buildPhone() {
       mark.setAttribute('aria-label', t('league.team_lead', 'Team Lead'));
       identity.append(mark);
     }
-    identity.append(el('span', 'ph-card-name', agentLabel(session)));
-    line.append(identity);
-    // ⚑ on the right, where the working dot sits (owner, KAN-776).
-    if (situation === 'flagged') line.append(el('span', 'ph-row-flag', '⚑'));
+    identity.append(el('span', 'ph-card-name roster-name', agentLabel(session)));
+    // ⚑ or the working dot on the right (owner, KAN-776; roster-lists.js rosterMark).
+    line.append(identity, rosterMark());
     card.append(line);
     return { card, shows: JSON.stringify([name, agentLabel(session), lead, situation]) };
   };
   const itemRow = (item, situation) => {
-    const card = el('a', `ph-card ph-row${situation ? ` ${situation}` : ''}`);
+    const card = el('a', `ph-card ph-row ${rosterRowClass(situation)}`);
     card.href = itemHash(item.id);
     const line = el('div', 'ph-card-line');
     const identity = el('span', 'ph-card-identity');
-    identity.append(el('span', 'ph-card-name', splitItemTitle(item.title || item.id).shortTitle));
-    line.append(identity);
-    if (situation === 'flagged') line.append(el('span', 'ph-row-flag', '⚑'));
+    identity.append(el('span', 'ph-card-name roster-name', splitItemTitle(item.title || item.id).shortTitle));
+    line.append(identity, rosterMark());
     card.append(line, el('div', 'ph-card-key', [item.id, item.kind, item.status].filter(Boolean).join(' · ')));
     return { card, shows: JSON.stringify([item.id, item.title, item.kind, item.status, situation]) };
   };
