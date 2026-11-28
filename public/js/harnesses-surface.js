@@ -216,6 +216,12 @@ const NO_TERMINAL = new Set(['hermes']);
  * ONE HARNESS'S PANEL, drawn into `host`; returns its dispose. `openAgent()` is the place's: where the Helpful
  * Assistant opens when a sign-in she helps with starts.
  */
+/* THE OFFICE'S DEFAULT HARNESS (KAN-1002): ⚙ agents.sessions.default, the Agent defaults' own record, read with
+ * the panel and written by its Set as default; the model Native (blank). */
+let officeDefault = null;
+const readOfficeDefault = () => request('/api/machine-settings', { cache: 'no-store' })
+  .then((r) => { if (r.ok) officeDefault = String(r.data?.agents?.sessions?.default?.provider || ''); });
+
 export function mountHarnessPanel(host, id, { drawing, context = {}, openAgent = () => {}, back = null } = {}) {
   const card = el('article', 'harness-panel');
   card.dataset.provider = id;
@@ -381,6 +387,20 @@ export function mountHarnessPanel(host, id, { drawing, context = {}, openAgent =
         : current === 'api_key' ? t('harness.on_api_key', 'Signed in with an API key.')
           : signedIn ? t('harness.signed_in', 'Signed in on this office.') : '';
     if (said && !run && !provider.login_open) part.append(el('p', 'setup-harness-line', said));
+    // Signed in on its own: Set as default, or Default on the one that is (KAN-1002).
+    const catalogProvider = (harnessCatalog().harnesses || []).find((entry) => entry.cli === id)?.provider || '';
+    if (signedIn && current && catalogProvider && !run && !provider.login_open && officeDefault !== null) {
+      if (officeDefault === catalogProvider) part.append(el('p', 'setup-harness-line', t('harness.is_default', 'Default: a new Agent starts on {cli}.', { cli })));
+      else {
+        const make = stone(t('harness.set_default', 'Set as default'), async () => {
+          make.disabled = true;
+          const result = await request('/api/machine-settings', { method: 'PATCH', json: { family: 'agents', value: { sessions: { default: { provider: catalogProvider, model: '' } } } } });
+          if (result.ok) officeDefault = catalogProvider; else problem = result.message;
+          paint();
+        });
+        const row = stoneRow(); row.append(make); part.append(row);
+      }
+    }
     // A sign-in that ended without signing in (KAN-991): a 5xx from the provider is said plainly, with its
     // name; anything else is the CLI's own line. Pressing the same way again starts a fresh flow.
     const failed = signIn.failed[id] || '';
@@ -464,12 +484,14 @@ export function mountHarnessPanel(host, id, { drawing, context = {}, openAgent =
   let running = Boolean(runOf(id));
   const stopSignIn = listenSignIn(() => {
     const now = Boolean(runOf(id));
-    if (running && !now) void drawing.measure();
+    // A sign-in that ended may have made the first default (KAN-1002): read it again too.
+    if (running && !now) { void drawing.measure(); void readOfficeDefault().then(() => { if (!disposed) paint(); }); }
     running = now;
     paint();
   });
   const stopFrame = drawing.onFrame(() => { newEditor(); paint(); });
   paint();
+  void readOfficeDefault().then(() => { if (!disposed) paint(); });
   return () => { disposed = true; stopSignIn(); stopFrame(); dropTerminal(); editor?.destroy(); card.remove(); };
 }
 
