@@ -4592,7 +4592,27 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 .harness-panel .setup-harness-terminal { align-self: stretch; }
 /* Under a sign-in terminal: small stones, as wide as their words. */
 .harness-terminal-stones .ask-rect { width: auto; flex: none; }
-.harness-terminal-note { margin: 0; align-self: center; font-style: italic; }
+.harness-terminal-note { margin: 0; align-self: center; }
+/* ONE VOICE ON THE PANEL (owner, 28 Nov; KAN-990): one text size, one ink, weight for names and headings, no
+   capitals, no blue links. The harness's name is the one larger line; a heading is strong body text; every line,
+   note, table cell and press is body text in --fg. Only a status keeps its own colour: a fault (kaki), a row that is
+   off (muted), the service it is on (the kaki fill). Presses that are words read as words and underline on hover. */
+.harness-panel { color: var(--fg); font-size: var(--text-body); line-height: var(--leading-body); }
+.harness-panel-title h2 { font-size: var(--text-heading); font-weight: var(--weight-strong); line-height: var(--leading-tight); color: var(--fg-strong); }
+.harness-panel :is(.setup-provider-eyebrow, .harness-models-service) { margin: 0; color: var(--fg-strong); font-size: var(--text-body); font-weight: var(--weight-strong); letter-spacing: 0; text-transform: none; }
+.harness-panel :is(.setup-provider-from, .harness-panel-state, .setup-fine, .setup-harness-line, .setup-provider-command, .hermes-add-note) { color: var(--fg); font-size: var(--text-body); font-weight: var(--weight-regular); }
+.harness-panel .setup-harness-line.bad { color: var(--kaki); /* status: a fault */ }
+.harness-panel .setup-provider-command { font-family: var(--font-mono); }
+.harness-panel .setup-harness-code { font-size: var(--text-body); font-weight: var(--weight-strong); letter-spacing: var(--tracking-wide); }
+.harness-panel :is(.setup-harness-link, .hermes-add-line, .data-table-link) { color: var(--fg); font-size: var(--text-body); text-decoration: none; }
+.harness-panel :is(.setup-harness-link, .hermes-add-line, .data-table-link):is(:hover, :focus-visible) { color: var(--fg-strong); text-decoration: underline; text-decoration-color: var(--kaki); }
+.harness-panel .hermes-table :is(th, td) { font-size: var(--text-body); }
+.harness-panel .hermes-table thead th { color: var(--fg); font-weight: var(--weight-strong); }
+.harness-panel .hermes-table tbody :is(th, td) { color: var(--fg); font-weight: var(--weight-regular); }
+.harness-panel .data-table tr.data-table-off :is(th, td):not(.hermes-tools) { color: var(--muted); /* status: hidden */ }
+.harness-panel .ask-word { color: var(--muted); }
+.harness-panel .ask-opt[aria-selected='true'] .ask-word { color: var(--kaki-fill-ink); }
+.harness-panel .wk-action { font-size: var(--text-body); }
 /* Settings' window on the surface: the Helpful Assistant's chat over the harness surface, put away with −. */
 .setup-surface:has(> .harness-agent-window) { position: relative; }
 .harness-agent-window { position: absolute; z-index: 5; inset-inline-end: 16px; inset-block-end: 16px; inline-size: min(440px, calc(100% - 32px)); block-size: min(560px, calc(100% - 32px)); display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--line-2); border-radius: 8px; box-shadow: var(--shadow-menu); overflow: hidden; }
