@@ -4628,6 +4628,8 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 .harness-panel-part:has(> .setup-fine + .harness-action) { flex-direction: row; align-items: center; gap: var(--space-inset); padding-top: var(--space-subsection); border-top: var(--edge) solid var(--line); }
 .harness-panel-part:has(> .setup-fine + .harness-action) > .setup-fine { flex: 1 1 auto; align-self: center; color: var(--muted); }
 .harness-panel-part:has(> .setup-fine + .harness-action) > .harness-action { flex: none; min-height: var(--control-height-small); }
+/* Back to every harness: a small box at the panel's top left, as wide as its words. */
+.harness-panel > .harness-action:first-child { align-self: flex-start; min-height: var(--control-height-small); }
 .harness-panel .ask-word { color: var(--muted); }
 .harness-panel .ask-opt[aria-selected='true'] .ask-word { color: var(--kaki-fill-ink); }
 .harness-panel .wk-action { font-size: var(--text-body); }
