@@ -10,7 +10,7 @@
  *    folder files/<source>, for the Team step's Epic to bring in. Nothing is pulled in here.
  * 3. From scratch: a new Git repository in repos/<name>; on GitHub too once signed in.
  * 4. Not sure yet: Ronin Lab, what it is and its folder, then Create (two presses).
- * Doors 1–3 ask, in order: the kind, the name, what you are working on; the door's own question (doors 1
+ * Door 1 with GitHub not signed in asks Connect first, at the top. Doors 1–3 ask, in order: the kind, the name, what you are working on; the door's own question (doors 1
  * and 3 then how Agents work in the repositories, Desks or Direct); what every Agent in it should follow; while there is none, Also add Ronin Lab; then Create. Every answer is
  * on the Workspace record. With no door chosen, or the chosen one pressed again: on Setup's step, what
  * a Workspace is, and a link to yours. The same doors are New Workspace everywhere (owner, 26 Nov; KAN-900):
@@ -290,11 +290,11 @@ export function createWorkspaceKickoff({ workspacesRead, environment, intro = fa
       return;
     }
     const { head, tail } = define();
+    // GITHUB FIRST (owner, 25 Nov; walkthrough 28 Nov, KAN-996): signed in, nothing to say; not (almost always,
+    // on a new office), Connect at the top of door 1, before the kind, the name and the rest.
+    if (door === 'git' && !github.authenticated) blanks.append(connectStone(t('setup_workspace.github_private', 'GitHub is not signed in on this machine. The Helpful Assistant signs you in, in her chat; then your repositories are listed here to pick. A public one can be pasted without it.')));
     blanks.append(...head);
     if (door === 'git') {
-      // GITHUB FIRST (owner, 25 Nov): signed in, nothing to say; not (almost always, on a new office),
-      // Connect before anything else.
-      if (!github.authenticated) blanks.append(connectStone(t('setup_workspace.github_private', 'GitHub is not signed in on this machine. The Helpful Assistant signs you in, in her chat; then your repositories are listed here to pick. A public one can be pasted without it.')));
       if (github.authenticated && mine?.length) blanks.append(question('picked', t('setup_workspace.which_repos', 'Which repositories?'),
         mine.map((repo) => ({ v: repo.url, l: repo.name, ...(repo.private ? { word: t('workspaces.private', 'private') } : {}) })), draft.picked,
         (v) => { draft.picked = v || []; }, { many: true }));

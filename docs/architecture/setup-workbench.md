@@ -168,7 +168,8 @@ again: people have several Workspaces, and one Workspace can hold several reposi
 4. **Not sure yet**: Ronin Lab, what it is and its folder, then Create. Made, the door reads "Ronin
    Lab is ready", greyed.
 
-Doors 1–3 ask, in this order: what kind of project (open, business, personal, household, social,
+Door 1 with GitHub not signed in starts with **Connect** (the Helpful Assistant signs you in), at
+the top; signed in, it goes straight to its questions. Doors 1–3 ask, in this order: what kind of project (open, business, personal, household, social,
 school; a Workspace's only, `WORKSPACE_KINDS`: Teams and Agents have none) · its name · what you are working on (the name
 follows it until one is typed) · the door's own question · for doors 1 and 3, how Agents work in the
 repositories (**Desks** unless they say **Direct**) · anything every Agent there should follow ·
