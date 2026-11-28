@@ -1,4 +1,5 @@
 import { mkdir, stat, writeFile } from 'node:fs/promises';
+import { claudeAhead } from './launch-ahead.js';
 import os from 'node:os';
 import path from 'node:path';
 import { AGENTS, discoverExecutable, launchArgv, listAgentAvailability } from './agents.js';
@@ -89,6 +90,8 @@ const defaultSessionOps: ProviderSessionOps = {
     const launch = await launchArgv(spec.cmd, '');
     if (!launch.argv.length) throw new Error(`${spec.label} is not installed on this machine.`);
     await mkdir(rootDir('user'), { recursive: true });
+    // Claude's first-run questions answered first, as at every Claude start (KAN-995): no theme picker here.
+    if (spec.id === 'claude') await claudeAhead(rootDir('user'));
     await createSetupSession(name, spec.id, rootDir('user'), { agent: false, argv: [] });
     void collectBirthLines(name, true);
     await runCommand(name, [...launch.argv, ...(spec.operations.setup ?? [])].map((arg) => "'" + arg.replace(/'/g, "'\\''") + "'").join(' '));
