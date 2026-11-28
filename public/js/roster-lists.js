@@ -13,6 +13,7 @@ import { agentSituation } from './home.js';
 import { S } from './state.js';
 import { t } from './lexicon.js';
 import { splitItemTitle } from './item-title.js';
+import { humanAge } from './work-record.js';
 
 export const readable = (name) => String(name || '').split(/[_-]+/).filter(Boolean)
   .map((part) => part[0]?.toUpperCase() + part.slice(1)).join(' ');
@@ -134,11 +135,26 @@ function readGroups(type, kind) {
  * finished), nothing otherwise; the name (`roster-name`) muted when stopped.
  */
 export const rosterRowClass = (situation) => `roster-row${situation ? ` ${situation}` : ''}`;
-export function rosterMark() {
+/** `words`: what an Agent with no dot or ⚑ says in the mark's place (lastWorked), muted. */
+export function rosterMark(words = '') {
   const mark = document.createElement('span');
   mark.className = 'roster-mark';
-  mark.setAttribute('aria-hidden', 'true');
+  if (words) mark.textContent = words;
+  else mark.setAttribute('aria-hidden', 'true');
   return mark;
+}
+/**
+ * LAST ACTIVE (owner, 28 Nov; KAN-982): an Agent with no mark (not flagged, working or just
+ * finished) says how long ago its last turn ended, the card's `at` that agentSituation reads:
+ * 'just now', else humanAge's '3h ago'. '' while it has a mark or no turn yet. The age clock
+ * (onAgeTick) that already redraws the rows keeps it current.
+ */
+export function lastWorked(card, situation, now = Date.now()) {
+  if (['flagged', 'working', 'ready'].includes(situation)) return '';
+  const at = Date.parse(card?.at || '');
+  if (!Number.isFinite(at)) return '';
+  const ms = Math.max(0, now - at);
+  return ms < 60000 ? t('roster.just_now', 'just now') : t('roster.ago', '{age} ago', { age: humanAge(ms) });
 }
 
 /** The cards Home reads (`home`), by Agent name: what a row's situation is read from. */

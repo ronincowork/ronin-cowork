@@ -20,7 +20,7 @@ import { guard, showFailure } from './errors.js';
 import { sayWhenUnreachable, sessionsHandlers } from './events.js';
 import { connect, subscribe as hear } from './store.js';
 import { membersOfTeam, subscribe, teamByName, teamsFromState, UNASSIGNED } from './team-controller.js';
-import { agentLabel, cardsByName, readable, rosterGroups, rosterMark, rosterQuestions, rosterRowClass, rosterShown, situationOf, teamLabel, teamsOfItem } from './roster-lists.js';
+import { agentLabel, cardsByName, lastWorked, readable, rosterGroups, rosterMark, rosterQuestions, rosterRowClass, rosterShown, situationOf, teamLabel, teamsOfItem } from './roster-lists.js';
 import { loadProjects, onAgeTick, projectData, situationTitle } from './home.js';
 import { buildDocs } from './docs.js';
 import { createTerminalTileHost } from './terminal-tile-host.js';
@@ -143,7 +143,7 @@ export async function buildPhone() {
   listScreen.append(questions.el, list);
   const rows = createKeyedList({ key: (row) => row.key, shows: (row) => row.shows, draw: (row) => row.draw() });
 
-  const agentRow = (name, situation) => {
+  const agentRow = (name, situation, age = '') => {
     const session = (S.sessions || []).find((one) => one.name === name) || { name };
     const lead = teamsFromState().some((team) => membersOfTeam(team.name).some((member) => member.name === name && member.team_lead));
     const card = el('a', `ph-card ph-row ${rosterRowClass(situation)}`);
@@ -158,10 +158,10 @@ export async function buildPhone() {
       identity.append(mark);
     }
     identity.append(el('span', 'ph-card-name roster-name', agentLabel(session)));
-    // ⚑ or the working dot on the right (owner, KAN-776; roster-lists.js rosterMark).
-    line.append(identity, rosterMark());
+    // ⚑ or the working dot on the right, else when it last worked (owner, KAN-776, KAN-982; roster-lists.js).
+    line.append(identity, rosterMark(age));
     card.append(line);
-    return { card, shows: JSON.stringify([name, agentLabel(session), lead, situation]) };
+    return { card, shows: JSON.stringify([name, agentLabel(session), lead, situation, age]) };
   };
   const itemRow = (item, situation) => {
     const card = el('a', `ph-card ph-row ${rosterRowClass(situation)}`);
@@ -173,8 +173,8 @@ export async function buildPhone() {
     card.append(line, el('div', 'ph-card-key', [item.id, item.kind, item.status].filter(Boolean).join(' · ')));
     return { card, shows: JSON.stringify([item.id, item.title, item.kind, item.status, situation]) };
   };
-  const drawRow = (row, situation, under = '') => {
-    const made = row.kind === 'agent' ? agentRow(row.name, situation) : itemRow(row.item, situation);
+  const drawRow = (row, situation, under = '', cardOf = new Map()) => {
+    const made = row.kind === 'agent' ? agentRow(row.name, situation, lastWorked(cardOf.get(row.name), situation)) : itemRow(row.item, situation);
     return { key: `${under}|${row.key}`, shows: made.shows, draw: () => made.card };
   };
 
@@ -288,7 +288,7 @@ export async function buildPhone() {
       out.push({ key: `g:${group.cardId}`, shows: JSON.stringify([group.label, open]), draw: () => groupCard(group, open) });
       if (!open) continue;
       if (!group.rows.length) out.push({ key: `e:${group.cardId}`, shows: '', draw: () => el('div', 'ph-empty', t('phone.no_rows', 'Nobody here yet.')) });
-      for (const row of group.rows) out.push(drawRow(row, situationOf(row, cardOf), group.cardId));
+      for (const row of group.rows) out.push(drawRow(row, situationOf(row, cardOf), group.cardId, cardOf));
       if (group.team) {
         out.push({ key: `act:${group.team}`, shows: '', draw: () => teamActions(group.team) });
         out.push({ key: `launch:${group.team}`, shows: '', draw: () => launchForm(group.team) });

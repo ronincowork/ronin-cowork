@@ -117,7 +117,7 @@
     background: color-mix(in srgb, var(--warn) 12%, transparent); /* status: a person is needed */
   }
   .roster-row .wk-card-heading { display: flex; align-items: center; }
-  .roster-mark { display: flex; flex: none; align-self: center; align-items: center; margin-left: auto; }
+  .roster-mark { display: flex; flex: none; align-self: center; align-items: center; margin-left: auto; color: var(--muted); white-space: nowrap; /* an idle Agent's 'just now' / '3h ago' (KAN-982), muted */ }
   .roster-row :is(.roster-mark, .wk-card-heading)::after { flex: none; margin-left: auto; }
   .roster-row.flagged :is(.roster-mark, .wk-card-heading)::after { content: '⚑'; padding-left: var(--space-row); }
   .roster-row:is(.working, .ready) :is(.roster-mark, .wk-card-heading)::after {

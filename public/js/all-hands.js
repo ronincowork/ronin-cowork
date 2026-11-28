@@ -19,7 +19,7 @@ import { membersOfTeam, subscribe, teamByName, teamsFromState, UNASSIGNED } from
 import { createTeamRosterSurface } from './team-roster-surface.js';
 import { createTeamOne } from './team-one.js';
 import { onAgeTick, situationTitle } from './home.js';
-import { agentLabel, cardsByName, rosterGroups, rosterMark, rosterQuestions, rosterRowClass, rosterShown, ROSTER_CHOICE, sessionOf, situationOf } from './roster-lists.js';
+import { agentLabel, cardsByName, lastWorked, rosterGroups, rosterMark, rosterQuestions, rosterRowClass, rosterShown, ROSTER_CHOICE, sessionOf, situationOf } from './roster-lists.js';
 import { ask } from './ask.js';
 import { splitItemTitle } from './item-title.js';
 import { createWarmTerminalPool } from './team-terminal-pool.js';
@@ -86,14 +86,14 @@ function createAllHandsRoster({ open }) {
     if (choice.sort !== 'active' && choice.type === 'workspace' && group.id) draggable(head, WORKBENCH_TYPES.workspaceRecord, group.id, group.label);
     return head;
   };
-  const agentRow = (name, situation, lead) => {
+  const agentRow = (name, situation, lead, age) => {
     const label = agentLabel(sessionOf(name));
     const row = press(el('button', `all-hands-row ${rosterRowClass(situation)}`), () => open({ kind: 'agent', name }));
     row.title = situationTitle(label, situation);
     if (lead) row.append(el('span', 'home-job lead', '人'));
-    row.append(el('span', 'all-hands-name roster-name', label), rosterMark());
+    row.append(el('span', 'all-hands-name roster-name', label), rosterMark(age));
     draggable(row, WORKBENCH_TYPES.terminal, name, label);
-    return { node: row, shows: JSON.stringify([name, label, lead, situation]) };
+    return { node: row, shows: JSON.stringify([name, label, lead, situation, age]) };
   };
   const itemRow = (item, situation) => {
     const row = press(el('button', `all-hands-row ${rosterRowClass(situation)}`), () => open({ kind: 'item', id: item.id }));
@@ -113,7 +113,7 @@ function createAllHandsRoster({ open }) {
       if (!group.rows.length) out.push({ key: `e:${group.cardId}`, shows: '', draw: () => el('p', 'all-hands-empty', t('phone.no_rows', 'Nobody here yet.')) });
       for (const row of group.rows) {
         const situation = situationOf(row, cardOf);
-        const made = row.kind === 'agent' ? agentRow(row.name, situation, lead.has(row.name)) : itemRow(row.item, situation);
+        const made = row.kind === 'agent' ? agentRow(row.name, situation, lead.has(row.name), lastWorked(cardOf.get(row.name), situation)) : itemRow(row.item, situation);
         out.push({ key: `${group.cardId}|${row.key}`, shows: made.shows, draw: () => made.node });
       }
     }

@@ -242,7 +242,8 @@ New Agent** under its rows. The phone remembers the three choices and which card
 
 An Agent sits under an Epic when it holds the Epic or an item under it, so it can appear under
 more than one. An Agent's Workspace is its Team's; an item's is that of whoever holds its Epic.
-An item's row shows its holder's situation.
+An item's row shows its holder's situation. An Agent with no ⚑ or dot says, in muted words where
+the mark sits, when it last worked: **just now**, or how long ago, as **3h ago** or **2d ago**.
 
 Press an Agent to open its tile; back returns to the list. Press an item to open it on its own
 screen: the same reading as on a desk, with its status to move, its Agents (each opens that
@@ -255,7 +256,8 @@ attachments (each opens in Docs). Back returns to where you came from.
 two tilespaces. Tilespace 1 opens on the same list, with the same **Kind**, **Sort** and (By type) **Type**;
 every group starts open and closes when pressed (it remembers the ones you closed); Tilespace 2
 starts empty. Each row carries the same mark as an Agent's card on a Team's selector: ⚑ when
-flagged, the working dot (hollow just finished), muted when stopped. Press an Agent and its tile
+flagged, the working dot (hollow just finished), muted when stopped; an Agent with neither says
+when it last worked, as on the phone. Press an Agent and its tile
 opens in the selected tilespace; press an item and it opens there on **Find item**. When the
 list's own tilespace is selected, what you press opens in the first empty tilespace on screen (with
 two or four), else the one beside the list. Drag a row instead and it opens in the tilespace you
