@@ -170,7 +170,7 @@ const NO_TERMINAL = new Set(['hermes']);
  * ONE HARNESS'S PANEL, drawn into `host`; returns its dispose. `openAgent()` is the place's: where the Helpful
  * Assistant opens when a sign-in she helps with starts.
  */
-export function mountHarnessPanel(host, id, { drawing, context = {}, openAgent = () => {} } = {}) {
+export function mountHarnessPanel(host, id, { drawing, context = {}, openAgent = () => {}, back = null } = {}) {
   const card = el('article', 'harness-panel');
   card.dataset.provider = id;
   host.append(card);
@@ -425,7 +425,9 @@ export function mountHarnessPanel(host, id, { drawing, context = {}, openAgent =
     if (from && provider) title.append(el('p', 'setup-provider-from', t('setup_surface.provider_from', 'From {vendor}', { vendor: from })));
     head.append(title);
     if (provider) head.append(el('span', 'harness-panel-state', harnessState(provider)));
-    const parts = [head];
+    // BACK TO EVERY HARNESS (owner, 28 Nov): a new person may not read the − as the way back, so the panel says it
+    // in words above the harness's name; the − stays, as on every other surface.
+    const parts = back ? [action(t('harness.back', '← Back'), '', back), head] : [head];
     if (!provider) {
       parts.push(el('p', 'setup-fine', entry ? t('setup_surface.no_cli', 'No CLI in Ronin’s registry serves this harness, so it cannot be installed or signed in here.') : t('setup_surface.provider_missing', 'This harness is no longer in the harness catalog.')));
       card.replaceChildren(...parts);
@@ -477,7 +479,7 @@ export function createHarnessesSurface(context, { label, className = '', openAge
   const drawing = createHarnessDrawing(context, { repaint: () => repaint(), say });
   const stones = createPhalanx({
     className: 'setup-provider-stones',
-    renderDetail: (item, host) => drawing.paintHarness(item.id, host, { openAgent: () => openAgent(out.el) }),
+    renderDetail: (item, host) => drawing.paintHarness(item.id, host, { openAgent: () => openAgent(out.el), back: () => stones.back() }),
   });
   stones.mount(out.content, { after: [notice] });
   const repaint = () => {

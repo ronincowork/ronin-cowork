@@ -350,7 +350,9 @@ fault (kaki), a hidden row (muted), the service it is on (the kaki fill). Each s
 entries is its own block: its name a band (inset ground, kaki edge, as All Hands' groups), its table
 under it, a section's space before the next service. After the tables, Add or change is a small
 outlined control, and Turn off is a footer ruled off from the panel, its sentence and button on one
-line. The rules sit under `.harness-panel` in `style.css`.
+line. The rules sit under `.harness-panel` in `style.css`. Opened from the stones, the panel starts
+with a small **← Back** box above the harness's name (owner, 28 Nov: a new person may not read the
+kit's − as the way back); it does what the − does, which stays.
 
 ### The state word
 
