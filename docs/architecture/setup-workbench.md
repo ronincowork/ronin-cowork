@@ -9,7 +9,7 @@ For contributors: what each Setup surface shows and measures, in full. The user'
 **Ronin Home** has the doors **Teams**, **Epics** and **Workspaces**, and the smaller stones **Setup**
 and **Settings** (Help's stone is off Home until Mika is ready; its page stays; w1069), with **Business Lounge** on a hosted office (owner, 26 Nov; KAN-856, w1059).
 Teams, Epics and Workspaces wait for an Activated harness; the small stones are open from the start.
-The Setup stone is always there; Harnesses has no stone and is reached through Setup's Harness step.
+The Setup stone is always there; Harnesses has no stone and is reached through Setup's Harness step. Until all three steps are done, the Setup stone carries Setup's own 1-2-3 bar (`createSetupStepsBar`, from `GET /api/setup/progress`); once they are, the stone is quiet (KAN-987).
 Nothing decides that Setup is finished. Settings is Settings, with no toggle to Setup. A link that names a page still opens that page.
 **A new office's first visit lands on Setup** (owner, 28 Nov; KAN-986): the office's campaign record is made
 with `first_visit: true`; the first bare address any browser or person (not a member) opens asks

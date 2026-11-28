@@ -22,6 +22,8 @@ import { createSenmaida } from './senmaida.js';
 import { workbenchLink } from './workspace.js';
 import { folderWorkbenches, isShown } from './folder-workbenches.js';
 import { BUSINESS_LOUNGE, HOSTED, SIGN_OUT } from './hosted.js';
+import { createSetupStepsBar } from './setup-steps-bar.js';
+import { firstUnansweredSetupStep } from './setup-progress.js';
 
 const el = (tag, cls, text) => {
   const out = document.createElement(tag);
@@ -102,6 +104,8 @@ export function createCampaignHome() {
   let entered = false;
   let activatedCount = 0;
   let runtimeKnown = false;
+  // Setup's ticks (KAN-987): the Setup stone carries Setup's own bar until every step is done.
+  let setupProgress = null;
 
   // A DOOR IS A LINK to its workbench: its href the plain address (KAN-473); pressed, it
   // navigates this tab; with a modifier or the middle button it opens the workbench in a new
@@ -126,6 +130,7 @@ export function createCampaignHome() {
       card.setAttribute('aria-disabled', 'true');
     }
     card.append(doorGlyph(door.glyph), el('h2', null, door.name), el('p', 'ch-is', door.is));
+    if (door.key === 'setup' && setupProgress?.steps?.length && firstUnansweredSetupStep(setupProgress)) card.append(createSetupStepsBar(setupProgress));
     if (locked) card.append(el('p', 'ch-gate', t('campaign_home.gate', 'Activate a harness in Setup to use this.')));
     card.addEventListener('click', (event) => {
       if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
@@ -173,6 +178,11 @@ export function createCampaignHome() {
         if (!entered) return;
         runtimeKnown = result.ok;
         activatedCount = result.ok ? Number(result.data?.activated_count) || 0 : 0;
+        paintDoors();
+      });
+      void request('/api/setup/progress', { cache: 'no-store' }).then((result) => {
+        if (!entered || !result.ok) return;
+        setupProgress = result.data;
         paintDoors();
       });
     },

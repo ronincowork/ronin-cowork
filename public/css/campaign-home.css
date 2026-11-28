@@ -184,6 +184,8 @@
 
   .ch-door-small { min-height: var(--ch-side-small-h); padding: var(--space-inline) var(--space-inline) var(--space-inline) var(--space-inset); }
   .ch-door-small .ch-glyph { --ch-glyph: var(--ch-side-glyph); }
+  /* Setup's own 1-2-3 bar on its stone until every step is done (KAN-987). */
+  .ch-door-small .setup-steps-bar { margin-top: var(--space-row); --slab: 16px; --slab-w: 11px; --slab-type: var(--text-small); }
   .ch-door-small h2 { margin-top: var(--space-paragraph); font-size: var(--text-heading); }
   .ch-door-small .ch-is, .ch-door-small .ch-gate { position: static; opacity: 1; transform: none; margin-top: var(--space-row); padding-top: 0; border-top: 0; font-size: var(--text-small); }
   .ch-door-small:not(:hover):not(:focus-visible) .ch-is { display: none; }
