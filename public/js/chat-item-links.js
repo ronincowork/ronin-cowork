@@ -16,6 +16,8 @@
  *    looked up, and a full stop or closing bracket after it stays text.
  *  - a Workspace's handle (shop_site) that is no Agent's name (KAN-809): opens its own page in a new
  *    tab. Known: the office's Workspaces, read once and again on each `workspaces-changed` push.
+ *  - an image handed to the Agent (a path in its drop/) is drawn as the image, opening in Docs; the
+ *    CLI's "[Image #2]" placeholder, whose image is not on the line, as one chip (w1170).
  *
  * One read per id or path per page, only for what the push and the session list cannot answer.
  */
@@ -37,9 +39,16 @@ const HASH_END = String.raw`(?!\w|\.\w)`;
 // A web address (KAN-778), matched before a document so github.com/… is not read as a path; it
 // ends before a sentence's full stop, comma or closing bracket (…/pull/149). or (…/pull/149)).
 const URL_ = String.raw`https?:\/\/[^\s<>"'\x60]*[^\s<>"'\x60.,;:!?)\]}]`;
-const TOKEN = new RegExp(String.raw`(?:(?<=\w@)(?<atcommit>${COMMIT})${HASH_END}|(?<![\w/.~@-])(?:(?<url>${URL_})|(?<item>${ITEM})|(?<commit>${COMMIT})${HASH_END}|(?<doc>${DOC})|(?<agent>${AGENT})))(?![\w/-])`, 'g');
+// What Claude Code writes in place of an image it took in (a pasted screenshot, a sent image path):
+// "[Image #2]". The image itself is not on the line; Chat draws one chip where it was said.
+const SHOT = String.raw`\[Image #[1-9][0-9]*\]`;
+const TOKEN = new RegExp(String.raw`(?:(?<=\w@)(?<atcommit>${COMMIT})${HASH_END}|(?<![\w/.~@-])(?:(?<shot>${SHOT})|(?<url>${URL_})|(?<item>${ITEM})|(?<commit>${COMMIT})${HASH_END}|(?<doc>${DOC})|(?<agent>${AGENT})))(?![\w/-])`, 'g');
 const HAS_TOKEN = new RegExp(TOKEN.source); // a stateless test: the /g one carries lastIndex into matchAll
 const BARE_DOC = /^[\w.@+-]+\.(?:md|html?|txt|json|ya?ml|csv|pdf|png|jpe?g)$/i;
+/** An image handed to an Agent (its session's drop/): Chat shows the image where its path was. */
+export const DROP_IMAGE = /\/drop\/[^/]+\.(?:png|jpe?g|gif|webp)$/i;
+/** A line that is only the CLI's image placeholders: what a sent image path became. */
+export const ONLY_SHOTS = new RegExp(String.raw`^\s*(?:${SHOT}\s*)+$`);
 
 const items = new Map(); // id → Promise<item | null>
 const docs = new Map(); // session \0 path → Promise<path | null>
@@ -122,11 +131,23 @@ function webLink(doc, url) {
 
 function link(doc, words, kind, target, open, title) {
   if (kind === 'url') return webLink(doc, words);
+  if (kind === 'shot') {
+    const chip = doc.createElement('span');
+    chip.className = 'chat-shot';
+    chip.textContent = 'Image';
+    return chip;
+  }
   const a = doc.createElement('a');
   a.className = `chat-item-link chat-${kind}-link`;
   a.href = '#';
   a.dataset[kind] = typeof target === 'string' ? target : target.id;
-  a.textContent = words;
+  if (kind === 'doc' && DROP_IMAGE.test(target)) {
+    const img = doc.createElement('img');
+    img.className = 'chat-image';
+    img.src = '/raw' + target.split('/').map(encodeURIComponent).join('/');
+    img.alt = words.split('/').pop();
+    a.append(img);
+  } else a.textContent = words;
   if (title) a.title = title;
   a.draggable = true;
   a.addEventListener('dragstart', (event) => {
@@ -163,7 +184,8 @@ export function linkChat(entry, open = {}) {
   for (const node of nodes) {
     const text = node.nodeValue;
     const found = [...text.matchAll(TOKEN)].map((m) => {
-      const { url, item, doc: path, agent } = m.groups;
+      const { shot, url, item, doc: path, agent } = m.groups;
+      if (shot) return { at: m.index, words: shot, kind: 'shot', target: shot }; // nothing to look up
       if (url) return { at: m.index, words: url, kind: 'url', target: url }; // nothing to look up
       const commit = m.groups.commit || m.groups.atcommit;
       let kind = item ? 'item' : commit ? 'commit' : path ? 'doc' : 'agent';

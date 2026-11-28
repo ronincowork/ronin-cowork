@@ -2975,6 +2975,9 @@ body {
 /* An item id in Chat opens the item over the tile (js/chat-item-links.js, KAN-698). */
 .tile-transcript-entry a.chat-item-link { color: var(--accent); }
 .tile-transcript-entry a.chat-item-link[aria-busy='true'] { cursor: progress; opacity: 0.6; }
+/* An image handed to the Agent, where its path was; the CLI's placeholder for one, a chip (w1170). */
+.tile-transcript-entry img.chat-image { display: block; max-width: 100%; max-height: 20rem; margin-top: var(--space-row); border-radius: var(--radius-small); }
+.tile-transcript-entry .chat-shot { padding: 0 var(--space-row); border-radius: var(--radius-small); background: var(--inset); color: var(--muted); }
 /* Sent, and not yet written down by the CLI: the person's words in a lighter shade until they land. */
 .tile-transcript-entry[data-role='user'][data-pending='true'] { color: var(--muted); }
 /* A pipe table, wherever markdown is read (Chat, Docs, Help): a heavier rule under the header

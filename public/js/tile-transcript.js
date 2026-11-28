@@ -7,7 +7,7 @@ import { WorkspacePrimitives } from './workspace-primitives.js';
 import { openDocOver } from './tile-doc-view.js';
 import { fileLinkPath } from './document-links.js';
 import { answerable, buildQuestion } from './chat-question.js';
-import { linkChat } from './chat-item-links.js';
+import { linkChat, DROP_IMAGE, ONLY_SHOTS } from './chat-item-links.js';
 
 /*
  * MARKDOWN ON OR OFF, per Agent (owner, 2026-11-01: "when i select MD or not in one tile it
@@ -362,7 +362,14 @@ export function makeTileTranscript({ read = request, watch = transcriptWatch(), 
    *  without Ronin's head (personWords); the words end it either way (KAN-623). */
   function landed(rec) {
     if (rec.role !== 'user' || typeof rec.seq !== 'number') return;
-    const at = sent.findIndex((mark) => rec.seq > mark.after && said(rec.text).endsWith(mark.text));
+    let at = sent.findIndex((mark) => rec.seq > mark.after && said(rec.text).endsWith(mark.text));
+    // A sent image path alone comes back as the CLI's "[Image #2]" (w1170): the same message, so
+    // the light copy goes, and the record draws the image from the path it was sent as.
+    if (at < 0 && ONLY_SHOTS.test(rec.text)) {
+      at = sent.findIndex((mark) => rec.seq > mark.after && DROP_IMAGE.test(mark.text));
+      const drawn = at < 0 ? null : el.querySelector(`[data-seq="${rec.seq}"]`);
+      drawn?.replaceWith(linkItems({ ...rec, text: sent[at].text }));
+    }
     if (at < 0) return;
     sent[at].node.remove();
     sent.splice(at, 1);
