@@ -14,6 +14,8 @@ import { enqueueMessage } from './message-queue.js';
 import { readHarnessSummary, refreshHarnesses } from './harness-summary.js';
 import { checkGithub } from './facts.js';
 import { fetchMissingModelLists } from './model-list-fetch.js';
+import { claudeAhead } from './launch-ahead.js';
+import { rootDir } from './resources.js';
 
 export type SignInWay = 'subscription' | 'api_key';
 
@@ -77,6 +79,8 @@ export async function startSignIn(provider: string, way: SignInWay, tell = ''): 
   if (!step) throw new Error(`Choose subscription or API key.`);
   // The CLI as the measure found it: Ronin's own PATH need not hold ~/.local/bin.
   const file = (await readHarnessSummary())?.paths?.[provider] || agent.cmd;
+  // Claude's first-run questions answered before its sign-in, so whatever starts it next skips them (KAN-995).
+  if (provider === 'claude') await claudeAhead(rootDir('user'));
   return run(provider, { label: agent.label, way, file, argv: step.argv, paste: step.paste, code: login.code ?? '' }, tell);
 }
 
