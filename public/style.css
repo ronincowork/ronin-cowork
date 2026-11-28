@@ -4655,6 +4655,10 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 .setup-workspace-blanks { display: flex; flex-direction: column; gap: var(--space-subsection); }
 .setup-workspace-blanks[data-door='open'] { padding-inline-start: var(--space-subsection); border-inline-start: 2px solid var(--line); }
 .setup-workspace-blanks > *, .setup-workspace-blanks .wk-field { margin: 0; }
+/* From Git, waiting on GitHub (KAN-998): the rest of the door, shown but not live, in the kit's greyed look. */
+.setup-workspace-waiting { display: flex; flex-direction: column; gap: var(--space-subsection); }
+.setup-workspace-waiting[inert] { opacity: .58; /* the kit's greyed look (.wk-surface[data-state='inert']) */ }
+.setup-workspace-waiting > *, .setup-workspace-waiting .wk-field { margin: 0; }
 .setup-workspace-kickoff .wk-field { display: flex; flex-direction: column; gap: var(--space-paragraph); }
 .setup-workspace-kickoff .wk-field-description:empty, .setup-workspace-kickoff .ask-caption:empty { display: none; }
 .setup-workspace-question { display: flex; flex-direction: column; gap: var(--space-paragraph); }

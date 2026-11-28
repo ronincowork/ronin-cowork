@@ -171,7 +171,9 @@ again: people have several Workspaces, and one Workspace can hold several reposi
 Door 1 with GitHub not signed in starts with **Connect** (the Helpful Assistant runs `github sign-in`, one
 call: gh's device login on the harness sign-in run, KAN-997; while it runs, the link and code with Copy and
 Cancel stand in Connect's place, and once approved Ronin runs `gh auth setup-git`), at
-the top; signed in, it goes straight to its questions. Doors 1–3 ask, in this order: what kind of project (open, business, personal, household, social,
+the top. Until GitHub is connected, Connect and its sign-in window are the only live things: the rest of
+door 1 is shown greyed and unpressable (`inert`, the kit's greyed look; KAN-998), and comes alive once
+connected. Signed in, it goes straight to its questions. Doors 1–3 ask, in this order: what kind of project (open, business, personal, household, social,
 school; a Workspace's only, `WORKSPACE_KINDS`: Teams and Agents have none) · its name · what you are working on (the name
 follows it until one is typed) · the door's own question · for doors 1 and 3, how Agents work in the
 repositories (**Desks** unless they say **Direct**) · anything every Agent there should follow ·

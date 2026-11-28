@@ -10,7 +10,7 @@
  *    folder files/<source>, for the Team step's Epic to bring in. Nothing is pulled in here.
  * 3. From scratch: a new Git repository in repos/<name>; on GitHub too once signed in.
  * 4. Not sure yet: Ronin Lab, what it is and its folder, then Create (two presses).
- * Door 1 with GitHub not signed in asks Connect first, at the top. Doors 1–3 ask, in order: the kind, the name, what you are working on; the door's own question (doors 1
+ * Door 1 with GitHub not signed in asks Connect first, at the top, the rest greyed until it is connected. Doors 1–3 ask, in order: the kind, the name, what you are working on; the door's own question (doors 1
  * and 3 then how Agents work in the repositories, Desks or Direct); what every Agent in it should follow; while there is none, Also add Ronin Lab; then Create. Every answer is
  * on the Workspace record. With no door chosen, or the chosen one pressed again: on Setup's step, what
  * a Workspace is, and a link to yours. The same doors are New Workspace everywhere (owner, 26 Nov; KAN-900):
@@ -301,13 +301,21 @@ export function createWorkspaceKickoff({ workspacesRead, environment, intro = fa
     const { head, tail } = define();
     // GITHUB FIRST (owner, 25 Nov; walkthrough 28 Nov, KAN-996): signed in, nothing to say; not (almost always,
     // on a new office), Connect at the top of door 1, before the kind, the name and the rest.
-    if (door === 'git' && !github.authenticated) blanks.append(...githubPart(t('setup_workspace.github_private', 'GitHub is not signed in on this machine. The Helpful Assistant signs you in, in her chat; then your repositories are listed here to pick. A public one can be pasted without it.')));
-    blanks.append(...head);
+    // WAITING ON GITHUB (walkthrough 28 Nov, KAN-998): Connect and its sign-in window are the only live things;
+    // the rest of door 1 is shown, greyed and unpressable (inert), until GitHub is connected.
+    let into = blanks;
+    if (door === 'git' && !github.authenticated) {
+      blanks.append(...githubPart(t('setup_workspace.github_private', 'GitHub is not signed in on this machine. Connect it first: the sign-in link and code appear here, and the Helpful Assistant walks you through it in her chat beside this page. Then your repositories are listed here to pick.')));
+      into = el('div', 'setup-workspace-waiting');
+      into.inert = true;
+      blanks.append(into);
+    }
+    into.append(...head);
     if (door === 'git') {
-      if (github.authenticated && mine?.length) blanks.append(question('picked', t('setup_workspace.which_repos', 'Which repositories?'),
+      if (github.authenticated && mine?.length) into.append(question('picked', t('setup_workspace.which_repos', 'Which repositories?'),
         mine.map((repo) => ({ v: repo.url, l: repo.name, ...(repo.private ? { word: t('workspaces.private', 'private') } : {}) })), draft.picked,
         (v) => { draft.picked = v || []; }, { many: true }));
-      blanks.append(textBox(github.authenticated ? t('setup_workspace.or_paste', 'Or paste Git URLs, one per line') : t('setup_workspace.paste', 'Git URLs, one per line'), draft.pasted,
+      into.append(textBox(github.authenticated ? t('setup_workspace.or_paste', 'Or paste Git URLs, one per line') : t('setup_workspace.paste', 'Git URLs, one per line'), draft.pasted,
         (v) => { draft.pasted = v; }, t('workspace_add.repository_placeholder', 'https://… or git@… ; owner/repo for GitHub'), 2));
     }
     if (door === 'existing') blanks.append(question('sources', t('setup_workspace.sources_ask', 'Where is it coming from?'),
@@ -321,13 +329,13 @@ export function createWorkspaceKickoff({ workspacesRead, environment, intro = fa
       ], draft.github, (v) => { draft.github = v; }));
     }
     // DESKS OR DIRECT (owner, 25 Nov): wherever a repository is added; Desks unless they say.
-    if (door === 'git' || door === 'scratch') blanks.append(question('mode', t('workspaces.repo_mode_ask', 'How do Agents work in it?'), repoModeRows(), draft.mode, (v) => { draft.mode = v; }));
-    blanks.append(...tail);
+    if (door === 'git' || door === 'scratch') into.append(question('mode', t('workspaces.repo_mode_ask', 'How do Agents work in it?'), repoModeRows(), draft.mode, (v) => { draft.mode = v; }));
+    into.append(...tail);
     // GITHUB, OPTIONAL (owner, 25 Nov), at the foot of doors 2 and 3 while it is not signed in.
     if ((door === 'existing' || door === 'scratch') && !github.authenticated) blanks.append(...githubPart(t('setup_workspace.github_optional', 'Optional. So Agents can use GitHub for this project: pull requests, issues, a repository on GitHub. The Helpful Assistant signs you in, in her chat.')));
     const line = el('div', 'setup-workspace-create');
     line.append(create.el);
-    blanks.append(line);
+    into.append(line);
   };
 
   function paint() {
