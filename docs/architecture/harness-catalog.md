@@ -75,11 +75,13 @@ is good for (tier, "use it for", price) is a judgement no vendor publishes, so i
 only written: that is HQ's standing work, and anything HQ must keep current reaches an office through
 Ronin Services, never through a file someone edits on the machine. Nobody opens a file to make a
 mainstream model appear: the CLI lists it after its update, and it is offered at once, Unrated until
-HQ rates it. When a model is missing, the usual cause is an old CLI, which is why the Harness page
-shows the installed version beside the newest release and offers Update.
+HQ rates it. When a model is missing, the usual cause is an old CLI; HQ moves the CLIs.
 
-The catalog never grants a model: a model is offered because its CLI lists it, and a catalog
-row the CLI doesn't list is not offered.
+A model is offered because its CLI lists it, and a catalog row the CLI doesn't list is not
+offered. The one exception (owner, 2026-11-28; KAN-993): while a signed-in harness's CLI has no
+list yet (Claude Code writes its list only once it has run), HQ's rows for that harness are its
+list, in tier order, until the CLI's own list is read. With neither, the entries say the models
+are on their way from Ronin HQ.
 
 **Two names per listed model, and no more (owner, 2026-09-25).** `model` is the id every
 new picker choice uses. The name shown beside it is the CLI's own display name,

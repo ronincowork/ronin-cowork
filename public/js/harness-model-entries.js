@@ -125,7 +125,9 @@ export function harnessModelEditor(catalog, entry, openServices, { skip = [] } =
         const id = row.model === 'native' ? 'CLI default' : row.api_model_id || row.model;
         return { off: !isShown(row), cells: [modelLabel(row), id], tools: [[isShown(row) ? 'Hide' : 'Show', () => flip(row)]] };
       }),
-      lines: models.length ? [] : [['No models yet.', null]],
+      // Native alone in the harness's own list: neither the CLI nor HQ has named its models yet (KAN-993).
+      lines: !models.length ? [['No models yet.', null]]
+        : group === 'in-harness' && models.every((row) => row.model === 'native') ? [[t('harness.models_on_way', 'Its models are on their way from Ronin HQ.'), null]] : [],
     });
   };
 
