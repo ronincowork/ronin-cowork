@@ -178,4 +178,15 @@
   .ac-status { margin: 0; color: var(--muted); font-size: var(--form-note); }
   .ac-status:empty { display: none; }
   .fs-reading.ac-behaviours { --fs-reading-key-w: var(--fs-key-w); } /* a behaviour's name is the key: a step's name column fits one, the reading key width fits a word */
+  /* ALL HANDS' ROSTER (w1146): the three questions over the groups; a group a line that opens to
+     its rows, a row a line pressed to open its Agent or item; one text size, even rows. */
+  .all-hands-list { display: flex; flex-direction: column; margin-top: var(--space-row); }
+  :is(.all-hands-group, .all-hands-row) { display: flex; align-items: baseline; gap: var(--space-inline); width: 100%; padding: var(--space-row) var(--space-inset); border: 0; border-bottom: var(--edge) solid var(--line); background: transparent; color: var(--fg); font: inherit; font-size: var(--text-body); text-align: left; cursor: pointer; }
+  .all-hands-group { color: var(--fg-strong); font-weight: var(--weight-strong); }
+  .all-hands-row { padding-left: calc(var(--space-inset) * 2); }
+  :is(.all-hands-group, .all-hands-row):hover { background: var(--line); }
+  .all-hands-name { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+  :is(.all-hands-count, .all-hands-key) { color: var(--muted); }
+  .all-hands-flag, .all-hands-row.flagged .all-hands-name { color: var(--warn); }
+  .all-hands-empty { margin: 0; padding: var(--space-row) var(--space-inset); color: var(--muted); }
 }

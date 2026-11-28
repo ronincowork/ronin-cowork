@@ -44,6 +44,8 @@ function OFFICE() {
 function SIDE() {
   return [
     { key: 'setup', route: 'setup', glyph: '人', name: t('campaign_home.setup', 'Setup'), is: t('campaign_home.setup_is', 'Harness, Workspace, Team'), gated: false },
+    // All Hands (w1146): every Agent and item in one roster, the phone's, beside what it opens.
+    { key: 'allhands', route: 'allhands', glyph: '≡', name: t('campaign_home.all_hands', 'All Hands'), is: t('campaign_home.all_hands_is', 'Every Agent and item') },
     // Help's stone is off Home until Mika is ready for a live office; its page stays at #/help (owner, 26 Nov; w1069).
     // A stone per workbench from the office's custom/workbenches/ folder (KAN-954).
     ...folderWorkbenches().map((one) => ({ key: `workbench:${one.name}`, route: one.name, glyph: '▦', name: one.title, is: t('campaign_home.workbench_is', 'A workbench of this office'), gated: false })),

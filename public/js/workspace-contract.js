@@ -8,7 +8,7 @@ export const WORKBENCH_HEADER = Object.freeze({
   ram: true,
   feedback: true,
 });
-export const WORKBENCH_APPEARANCES = Object.freeze(['campaign', 'setup', 'launch', 'cowork', 'team', 'agent', 'workspaces', 'epics', 'help', 'settings2']);
+export const WORKBENCH_APPEARANCES = Object.freeze(['campaign', 'setup', 'launch', 'cowork', 'team', 'agent', 'workspaces', 'epics', 'help', 'settings2', 'allhands']);
 // A workbench from a folder (KAN-954) adds its name at boot (folder-workbenches.js): one more
 // Workbench destination, with a tab instance of its own like the built-in ones.
 const appearances = new Set(WORKBENCH_APPEARANCES);

@@ -17,7 +17,7 @@ const el = (tag, cls, text) => { const out = document.createElement(tag); if (cl
 
 /** Every workbench a member could be shown: the built-in ones, then the office's own. */
 function workbenches() {
-  const builtIn = [['cowork', 'teams', 'Teams'], ['epics', 'epics', 'Epics'], ['workspaces', 'workspaces', 'Workspaces'], ['setup', 'setup', 'Setup'], ['help', 'help', 'Help'], ['settings2', 'settings', 'Settings']];
+  const builtIn = [['cowork', 'teams', 'Teams'], ['allhands', 'all_hands', 'All Hands'], ['epics', 'epics', 'Epics'], ['workspaces', 'workspaces', 'Workspaces'], ['setup', 'setup', 'Setup'], ['help', 'help', 'Help'], ['settings2', 'settings', 'Settings']];
   return [
     ...builtIn.map(([v, key, word]) => ({ v, l: t(`campaign_home.${key}`, word) })),
     ...folderWorkbenches().map((one) => ({ v: one.name, l: one.title })),

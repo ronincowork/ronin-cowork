@@ -44,6 +44,7 @@ not separate layout systems.
 | Teams collection | Teams, Agents, shared resources, and creation surfaces available in the selected Campaign context |
 | Team | that Team's Agents, Commons, Epics, New Agent, New Item (the Epics workbench's New form, started on Task) and Agent composition |
 | Agent | Self, Documents, Team membership, and Work Items: the work items the Agent holds across its Teams |
+| All Hands | its roster, New Agent, New Team, Archived Agents, Epics and Find item, each over no Team |
 | Setup | Harness, Workspace, Team and Tour, with the Ask Ronin panel |
 
 Adding another tenant or profile adds no layout implementation. Adding another surface
@@ -247,6 +248,17 @@ Press an Agent to open its tile; back returns to the list. Press an item to open
 screen: the same reading as on a desk, with its status to move, its Agents (each opens that
 Agent's tile), its Subtasks (each opens its own screen), comments and a box to add one, and its
 attachments (each opens in Docs). Back returns to where you came from.
+
+## All Hands
+
+**All Hands** (its door on Home, `#/allhands`) is the phone's list on a desk, as a workbench with
+two tilespaces. Tilespace 1 opens on the same list, with the same **Type**, **Kind** and **Sort**
+and its groups opening and closing in place; Tilespace 2 starts empty. Press an Agent and its tile
+opens in the selected tilespace; press an item and it opens there on **Find item**. When the
+list's own tilespace is selected, what you press opens in the other one. The list is a card in
+the selector too, so it can be put in either tilespace. The selector is for the whole office:
+**New Agent**, **New Team**, **Archived Agents**, **Epics** and **Find item**, none of them tied
+to a Team.
 
 ## Short vocabulary check
 

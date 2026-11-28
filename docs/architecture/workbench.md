@@ -149,7 +149,7 @@ status as its own reads return.
    ownership checks prevent stale responses from repainting replaced surfaces.
 
 **Ronin Home** (`campaign-home.js`; owner, 2026-10-19) stays a page, not a Workbench: Teams,
-Workspaces and Epics in a triangle (owner, 2026-11-02), with Setup, Help and Settings smaller stones
+Workspaces and Epics in a triangle (owner, 2026-11-02), with Setup, All Hands and Settings smaller stones
 in a column inset on the right — each a link to a Workbench destination of its own,
 opened in the same tab. The link's href is the plain address (`#/setup`), so hovering shows what a
 person reads; a Ctrl/Cmd/Shift or middle press makes the tab id and launch state then and opens a new
@@ -157,7 +157,12 @@ tab through `openWorkbenchTab` (`workbenchLink`, KAN-473; the bar's Teams crumb 
 defaults links the same). The
 Teams door opens the Teams workbench (`#/cowork`, `cowork-view.js`; owner, 2026-10-20). Workspaces, Epics
 and Help are one shape (`door-workbenches.js`): the Kit Workbench on a profile of the door's surfaces, the door's
-surface seated in Workspace 1 on first open. Settings' harness cards come from the same file's `harnessKit`: the
+surface seated in Workspace 1 on first open. All Hands (`#/allhands`, `all-hands.js`, w1146) is a door workbench of
+the same shape: profile `allhands`, its roster (`allhands.roster`) seated in Workspace 1 and Workspace 2 empty. The
+roster draws the phone list's one reading (`roster-lists.js`: Type, Kind, Sort); a row places `session.terminal` or
+`team.find-item` (keyed by the item) in the selected workspace, the other one when the roster's own is selected. Its
+selector offers the roster and the catalog's own New Agent, New Team, Archived Agents, Epics (`epics.records`) and Find
+item, each given an environment over no Team. Settings' harness cards come from the same file's `harnessKit`: the
 stones of harnesses (`models.stones`; a stone pressed opens its page in place of the stones, a stone dragged or a harness's
 selector card places it whole, `models.provider`; `models-surface.js`, drawn with `harnesses-surface.js`).
 Workspaces seats
