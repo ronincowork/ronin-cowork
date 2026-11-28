@@ -55,9 +55,12 @@ async function exists(file: string): Promise<boolean> {
   try { await stat(file); return true; } catch { return false; }
 }
 
+/** A harness with no sign-in of its own: it counts as signed in when a model service is set up (Hermes). */
+export const SIGNED_IN_BY_SERVICE: ReadonlySet<string> = new Set(['hermes']);
+
 /** The CLI signed in on this machine and left its credential file; Ronin reads only that it exists. */
 export async function harnessSignedIn(cli: string, home = os.homedir()): Promise<boolean> {
-  if (cli === 'hermes') return modelServiceConfigured();
+  if (SIGNED_IN_BY_SERVICE.has(cli)) return modelServiceConfigured();
   const files = AGENTS.find((agent) => agent.id === cli)?.credentials ?? [];
   for (const file of files) if (await exists(path.join(home, file))) return true;
   return false;
@@ -262,15 +265,18 @@ const record = (value: unknown): Record<string, unknown> =>
  * set, the first CLI signed in here becomes ⚙ agents.sessions.default, written once: the
  * provider, its model blank (the provider's own default). A later sign-in never moves it; only the Agent defaults do.
  * One already signed in before this measure outranks one new in it. A model service is no
- * sign-in: it is never in `signed_in`. Returns the provider written, '' for none.
+ * sign-in: Hermes, signed in by one, never becomes the default here (KAN-1002); the harness panel's
+ * Set as default makes any signed-in harness the default. Returns the provider written, '' for none.
  */
 export async function settleFirstDefault(previous: HarnessSummary | null, summary: HarnessSummary): Promise<string> {
   const agents = await readAgentsSection();
   const sessions = record(agents.sessions);
   const stated = record(sessions.default).provider;
   if (typeof stated === 'string' && stated.trim()) return '';
+  // Only a sign-in of the harness's own (KAN-1002): Hermes, signed in by any model service, became the default
+  // on a hosted office the moment its Ronin Gateway was set up, before the person signed anything in.
   const order = [...(previous?.signed_in ?? []), ...summary.signed_in]
-    .filter((cli, at, all) => all.indexOf(cli) === at && summary.signed_in.includes(cli) && summary.operational.includes(cli));
+    .filter((cli, at, all) => all.indexOf(cli) === at && !SIGNED_IN_BY_SERVICE.has(cli) && summary.signed_in.includes(cli) && summary.operational.includes(cli));
   if (!order.length) return '';
   const rows = await harnessRows(summary);
   for (const cli of order) {

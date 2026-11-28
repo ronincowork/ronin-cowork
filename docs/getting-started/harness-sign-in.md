@@ -45,6 +45,10 @@ once it is on screen (a note says to click in the terminal to show it); **Go Bac
 back a screen when it offers that. While it is open,
 **Done** and **Cancel** stand in the row where **Terminal** was.
 
+The first harness you sign in on its own (Subscription or API key, or its terminal) becomes the office's
+default: a new Agent starts on it, with its own default model. A signed-in harness shows **Set as default**
+under its sign-in, or *Default* on the one that is; Settings > Advanced > Agent defaults is the same setting.
+
 A harness already signed in warns first: signing in again signs out every Agent on it until you
 finish. A second press goes ahead.
 
