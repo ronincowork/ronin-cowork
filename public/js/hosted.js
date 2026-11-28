@@ -9,5 +9,5 @@
 export const HOSTED = document.documentElement.dataset.hosted === 'on';
 export const BUSINESS_LOUNGE = 'https://hq.roninhosted.com/';
 /** Sign out (KAN-983; the contract is hosted_lounge_build's, w1154): the office's own OAuth2 Proxy clears its
- *  cookie and lands on the Business Lounge's signed-out page. A plain link; Cowork writes no sign-out code. */
-export const SIGN_OUT = '/oauth2/sign_out?rd=https%3A%2F%2Fhq.roninhosted.com%2Fsigned-out';
+ *  cookie and lands on HQ's sign-in page with signed_out=1. A plain link; Cowork writes no sign-out code. */
+export const SIGN_OUT = '/oauth2/sign_out?rd=https%3A%2F%2Fhq.roninhosted.com%2F%3Fsigned_out%3D1';
