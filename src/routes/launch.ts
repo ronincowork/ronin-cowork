@@ -25,7 +25,7 @@ import { briefTold } from '../brief-settings.js';
 import { HELP_LINE } from '../brief.js';
 import { appendLaunchLedger, persistBirthReceipt } from '../launch-ledger.js';
 import { mandate } from '../agent-defaults.js';
-import { asksForInput, classifyStatus } from '../status.js';
+import { asksForInput, classifyStatus, screenConsentQuestion } from '../status.js';
 import { enqueueMessage } from '../message-queue.js';
 import { scanContext, scanModel } from '../ctx.js';
 
@@ -182,7 +182,7 @@ export function mikaReadinessFromPane(text: string): 'ready' | 'starting' | 'act
 // row field. Both are the card's fields part.
 const readPane = async (name: string) => {
   const text = await capturePane(name, 0).catch(() => '');
-  return { ctx: scanContext(text), model: scanModel(text), asking: asksForInput(text) };
+  return { ctx: scanContext(text), model: scanModel(text), asking: asksForInput(text), question: screenConsentQuestion(text) };
 };
 
 /** AN AGENT FLAG (owner, 2026-11-15, KAN-527): the Agent itself waits on the owner, not an
@@ -215,9 +215,9 @@ export async function cardOf(s: SessionWithAxes, parts: ReadonlySet<CardPart>) {
   // A seat's tile shows its thread where a terminal would be: both ways, marked with its record.
   const thread = s.seat ? await part(threads, s.name, parts.has('record'), (name) => readThread(name)) : null;
   // The CLI's hook record says so (src/asking.ts), or, for a CLI without hooks, the screen does.
-  const { asking: onScreen, ...gauges } = pane;
+  const { asking: onScreen, question: screenQuestion, ...gauges } = pane;
   const { hooked, ...contributed } = row;
-  const asking = contributed.stance === 'asking' || (!hooked && onScreen);
+  const asking = contributed.stance === 'asking' || onScreen;
   const stopped_at = asking ? undefined : stoppedAt(s.name, contributed.at);
   // Working with nothing new in its conversation for 12 minutes: flagged too (KAN-618).
   const stuck = !asking && !stopped_at && noProgress.check(s.name, contributed.stance, contributed.at);
@@ -227,6 +227,7 @@ export async function cardOf(s: SessionWithAxes, parts: ReadonlySet<CardPart>) {
     ...s,
     ...gauges,
     ...contributed,
+    ...(asking && !contributed.question && screenQuestion ? { question: screenQuestion } : {}),
     // A question on the screen is asking, whatever the log's newest line says; a Stop Ronin
     // sent reads interrupted until the Agent writes a line or is sent to (stopped.ts).
     stance: flag ?? (stopped_at ? 'interrupted' : contributed.stance ?? 'unknown'),
