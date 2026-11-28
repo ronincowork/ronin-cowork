@@ -30,12 +30,14 @@ const el = (tag, cls, text) => {
   return out;
 };
 
-/** The office: the triangle, Teams at its apex. */
+/** The office: the triangle, Teams at its apex, and All Hands the broad slab under it (KAN-977):
+ *  the office-wide way in, every Agent and item in one roster (all-hands.js). */
 function OFFICE() {
   return [
     { key: 'teams', route: 'cowork', glyph: '人人', name: t('campaign_home.teams', 'Teams'), is: t('campaign_home.teams_is', 'Who does the work') },
     { key: 'epics', route: 'epics', glyph: '◇', name: t('campaign_home.epics', 'Epics'), is: t('campaign_home.epics_is', 'What the work is') },
     { key: 'workspaces', route: 'workspaces', glyph: '⌂', name: t('campaign_home.workspaces', 'Workspaces'), is: t('campaign_home.workspaces_is', 'Where the work is') },
+    { key: 'allhands', route: 'allhands', glyph: '≡', name: t('campaign_home.all_hands', 'All Hands'), is: t('campaign_home.all_hands_is', 'Every Agent and item') },
   ];
 }
 
@@ -44,8 +46,6 @@ function OFFICE() {
 function SIDE() {
   return [
     { key: 'setup', route: 'setup', glyph: '人', name: t('campaign_home.setup', 'Setup'), is: t('campaign_home.setup_is', 'Harness, Workspace, Team'), gated: false },
-    // All Hands (w1146): every Agent and item in one roster, the phone's, beside what it opens.
-    { key: 'allhands', route: 'allhands', glyph: '≡', name: t('campaign_home.all_hands', 'All Hands'), is: t('campaign_home.all_hands_is', 'Every Agent and item') },
     // Help's stone is off Home until Mika is ready for a live office; its page stays at #/help (owner, 26 Nov; w1069).
     // A stone per workbench from the office's custom/workbenches/ folder (KAN-954).
     ...folderWorkbenches().map((one) => ({ key: `workbench:${one.name}`, route: one.name, glyph: '▦', name: one.title, is: t('campaign_home.workbench_is', 'A workbench of this office'), gated: false })),

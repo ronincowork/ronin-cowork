@@ -251,7 +251,7 @@ attachments (each opens in Docs). Back returns to where you came from.
 
 ## All Hands
 
-**All Hands** (its door on Home, `#/allhands`) is the phone's list on a desk, as a workbench with
+**All Hands** (on Home the broad slab under Teams, Epics and Workspaces, the office-wide way in; `#/allhands`) is the phone's list on a desk, as a workbench with
 two tilespaces. Tilespace 1 opens on the same list, with the same **Type**, **Kind** and **Sort**
 and its groups opening and closing in place; Tilespace 2 starts empty. Press an Agent and its tile
 opens in the selected tilespace; press an item and it opens there on **Find item**. When the

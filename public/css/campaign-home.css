@@ -53,6 +53,12 @@
      Home's size, one even gap between them across and down. */
   .ch-doors { display: grid; grid-template-columns: repeat(2, var(--ch-door-w)); justify-content: center; gap: var(--ch-office-gap); }
   .ch-doors > .ch-door[data-door='teams'] { grid-column: 1 / -1; justify-self: center; width: var(--ch-door-w); }
+  /* ALL HANDS (KAN-977): the office-wide way in, a broad slab under the triangle, its whole width
+     and a side stone's height; glyph, name and what it is on one line. */
+  .ch-doors > .ch-door[data-door='allhands'] { grid-column: 1 / -1; min-height: var(--ch-side-h); flex-direction: row; align-items: center; gap: var(--space-inset); }
+  .ch-door[data-door='allhands'] { --ch-tone: var(--ok-2); }
+  .ch-door[data-door='allhands'] :is(h2, .ch-gate) { margin: 0; }
+  .ch-door[data-door='allhands'] .ch-is { position: static; opacity: 1; transform: none; margin: 0; padding-top: 0; border-top: 0; }
 
   /* Model Providers, Help and Settings: smaller stones, one above the other, on the right. */
   .ch-side {

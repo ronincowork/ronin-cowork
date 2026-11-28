@@ -149,7 +149,7 @@ status as its own reads return.
    ownership checks prevent stale responses from repainting replaced surfaces.
 
 **Ronin Home** (`campaign-home.js`; owner, 2026-10-19) stays a page, not a Workbench: Teams,
-Workspaces and Epics in a triangle (owner, 2026-11-02), with Setup, All Hands and Settings smaller stones
+Workspaces and Epics in a triangle (owner, 2026-11-02), All Hands a broad slab across its foot (KAN-977), with Setup and Settings smaller stones
 in a column inset on the right — each a link to a Workbench destination of its own,
 opened in the same tab. The link's href is the plain address (`#/setup`), so hovering shows what a
 person reads; a Ctrl/Cmd/Shift or middle press makes the tab id and launch state then and opens a new
