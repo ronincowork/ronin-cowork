@@ -57,12 +57,76 @@ let signInAsked = false;
 const signInListeners = new Set();
 const heardSignIn = (message) => { signIn = { runs: message.runs || [], failed: message.failed || {}, ways: message.ways || {} }; for (const fn of signInListeners) fn(); };
 signInHandlers.add(heardSignIn);
-const listenSignIn = (fn) => {
-  if (!signInAsked) { signInAsked = true; void request('/api/setup/sign-in', { cache: 'no-store' }).then((r) => { if (r.ok) heardSignIn(r.data); }); }
+const readSignIn = () => request('/api/setup/sign-in', { cache: 'no-store' }).then((r) => { if (r.ok) heardSignIn(r.data); });
+// A reconnect may have missed a run's end (KAN-989): read the runs again on every open after the first read.
+store.onOpen(() => { if (signInAsked) void readSignIn(); });
+export const listenSignIn = (fn) => {
+  if (!signInAsked) { signInAsked = true; void readSignIn(); }
   signInListeners.add(fn);
   return () => signInListeners.delete(fn);
 };
-const runOf = (id) => signIn.runs.find((one) => one.provider === id) || null;
+export const runOf = (id) => signIn.runs.find((one) => one.provider === id) || null;
+export const failedOf = (id) => signIn.failed[id] || '';
+
+/**
+ * COPY THAT ANSWERS (KAN-989): the clipboard where the page may write it (https, a hosted office), else the
+ * text selected and copied the old way; either way the press says what happened.
+ */
+async function copyText(value) {
+  try { await navigator.clipboard.writeText(value); return true; } catch { /* not allowed here: the old way */ }
+  const area = document.createElement('textarea');
+  area.value = value; area.setAttribute('readonly', ''); area.style.position = 'fixed'; area.style.opacity = '0';
+  document.body.append(area); area.select();
+  let done = false;
+  try { done = document.execCommand('copy'); } catch { done = false; }
+  area.remove();
+  return done;
+}
+
+/**
+ * What the person must do now in a sign-in run, from what the CLI printed: the link, the code with Copy, a box
+ * for a code or key with Send, and Cancel. A harness's panel and Setup's GitHub sign-in (KAN-997) mount the
+ * same one; `base` is the routes' root, `tellHer` tells the Helpful Assistant what was pressed.
+ */
+export function signInRunWindow(provider, run, { base, drafts = new Map(), tellHer = () => {} }) {
+  const box = el('div', 'setup-harness-window');
+  const line = run.paste === 'key' ? t('setup_harness.paste_key', 'Paste your API key. It goes straight to {cli}.', { cli: shortName(provider) })
+    : run.paste === 'code' ? t('setup_harness.paste_code', 'Open the link, sign in, and paste the code it gives you here.')
+      : t('setup_harness.enter_code', 'Open the link, sign in, and enter this code.');
+  box.append(el('p', 'setup-harness-line', run.sent ? t('setup_harness.sent', 'Sent. Finishing the sign-in…') : line));
+  if (run.link) { const link = el('a', 'setup-harness-link', run.link.replace(/^https:\/\//, '').replace(/[?#].*$/, '')); link.href = run.link; link.target = '_blank'; link.rel = 'noopener noreferrer'; box.append(link); }
+  if (run.code) box.append(el('span', 'setup-harness-code', run.code));
+  const row = el('div', 'ask setup-harness-row'); row.dataset.density = 'tight';
+  const said = el('p', 'setup-fine'); said.hidden = true;
+  const answer = (text, bad = false) => { said.textContent = text; said.className = bad ? 'setup-harness-line bad' : 'setup-fine'; said.hidden = false; };
+  if (run.code) row.append(stone(t('setup_harness.copy', 'Copy'), async () => {
+    answer(await copyText(run.code) ? t('setup_harness.copied', 'Copied.') : t('setup_harness.copy_failed', 'Copy did not work here: select it and copy it.'), false);
+  }));
+  if (run.paste && !run.sent) {
+    const input = el('input', 'setup-harness-input');
+    input.type = run.paste === 'key' ? 'password' : 'text';
+    input.autocomplete = 'off';
+    input.placeholder = run.paste === 'key' ? t('setup_harness.key_hint', 'API key') : t('setup_harness.code_hint', 'Code');
+    input.value = drafts.get(run.provider) || '';
+    input.addEventListener('input', () => drafts.set(run.provider, input.value));
+    const send = stone(t('setup_harness.send', 'Send'), async () => {
+      send.disabled = true;
+      const result = await request(`${base}/sign-in/paste`, { method: 'POST', json: { text: input.value } });
+      if (result.ok) { drafts.delete(run.provider); tellHer(`${shortName(provider)} · Sent the ${run.paste}`); } else send.disabled = false;
+    });
+    input.addEventListener('keydown', (event) => { if (event.key === 'Enter') send.click(); });
+    row.append(input, send);
+  }
+  // Cancel always answers: the server says what runs now, and the panel draws that (KAN-989).
+  row.append(stone(t('setup_harness.cancel', 'Cancel'), async () => {
+    const r = await request(`${base}/sign-in/cancel`, { method: 'POST', json: {} });
+    if (!r.ok) { answer(r.message, true); return; }
+    if (r.data?.state) heardSignIn(r.data.state);
+    tellHer(`${shortName(provider)} · Cancel sign-in`);
+  }));
+  box.append(row, said);
+  return box;
+}
 
 /**
  * THE STATE WORD (owner, 25 and 27 Nov 2026): one word per harness, on its stone and its panel alike. It names
@@ -152,7 +216,13 @@ const NO_TERMINAL = new Set(['hermes']);
  * ONE HARNESS'S PANEL, drawn into `host`; returns its dispose. `openAgent()` is the place's: where the Helpful
  * Assistant opens when a sign-in she helps with starts.
  */
-export function mountHarnessPanel(host, id, { drawing, context = {}, openAgent = () => {} } = {}) {
+/* THE OFFICE'S DEFAULT HARNESS (KAN-1002): ⚙ agents.sessions.default, the Agent defaults' own record, read with
+ * the panel and written by its Set as default; the model Native (blank). */
+let officeDefault = null;
+const readOfficeDefault = () => request('/api/machine-settings', { cache: 'no-store' })
+  .then((r) => { if (r.ok) officeDefault = String(r.data?.agents?.sessions?.default?.provider || ''); });
+
+export function mountHarnessPanel(host, id, { drawing, context = {}, openAgent = () => {}, back = null } = {}) {
   const card = el('article', 'harness-panel');
   card.dataset.provider = id;
   host.append(card);
@@ -221,7 +291,7 @@ export function mountHarnessPanel(host, id, { drawing, context = {}, openAgent =
     copyRow = el('div', 'ask setup-harness-row setup-harness-ways harness-terminal-stones'); copyRow.dataset.density = 'tight';
     const said = el('p', 'setup-fine'); said.hidden = true;
     let seen = { code: '', link: '', back: '' };
-    const copy = (value) => { void navigator.clipboard?.writeText(value).then(() => { said.textContent = t('setup_harness.copied', 'Copied.'); said.hidden = false; }, () => {}); };
+    const copy = (value) => { void copyText(value).then((done) => { said.textContent = done ? t('setup_harness.copied', 'Copied.') : t('setup_harness.copy_failed', 'Copy did not work here: select it and copy it.'); said.hidden = false; }); };
     const paintCopy = () => {
       const code = stone(t('harness.copy_code', 'Copy code'), () => { if (seen.code) copy(seen.code); }, seen.code || t('harness.no_code', 'No code yet'));
       code.disabled = !seen.code;
@@ -244,37 +314,6 @@ export function mountHarnessPanel(host, id, { drawing, context = {}, openAgent =
     scan();
     stopCopy = mounted?.onOutput?.(scan) || (() => {});
     return copyRow;
-  };
-
-  /** What the person must do now in a sign-in run, from what the CLI printed. */
-  const runWindow = (provider, run) => {
-    const box = el('div', 'setup-harness-window');
-    const line = run.paste === 'key' ? t('setup_harness.paste_key', 'Paste your API key. It goes straight to {cli}.', { cli: shortName(provider) })
-      : run.paste === 'code' ? t('setup_harness.paste_code', 'Open the link, sign in, and paste the code it gives you here.')
-        : t('setup_harness.enter_code', 'Open the link, sign in, and enter this code.');
-    box.append(el('p', 'setup-harness-line', run.sent ? t('setup_harness.sent', 'Sent. Finishing the sign-in…') : line));
-    if (run.link) { const link = el('a', 'setup-harness-link', run.link.replace(/^https:\/\//, '').replace(/[?#].*$/, '')); link.href = run.link; link.target = '_blank'; link.rel = 'noopener noreferrer'; box.append(link); }
-    if (run.code) box.append(el('span', 'setup-harness-code', run.code));
-    const row = el('div', 'ask setup-harness-row'); row.dataset.density = 'tight';
-    if (run.code) row.append(stone(t('setup_harness.copy', 'Copy'), () => { void navigator.clipboard?.writeText(run.code).catch(() => {}); }));
-    if (run.paste && !run.sent) {
-      const input = el('input', 'setup-harness-input');
-      input.type = run.paste === 'key' ? 'password' : 'text';
-      input.autocomplete = 'off';
-      input.placeholder = run.paste === 'key' ? t('setup_harness.key_hint', 'API key') : t('setup_harness.code_hint', 'Code');
-      input.value = drafts.get(run.provider) || '';
-      input.addEventListener('input', () => drafts.set(run.provider, input.value));
-      const send = stone(t('setup_harness.send', 'Send'), async () => {
-        send.disabled = true;
-        const result = await request(`${base}/sign-in/paste`, { method: 'POST', json: { text: input.value } });
-        if (result.ok) { drafts.delete(run.provider); tellHer(`${shortName(provider)} · Sent the ${run.paste}`); } else send.disabled = false;
-      });
-      input.addEventListener('keydown', (event) => { if (event.key === 'Enter') send.click(); });
-      row.append(input, send);
-    }
-    row.append(stone(t('setup_harness.cancel', 'Cancel'), async () => { const r = await request(`${base}/sign-in/cancel`, { method: 'POST', json: {} }); if (r.ok) tellHer(`${shortName(provider)} · Cancel sign-in`); }));
-    box.append(row);
-    return box;
   };
 
   /** A terminal on the panel with what ends it: Done records the sign-in (it re-measures), Cancel ends it. */
@@ -305,6 +344,7 @@ export function mountHarnessPanel(host, id, { drawing, context = {}, openAgent =
     // Signed in on its own already: a new in-harness sign-in signs out every Agent on it (owner, w994).
     const signedIn = provider.signed_in === true;
     const current = signIn.ways[id] || '';
+    editor?.setWay?.(current); // the entries' own heading says it (KAN-992)
     const warnFirst = (key, go) => () => {
       if (signedIn && switching !== key) { switching = key; paint(); return; }
       switching = '';
@@ -339,7 +379,7 @@ export function mountHarnessPanel(host, id, { drawing, context = {}, openAgent =
       row.append(terminal);
     }
     part.append(el('p', 'setup-harness-line', t('harness.services_line', 'Choose how {cli} gets its models. Sign in where a service needs it.', { cli })), row);
-    if (run) part.append(runWindow(provider, run));
+    if (run) part.append(signInRunWindow(provider, run, { base, drafts, tellHer }));
     else if (provider.login_open) part.append(terminalWindow(provider, { line: provider.sign_in_how || '', copy: true }));
     const said = switching
       ? t('harness.signed_in_already', 'Signing in again signs out every {cli} Agent until you finish. Press it again to go ahead.', { cli })
@@ -347,8 +387,28 @@ export function mountHarnessPanel(host, id, { drawing, context = {}, openAgent =
         : current === 'api_key' ? t('harness.on_api_key', 'Signed in with an API key.')
           : signedIn ? t('harness.signed_in', 'Signed in on this office.') : '';
     if (said && !run && !provider.login_open) part.append(el('p', 'setup-harness-line', said));
+    // Signed in on its own: Set as default, or Default on the one that is (KAN-1002).
+    const catalogProvider = (harnessCatalog().harnesses || []).find((entry) => entry.cli === id)?.provider || '';
+    if (signedIn && current && catalogProvider && !run && !provider.login_open && officeDefault !== null) {
+      if (officeDefault === catalogProvider) part.append(el('p', 'setup-harness-line', t('harness.is_default', 'Default: a new Agent starts on {cli}.', { cli })));
+      else {
+        const make = stone(t('harness.set_default', 'Set as default'), async () => {
+          make.disabled = true;
+          const result = await request('/api/machine-settings', { method: 'PATCH', json: { family: 'agents', value: { sessions: { default: { provider: catalogProvider, model: '' } } } } });
+          if (result.ok) officeDefault = catalogProvider; else problem = result.message;
+          paint();
+        });
+        const row = stoneRow(); row.append(make); part.append(row);
+      }
+    }
+    // A sign-in that ended without signing in (KAN-991): a 5xx from the provider is said plainly, with its
+    // name; anything else is the CLI's own line. Pressing the same way again starts a fresh flow.
     const failed = signIn.failed[id] || '';
-    if (failed && !run) part.append(el('p', 'setup-harness-line bad', failed));
+    const status = failed.match(/\bstatus (5\d\d)\b/)?.[1] || '';
+    const failedLine = status && provider.from
+      ? t('harness.provider_timed_out', '{vendor}’s sign-in timed out ({status}). Start again.', { vendor: provider.from, status })
+      : failed;
+    if (failed && !run) part.append(el('p', 'setup-harness-line bad', failedLine));
     return part;
   };
 
@@ -390,7 +450,9 @@ export function mountHarnessPanel(host, id, { drawing, context = {}, openAgent =
     if (from && provider) title.append(el('p', 'setup-provider-from', t('setup_surface.provider_from', 'From {vendor}', { vendor: from })));
     head.append(title);
     if (provider) head.append(el('span', 'harness-panel-state', harnessState(provider)));
-    const parts = [head];
+    // BACK TO EVERY HARNESS (owner, 28 Nov): a new person may not read the − as the way back, so the panel says it
+    // in words above the harness's name; the − stays, as on every other surface.
+    const parts = back ? [action(t('harness.back', '← Back'), '', back), head] : [head];
     if (!provider) {
       parts.push(el('p', 'setup-fine', entry ? t('setup_surface.no_cli', 'No CLI in Ronin’s registry serves this harness, so it cannot be installed or signed in here.') : t('setup_surface.provider_missing', 'This harness is no longer in the harness catalog.')));
       card.replaceChildren(...parts);
@@ -422,12 +484,14 @@ export function mountHarnessPanel(host, id, { drawing, context = {}, openAgent =
   let running = Boolean(runOf(id));
   const stopSignIn = listenSignIn(() => {
     const now = Boolean(runOf(id));
-    if (running && !now) void drawing.measure();
+    // A sign-in that ended may have made the first default (KAN-1002): read it again too.
+    if (running && !now) { void drawing.measure(); void readOfficeDefault().then(() => { if (!disposed) paint(); }); }
     running = now;
     paint();
   });
   const stopFrame = drawing.onFrame(() => { newEditor(); paint(); });
   paint();
+  void readOfficeDefault().then(() => { if (!disposed) paint(); });
   return () => { disposed = true; stopSignIn(); stopFrame(); dropTerminal(); editor?.destroy(); card.remove(); };
 }
 
@@ -442,7 +506,7 @@ export function createHarnessesSurface(context, { label, className = '', openAge
   const drawing = createHarnessDrawing(context, { repaint: () => repaint(), say });
   const stones = createPhalanx({
     className: 'setup-provider-stones',
-    renderDetail: (item, host) => drawing.paintHarness(item.id, host, { openAgent: () => openAgent(out.el) }),
+    renderDetail: (item, host) => drawing.paintHarness(item.id, host, { openAgent: () => openAgent(out.el), back: () => stones.back() }),
   });
   stones.mount(out.content, { after: [notice] });
   const repaint = () => {

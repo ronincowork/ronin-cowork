@@ -2975,6 +2975,9 @@ body {
 /* An item id in Chat opens the item over the tile (js/chat-item-links.js, KAN-698). */
 .tile-transcript-entry a.chat-item-link { color: var(--accent); }
 .tile-transcript-entry a.chat-item-link[aria-busy='true'] { cursor: progress; opacity: 0.6; }
+/* An image handed to the Agent, where its path was; the CLI's placeholder for one, a chip (w1170). */
+.tile-transcript-entry img.chat-image { display: block; max-width: 100%; max-height: 20rem; margin-top: var(--space-row); border-radius: var(--radius-small); }
+.tile-transcript-entry .chat-shot { padding: 0 var(--space-row); border-radius: var(--radius-small); background: var(--inset); color: var(--muted); }
 /* Sent, and not yet written down by the CLI: the person's words in a lighter shade until they land. */
 .tile-transcript-entry[data-role='user'][data-pending='true'] { color: var(--muted); }
 /* A pipe table, wherever markdown is read (Chat, Docs, Help): a heavier rule under the header
@@ -4592,7 +4595,47 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 .harness-panel .setup-harness-terminal { align-self: stretch; }
 /* Under a sign-in terminal: small stones, as wide as their words. */
 .harness-terminal-stones .ask-rect { width: auto; flex: none; }
-.harness-terminal-note { margin: 0; align-self: center; font-style: italic; }
+.harness-terminal-note { margin: 0; align-self: center; }
+/* ONE VOICE ON THE PANEL (owner, 28 Nov; KAN-990): one text size, one ink, weight for names and headings, no
+   capitals, no blue links. The harness's name is the one larger line; a heading is strong body text; every line,
+   note, table cell and press is body text in --fg. Only a status keeps its own colour: a fault (kaki), a row that is
+   off (muted), the service it is on (the kaki fill). Presses that are words read as words and underline on hover. */
+.harness-panel { color: var(--fg); font-size: var(--text-body); line-height: var(--leading-body); }
+.harness-panel-title h2 { font-size: var(--text-heading); font-weight: var(--weight-strong); line-height: var(--leading-tight); color: var(--fg-strong); }
+.harness-panel :is(.setup-provider-eyebrow, .harness-models-service) { margin: 0; color: var(--fg-strong); font-size: var(--text-body); font-weight: var(--weight-strong); letter-spacing: 0; text-transform: none; }
+.harness-panel :is(.setup-provider-from, .harness-panel-state, .setup-fine, .setup-harness-line, .setup-provider-command, .hermes-add-note) { color: var(--fg); font-size: var(--text-body); font-weight: var(--weight-regular); }
+.harness-panel .setup-harness-line.bad { color: var(--kaki); /* status: a fault */ }
+.harness-panel .setup-provider-command { font-family: var(--font-mono); }
+.harness-panel .setup-harness-code { font-size: var(--text-body); font-weight: var(--weight-strong); letter-spacing: var(--tracking-wide); }
+.harness-panel :is(.setup-harness-link, .hermes-add-line, .data-table-link) { color: var(--fg); font-size: var(--text-body); text-decoration: none; }
+.harness-panel :is(.setup-harness-link, .hermes-add-line, .data-table-link):is(:hover, :focus-visible) { color: var(--fg-strong); text-decoration: underline; text-decoration-color: var(--kaki); }
+.harness-panel .hermes-table :is(th, td) { font-size: var(--text-body); }
+.harness-panel .hermes-table thead th { color: var(--fg); font-weight: var(--weight-strong); }
+.harness-panel .hermes-table tbody :is(th, td) { color: var(--fg); font-weight: var(--weight-regular); }
+.harness-panel .data-table tr.data-table-off :is(th, td):not(.hermes-tools) { color: var(--muted); /* status: hidden */ }
+/* EACH SERVICE ITS OWN BLOCK (owner, 28 Nov): a service's name is a band (the inset ground and a kaki edge, as
+   All Hands' groups), its table sits under it aligned with the name, and a section's space parts it from the next
+   service, so In harness and Ronin Gateway never read as one list. */
+.harness-panel .harness-models-body { gap: 0; }
+.harness-panel .harness-models-service { position: relative; padding: var(--space-inline) var(--space-inset); border-radius: var(--radius-small); background: var(--inset); }
+.harness-panel .harness-models-service::before { content: ''; position: absolute; inset: var(--space-row) auto var(--space-row) 0; width: var(--edge-2); border-radius: var(--radius-pill); background: var(--kaki); /* kaki: the brand, the service's edge */ }
+.harness-panel .harness-models-service ~ .harness-models-service { margin-top: var(--space-section); }
+.harness-panel .harness-models-service + .hermes-table { margin-top: var(--space-row); }
+.harness-panel .hermes-table :is(th, td):first-child { padding-left: var(--space-inset); }
+.harness-panel .hermes-table thead th { color: var(--muted); font-weight: var(--weight-regular); border-bottom-color: var(--line); }
+.harness-panel .hermes-table td.hermes-tools { text-align: right; padding-right: var(--space-inset); }
+/* What comes after the tables is a control, not a line of text: the way to Settings, then a footer for Turn off,
+   ruled off from the panel, its sentence and its button on one line. */
+.harness-panel .harness-models-body > .hermes-add-line { justify-self: start; margin-top: var(--space-subsection); min-height: var(--control-height-small); padding: var(--space-row) var(--space-control); border: var(--edge) solid var(--line-2); border-radius: var(--radius-small); }
+.harness-panel .harness-models-body > .hermes-add-line:is(:hover, :focus-visible) { border-color: var(--kaki); text-decoration: none; }
+.harness-panel-part:has(> .setup-fine + .harness-action) { flex-direction: row; align-items: center; gap: var(--space-inset); padding-top: var(--space-subsection); border-top: var(--edge) solid var(--line); }
+.harness-panel-part:has(> .setup-fine + .harness-action) > .setup-fine { flex: 1 1 auto; align-self: center; color: var(--muted); }
+.harness-panel-part:has(> .setup-fine + .harness-action) > .harness-action { flex: none; min-height: var(--control-height-small); }
+/* Back to every harness: a small box at the panel's top left, as wide as its words. */
+.harness-panel > .harness-action:first-child { align-self: flex-start; min-height: var(--control-height-small); }
+.harness-panel .ask-word { color: var(--muted); }
+.harness-panel .ask-opt[aria-selected='true'] .ask-word { color: var(--kaki-fill-ink); }
+.harness-panel .wk-action { font-size: var(--text-body); }
 /* Settings' window on the surface: the Helpful Assistant's chat over the harness surface, put away with −. */
 .setup-surface:has(> .harness-agent-window) { position: relative; }
 .harness-agent-window { position: absolute; z-index: 5; inset-inline-end: 16px; inset-block-end: 16px; inline-size: min(440px, calc(100% - 32px)); block-size: min(560px, calc(100% - 32px)); display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--line-2); border-radius: 8px; box-shadow: var(--shadow-menu); overflow: hidden; }
@@ -4612,6 +4655,10 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 .setup-workspace-blanks { display: flex; flex-direction: column; gap: var(--space-subsection); }
 .setup-workspace-blanks[data-door='open'] { padding-inline-start: var(--space-subsection); border-inline-start: 2px solid var(--line); }
 .setup-workspace-blanks > *, .setup-workspace-blanks .wk-field { margin: 0; }
+/* From Git, waiting on GitHub (KAN-998): the rest of the door, shown but not live, in the kit's greyed look. */
+.setup-workspace-waiting { display: flex; flex-direction: column; gap: var(--space-subsection); }
+.setup-workspace-waiting[inert] { opacity: .58; /* the kit's greyed look (.wk-surface[data-state='inert']) */ }
+.setup-workspace-waiting > *, .setup-workspace-waiting .wk-field { margin: 0; }
 .setup-workspace-kickoff .wk-field { display: flex; flex-direction: column; gap: var(--space-paragraph); }
 .setup-workspace-kickoff .wk-field-description:empty, .setup-workspace-kickoff .ask-caption:empty { display: none; }
 .setup-workspace-question { display: flex; flex-direction: column; gap: var(--space-paragraph); }
@@ -4650,6 +4697,9 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 .setup-workspace-bad { color: var(--bad); }
 .setup-workspace-foot { display: flex; flex-direction: column; gap: var(--space-subsection); margin-top: var(--space-subsection); padding-top: var(--space-subsection); border-top: var(--edge) solid var(--line); }
 .setup-workspace-done:empty, .setup-workspace-foot:empty { display: none; }
+/* Your Workspaces' stones under the doors (KAN-1001): the step still scrolls as one page, not as a stone surface. */
+.setup-workspace-surface > .wk-surface-content:has(.sws) { display: block; overflow: auto; }
+.setup-workspace-fold { max-inline-size: 40rem; }
 .setup-workspace-link { background: none; border: 0; padding: 0; color: var(--link); text-decoration: underline; cursor: pointer; font: inherit; }
 .setup-harness-link { color: var(--link); word-break: break-all; }
 .setup-harness-row { display: flex; flex-wrap: wrap; align-items: stretch; gap: var(--space-inline); }

@@ -12,13 +12,18 @@ import { AGENTS, type AgentLogin } from './agents.js';
 import { broadcastEvent } from './ws/events.js';
 import { enqueueMessage } from './message-queue.js';
 import { readHarnessSummary, refreshHarnesses } from './harness-summary.js';
+import { checkGithub } from './facts.js';
+import { fetchMissingModelLists } from './model-list-fetch.js';
+import { claudeAhead } from './launch-ahead.js';
+import { rootDir } from './resources.js';
 
 export type SignInWay = 'subscription' | 'api_key';
 
 export interface SignInRun {
   provider: string;
   label: string;
-  way: SignInWay;
+  /** A harness's way; GitHub's device sign-in is `device`. */
+  way: SignInWay | 'device';
   /** The link the CLI printed; '' until it has. */
   link: string;
   /** The one-time code it printed, when it prints one. */
@@ -72,16 +77,32 @@ export async function startSignIn(provider: string, way: SignInWay, tell = ''): 
   const { agent, login } = loginOf(provider);
   const step = login[way];
   if (!step) throw new Error(`Choose subscription or API key.`);
+  // The CLI as the measure found it: Ronin's own PATH need not hold ~/.local/bin.
+  const file = (await readHarnessSummary())?.paths?.[provider] || agent.cmd;
+  // Claude's first-run questions answered before its sign-in, so whatever starts it next skips them (KAN-995).
+  if (provider === 'claude') await claudeAhead(rootDir('user'));
+  return run(provider, { label: agent.label, way, file, argv: step.argv, paste: step.paste, code: login.code ?? '' }, tell);
+}
+
+/**
+ * GITHUB'S SIGN-IN (owner, 28 Nov 2026; KAN-997): gh's own device login on the same run as a harness's, for
+ * github.com over HTTPS. gh prints its code and link at once and waits for the approval; once it is approved,
+ * `gh auth setup-git` lets git clone what the person owns. The `github` tool and Setup's Connect start it.
+ */
+export const GITHUB = 'github';
+export function startGithubSignIn(tell = ''): Promise<SignInRun> {
+  return run(GITHUB, { label: 'GitHub', way: 'device', file: 'gh', argv: ['auth', 'login', '--hostname', 'github.com', '--git-protocol', 'https', '--web'], paste: null, code: '[A-Z0-9]{4}-[A-Z0-9]{4}' }, tell);
+}
+
+async function run(provider: string, how: { label: string; way: SignInRun['way']; file: string; argv: readonly string[]; paste: SignInRun['paste']; code: string }, tell: string): Promise<SignInRun> {
   runs.get(provider)?.child.kill();
   failed.delete(provider);
   // No browser here: the CLI prints its link instead of opening one.
-  // The CLI as the measure found it: Ronin's own PATH need not hold ~/.local/bin.
-  const file = (await readHarnessSummary())?.paths?.[provider] || agent.cmd;
-  const child = spawn(file, [...step.argv], { stdio: ['pipe', 'pipe', 'pipe'], env: { ...process.env, BROWSER: 'true' } });
-  const run: SignInRun = { provider, label: agent.label, way, link: '', code: '', paste: step.paste, sent: false };
+  const child = spawn(how.file, [...how.argv], { stdio: ['pipe', 'pipe', 'pipe'], env: { ...process.env, BROWSER: 'true' } });
+  const run: SignInRun = { provider, label: how.label, way: how.way, link: '', code: '', paste: how.paste, sent: false };
   const entry = { run, child, tell, out: '' };
   runs.set(provider, entry);
-  const code = login.code ? new RegExp(login.code) : null;
+  const code = how.code ? new RegExp(how.code) : null;
   const read = (chunk: Buffer) => {
     entry.out += chunk.toString('utf8').replace(ANSI, '');
     const link = entry.out.match(LINK)?.[0] ?? '';
@@ -101,9 +122,17 @@ async function ended(provider: string, entry: { run: SignInRun; child: ChildProc
   runs.delete(provider);
   const last = entry.out.split('\n').map((line) => line.trim()).filter(Boolean).pop() ?? '';
   if (!ok) failed.set(provider, last || 'The sign-in stopped.');
-  // Measured again, model lists read: the facts and Setup's tick follow on their own.
-  await refreshHarnesses().catch((error) => console.error('[sign-in] measure:', error));
-  await readWays().catch(() => {});
+  if (provider === GITHUB) {
+    // Approved: git may now clone what they own; then the fact moves, and the page with it.
+    if (ok) await execFile('gh', ['auth', 'setup-git', '--hostname', 'github.com'], { timeout: 15_000 }).catch((error) => console.error('[sign-in] gh auth setup-git:', error));
+    await checkGithub().catch(() => {});
+  } else {
+    // Measured again, model lists read: the facts and Setup's tick follow on their own.
+    await refreshHarnesses().catch((error) => console.error('[sign-in] measure:', error));
+    await readWays().catch(() => {});
+    // Signed in with no list file yet: the CLI is started once, hidden, to write it (KAN-995).
+    if (ok) void fetchMissingModelLists();
+  }
   push();
   if (entry.tell) {
     const said = ok ? `${entry.run.label} is signed in.` : `${entry.run.label} sign-in did not finish: ${failed.get(provider)}`;
@@ -124,11 +153,17 @@ export function pasteSignIn(provider: string, text: string): SignInRun {
   return entry.run;
 }
 
-/** Stops the run by its own process; nothing is recorded. */
-export function cancelSignIn(provider: string): void {
+/**
+ * Stops the run by its own process; nothing is recorded. It always answers with the state, run or
+ * none, so a page still drawing a run that already ended (a failed sign-in whose push it missed)
+ * is put right by the press itself (KAN-989).
+ */
+export async function cancelSignIn(provider: string): Promise<Awaited<ReturnType<typeof signInState>>> {
   const entry = runs.get(provider);
-  if (!entry) return;
-  runs.delete(provider);
-  entry.child.kill();
+  if (entry) {
+    runs.delete(provider);
+    entry.child.kill();
+  }
   push();
+  return signInState();
 }

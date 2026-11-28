@@ -1,10 +1,11 @@
 import { mkdir, stat, writeFile } from 'node:fs/promises';
+import { claudeAhead } from './launch-ahead.js';
 import os from 'node:os';
 import path from 'node:path';
 import { AGENTS, discoverExecutable, launchArgv, listAgentAvailability } from './agents.js';
 import { updateSection } from './machine-state.js';
 import { listHarnesses, type ModelList, type HarnessSummary } from './harness-catalog.js';
-import { activatedAt, offAt, harnessSignedIn } from './harness-summary.js';
+import { activatedAt, offAt, harnessSignedIn, withCurrentModels } from './harness-summary.js';
 import { rootDir } from './resources.js';
 import { runCommand } from './send.js';
 import { execFile as run, SpawnBrokerError } from './spawn-broker.js';
@@ -89,6 +90,8 @@ const defaultSessionOps: ProviderSessionOps = {
     const launch = await launchArgv(spec.cmd, '');
     if (!launch.argv.length) throw new Error(`${spec.label} is not installed on this machine.`);
     await mkdir(rootDir('user'), { recursive: true });
+    // Claude's first-run questions answered first, as at every Claude start (KAN-995): no theme picker here.
+    if (spec.id === 'claude') await claudeAhead(rootDir('user'));
     await createSetupSession(name, spec.id, rootDir('user'), { agent: false, argv: [] });
     void collectBirthLines(name, true);
     await runCommand(name, [...launch.argv, ...(spec.operations.setup ?? [])].map((arg) => "'" + arg.replace(/'/g, "'\\''") + "'").join(' '));
@@ -109,6 +112,8 @@ export async function setupRuntimeAnswer(
   servedBy: readonly string[] = [],
 ): Promise<SetupRuntimeAnswer> {
   const entries = listHarnesses();
+  // model_list is each CLI's list as of this ask (KAN-995): the park reports it to HQ as cli_models.
+  const lists = (await withCurrentModels(summary)).models;
   const providers = await Promise.all(AGENTS.map(async (agent): Promise<SetupHarnessState> => {
     const entry = entries.find((row) => row.cli === agent.id);
     const session = sessionName(agent.id);
@@ -144,7 +149,7 @@ export async function setupRuntimeAnswer(
       off: offSince !== null,
       off_at: offSince,
       version,
-      model_list: activated ? summary.models?.[agent.id] ?? null : null,
+      model_list: activated ? lists?.[agent.id] ?? null : null,
       login_command: [agent.cmd, ...(agent.operations.setup ?? [])].join(' '),
       // One attachment per provider: sign-in, then install. The same Close ends both;
       // installation remains visible after the binary appears.
@@ -310,13 +315,33 @@ export async function cloneRepository(repository: unknown, parent: string): Prom
   return { dir };
 }
 
-/** The signed-in GitHub account's repositories, newest first, as gh lists them (w926). */
-export async function githubRepositories(): Promise<Array<{ name: string; url: string; private: boolean }>> {
+/** How many repositories one owner's group lists; a group with more says it was cut short. */
+const REPOS_PER_OWNER = 100;
+
+export interface GithubRepository { name: string; short: string; owner: string; url: string; private: boolean }
+
+/**
+ * EVERY REPOSITORY THE SIGN-IN REACHES (owner, 28 Nov 2026; KAN-999): the account's own, then each organization
+ * it belongs to by name, each owner's newest first, as gh lists them. `cut` names an owner with more than
+ * REPOS_PER_OWNER, so the page can say its group was cut short.
+ */
+export async function githubRepositories(): Promise<{ repos: GithubRepository[]; cut: string[] }> {
   const gh = await discoverExecutable('gh');
   if (!gh) throw new Error('GitHub is not connected here.');
-  const { stdout } = await run(gh, ['repo', 'list', '--limit', '100', '--json', 'nameWithOwner,url,isPrivate'], { timeout: 30_000, maxBuffer: 4 * 1024 * 1024 });
-  return (JSON.parse(String(stdout || '[]')) as Array<{ nameWithOwner: string; url: string; isPrivate: boolean }>)
-    .map((repo) => ({ name: repo.nameWithOwner, url: `${repo.url}.git`, private: repo.isPrivate }));
+  const json = async (args: string[]) => JSON.parse(String((await run(gh, args, { timeout: 30_000, maxBuffer: 8 * 1024 * 1024 })).stdout || 'null')) as unknown;
+  const me = String(((await json(['api', 'user'])) as { login?: string } | null)?.login || '');
+  const orgs = ((await json(['api', 'user/orgs', '--paginate']).catch(() => [])) as Array<{ login?: string }> | null ?? [])
+    .map((org) => String(org.login || '')).filter(Boolean).sort((a, b) => a.localeCompare(b));
+  const owners = [me, ...orgs].filter(Boolean);
+  const lists = await Promise.all(owners.map(async (owner) => {
+    const rows = (await json(['repo', 'list', owner, '--limit', String(REPOS_PER_OWNER + 1), '--json', 'name,nameWithOwner,url,isPrivate']).catch(() => [])) as Array<{ name: string; nameWithOwner: string; url: string; isPrivate: boolean }> | null ?? [];
+    return { owner, rows };
+  }));
+  return {
+    repos: lists.flatMap(({ owner, rows }) => rows.slice(0, REPOS_PER_OWNER)
+      .map((repo) => ({ name: repo.nameWithOwner, short: repo.name, owner, url: `${repo.url}.git`, private: repo.isPrivate }))),
+    cut: lists.filter(({ rows }) => rows.length > REPOS_PER_OWNER).map(({ owner }) => owner),
+  };
 }
 
 /** A new folder's repository, created on GitHub with the GitHub CLI: origin set, the first commit pushed.

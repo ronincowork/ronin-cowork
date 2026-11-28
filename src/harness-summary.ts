@@ -55,9 +55,12 @@ async function exists(file: string): Promise<boolean> {
   try { await stat(file); return true; } catch { return false; }
 }
 
+/** A harness with no sign-in of its own: it counts as signed in when a model service is set up (Hermes). */
+export const SIGNED_IN_BY_SERVICE: ReadonlySet<string> = new Set(['hermes']);
+
 /** The CLI signed in on this machine and left its credential file; Ronin reads only that it exists. */
 export async function harnessSignedIn(cli: string, home = os.homedir()): Promise<boolean> {
-  if (cli === 'hermes') return modelServiceConfigured();
+  if (SIGNED_IN_BY_SERVICE.has(cli)) return modelServiceConfigured();
   const files = AGENTS.find((agent) => agent.id === cli)?.credentials ?? [];
   for (const file of files) if (await exists(path.join(home, file))) return true;
   return false;
@@ -223,6 +226,25 @@ export async function measureHarnesses(section: SetupSection, ops: MeasureOps = 
   };
 }
 
+/**
+ * READ ON ASK (owner, 28 Nov 2026; KAN-995): a list the CLI keeps in a file (Claude Code's and Codex's caches,
+ * which it rewrites while in use) or Ronin's own store is read at every ask, about 10 ms; nothing keeps a copy.
+ * A list only a command prints (Grok's `grok models`, OpenCode's `opencode models`, ~0.6 s) is the refresh's
+ * last answer, kept in the record.
+ */
+const READ_ON_ASK: ReadonlySet<ModelsSource['read']> = new Set(['claude-cache', 'codex-cache', 'model-entries']);
+export const readsOnAsk = (agent: Agent): boolean => READ_ON_ASK.has(agent.operations.models.read);
+
+/** The summary with every activated CLI's list as of now: read-on-ask ones read now, a command's last answer kept. */
+export async function withCurrentModels<T extends HarnessSummary | null>(summary: T): Promise<T> {
+  if (!summary) return summary;
+  const models = { ...summary.models };
+  await Promise.all(AGENTS.filter((agent) => summary.operational.includes(agent.id) && readsOnAsk(agent)).map(async (agent) => {
+    models[agent.id] = await readModels(agent, { file: summary.paths[agent.id] ?? '', version: summary.versions[agent.id] ?? '' });
+  }));
+  return { ...summary, models };
+}
+
 /** The summary the Campaign record holds, or null when Ronin has not measured yet. */
 export async function readHarnessSummary(): Promise<HarnessSummary | null> {
   return (await initialCampaign())?.providers ?? null;
@@ -243,15 +265,18 @@ const record = (value: unknown): Record<string, unknown> =>
  * set, the first CLI signed in here becomes ⚙ agents.sessions.default, written once: the
  * provider, its model blank (the provider's own default). A later sign-in never moves it; only the Agent defaults do.
  * One already signed in before this measure outranks one new in it. A model service is no
- * sign-in: it is never in `signed_in`. Returns the provider written, '' for none.
+ * sign-in: Hermes, signed in by one, never becomes the default here (KAN-1002); the harness panel's
+ * Set as default makes any signed-in harness the default. Returns the provider written, '' for none.
  */
 export async function settleFirstDefault(previous: HarnessSummary | null, summary: HarnessSummary): Promise<string> {
   const agents = await readAgentsSection();
   const sessions = record(agents.sessions);
   const stated = record(sessions.default).provider;
   if (typeof stated === 'string' && stated.trim()) return '';
+  // Only a sign-in of the harness's own (KAN-1002): Hermes, signed in by any model service, became the default
+  // on a hosted office the moment its Ronin Gateway was set up, before the person signed anything in.
   const order = [...(previous?.signed_in ?? []), ...summary.signed_in]
-    .filter((cli, at, all) => all.indexOf(cli) === at && summary.signed_in.includes(cli) && summary.operational.includes(cli));
+    .filter((cli, at, all) => all.indexOf(cli) === at && !SIGNED_IN_BY_SERVICE.has(cli) && summary.signed_in.includes(cli) && summary.operational.includes(cli));
   if (!order.length) return '';
   const rows = await harnessRows(summary);
   for (const cli of order) {
@@ -271,7 +296,7 @@ export async function settleFirstDefault(previous: HarnessSummary | null, summar
 export async function measureAndRecordHarnesses(section?: SetupSection, ops: MeasureOps = {}): Promise<HarnessSummary> {
   const previous = await readHarnessSummary();
   const summary = await measureHarnesses(section ?? await readSetupSection(), ops);
-  for (const id of summary.installed) if (previous?.models?.[id]) summary.models[id] = previous.models[id];
+  for (const agent of AGENTS) if (summary.installed.includes(agent.id) && !readsOnAsk(agent) && previous?.models?.[agent.id]) summary.models[agent.id] = previous.models[agent.id];
   summary.refreshed_at = previous?.refreshed_at ?? '';
   await recordHarnessSummary(summary);
   return summary;
@@ -279,16 +304,16 @@ export async function measureAndRecordHarnesses(section?: SetupSection, ops: Mea
 
 /**
  * REFRESH — the park's call after HQ moves the CLIs, and a sign-in's Done. The same machine
- * facts, then every activated CLI's own model list read again through the reader its
- * registry entry names. A CLI not activated gets nothing spent on it; its old list, if any,
- * is dropped with it.
+ * facts, then the list of every activated CLI that prints it by a command, kept as its last answer;
+ * a list read from a file is read at every ask instead (KAN-995). A CLI not activated gets nothing
+ * spent on it; its old list, if any, is dropped with it.
  */
 export async function refreshHarnesses(section?: SetupSection, ops: MeasureOps = {}): Promise<HarnessSummary> {
   const now = ops.now ?? (() => new Date().toISOString());
   const read = ops.models ?? readModels;
   const summary = await measureHarnesses(section ?? await readSetupSection(), ops);
   await readGatewayModels().catch((e) => console.error('[providers] gateway list:', e));
-  const lists = await Promise.all(AGENTS.filter((agent) => summary.operational.includes(agent.id))
+  const lists = await Promise.all(AGENTS.filter((agent) => summary.operational.includes(agent.id) && !readsOnAsk(agent))
     .map(async (agent) => [agent.id, await read(agent, { file: summary.paths[agent.id] ?? '', version: summary.versions[agent.id] ?? '', now })] as const));
   for (const [id, list] of lists) summary.models[id] = list;
   summary.refreshed_at = now();

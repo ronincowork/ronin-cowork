@@ -10,10 +10,10 @@
  *    folder files/<source>, for the Team step's Epic to bring in. Nothing is pulled in here.
  * 3. From scratch: a new Git repository in repos/<name>; on GitHub too once signed in.
  * 4. Not sure yet: Ronin Lab, what it is and its folder, then Create (two presses).
- * Doors 1–3 ask, in order: the kind, the name, what you are working on; the door's own question (doors 1
- * and 3 then how Agents work in the repositories, Desks or Direct); what every Agent in it should follow; while there is none, Also add Ronin Lab; then Create. Every answer is
+ * Door 1 with GitHub not signed in asks Connect first, at the top, the rest greyed until it is connected. Doors 1–3 ask, in order: the kind, the name, what you are working on; the door's own question (doors 1
+ * and 3 then how Agents work in the repositories, Desks or Direct); what every Agent in it should follow; then Create. Every answer is
  * on the Workspace record. With no door chosen, or the chosen one pressed again: on Setup's step, what
- * a Workspace is, and a link to yours. The same doors are New Workspace everywhere (owner, 26 Nov; KAN-900):
+ * a Workspace is (folded to its line once there is one), and yours as the Workspaces workbench's stones. The same doors are New Workspace everywhere (owner, 26 Nov; KAN-900):
  * Settings' and the Workspaces workbench's, which open the made one (`onMade`).
  *
  * The Helpful Assistant hears two things from here: Connect (its stone names her) asks her to sign in
@@ -27,10 +27,11 @@ import { subscribe } from './store.js';
 import { WorkspaceKit } from './workspace-kit.js';
 import { KINDS, kindWord, ruledRows } from './glyphs.js';
 import { openWorkspaceTab } from './workspace.js';
-import { repoModeRows, workspaceHandle } from './workspaces-surface.js';
+import { createWorkspaceStoneList, repoModeRows, workspaceHandle } from './workspaces-surface.js';
 import { sendComposerMessage } from './composer-rules.js';
 import { sendPress } from './press.js';
 import { IRASSHAI, IRASSHAI_NAME, askIrasshai, irasshaiLive } from './setup-irasshai.js';
+import { failedOf, listenSignIn, runOf, signInRunWindow } from './harnesses-surface.js';
 
 /** WHAT THE PERSON MAKES REACHES HER (owner, 25 Nov; w979): at Create, one line to the Helpful
  *  Assistant, while she runs, as the person's [Button] line (press.js): the Workspace's handle and
@@ -50,7 +51,7 @@ const SOURCES = [
   { v: 'netlify', l: 'Netlify' }, { v: 'computer', l: t('setup_workspace.source_computer', 'Files from my computer') },
 ];
 const repoBase = (url) => url.trim().replace(/\.git$/, '').replace(/\/+$/, '').split(/[/:]/).pop() || '';
-const blank = () => ({ picked: [], pasted: '', sources: [], github: 'here', mode: 'reviewed', title: '', named: false, objective: '', kind: '', instructions: '', lab: false });
+const blank = () => ({ picked: [], pasted: '', sources: [], github: 'here', mode: 'reviewed', title: '', named: false, objective: '', kind: '', instructions: '' });
 
 /**
  * WHAT A WORKSPACE IS, DRAWN (owner, 25 Nov; KAN-845): an example, said so, never pressable. Your
@@ -89,7 +90,7 @@ function workspaceDiagram() {
 /**
  * @param workspacesRead  the Workspaces read (workspaces-read.js), read again on their push
  * @param environment     Setup's: its setup-progress push re-reads GitHub's sign-in
- * @param intro           Setup's step: with no door chosen, what a Workspace is, and the link to yours
+ * @param intro           Setup's step: with no door chosen, what a Workspace is, and yours as stones
  * @param onMade          New Workspace elsewhere (workspaces-surface.js): the made one's handle, to open it
  */
 export function createWorkspaceKickoff({ workspacesRead, environment, intro = false, onMade = null }) {
@@ -110,8 +111,11 @@ export function createWorkspaceKickoff({ workspacesRead, environment, intro = fa
 
   let door = '';
   let draft = blank();
+  let aboutOpen = false; // the folded explainer, kept open across repaints once pressed open
+  let stoneList = null; // your Workspaces' stones, made once there is one
   let github = { authenticated: false, account: '' };
-  let mine = null; // their GitHub repositories, read once signed in
+  let mine = null; // every GitHub repository the sign-in reaches, read once signed in
+  let cut = []; // owners whose group was cut short
   let asking = ''; // what Connect answered
   const has = (name) => workspacesRead.list().some((w) => w.name === name && !w.archived);
   const urls = () => [...new Set([...draft.picked, ...draft.pasted.split(/\s+/).map((one) => one.trim()).filter(Boolean)])];
@@ -132,6 +136,7 @@ export function createWorkspaceKickoff({ workspacesRead, environment, intro = fa
     if (github.authenticated && !mine) {
       const list = await request('/api/setup/github/repos', { cache: 'no-store' });
       mine = list.ok ? list.data.repos || [] : [];
+      cut = list.ok ? list.data.cut || [] : [];
     }
     if (github.authenticated) asking = '';
     paintBlanks();
@@ -158,10 +163,18 @@ export function createWorkspaceKickoff({ workspacesRead, environment, intro = fa
   const connectStone = (why) => question('connect', t('setup_workspace.github_ask', 'GitHub'), [
     { v: 'connect', l: t('setup_workspace.connect', 'Connect'), word: IRASSHAI_NAME, sub: why, ...(asking ? { off: asking } : {}) },
   ], '', () => void connect());
+  // While GitHub's sign-in runs (KAN-997), its link and code with Copy and Cancel, the harness panel's own window.
+  const GITHUB_SIGN_IN = { id: 'github', label: 'GitHub' };
+  const githubPart = (why) => {
+    const run = runOf('github');
+    if (run) return [signInRunWindow(GITHUB_SIGN_IN, run, { base: '/api/setup/github', tellHer: (text) => { void sendPress(IRASSHAI, text); } })];
+    const failed = failedOf('github');
+    return [connectStone(why), ...(failed ? [el('p', 'setup-harness-line bad', failed)] : [])];
+  };
 
   // WHAT IT IS (doors 1–3), in the owner's order (25 Nov): the kind, the name, what they are working on
   // (the name made from it until one is typed); then the door's own question; then what every Agent in
-  // it should follow, and Also add Ronin Lab.
+  // it should follow.
   const define = () => {
     const name = textBox(t('workspaces.name', 'Name'), draft.title, (v) => { draft.title = v; draft.named = !!v.trim(); }, t('workspaces.name_placeholder', 'Such as Website or Accounts'));
     const nameInput = name.querySelector('input');
@@ -178,11 +191,6 @@ export function createWorkspaceKickoff({ workspacesRead, environment, intro = fa
       textBox(t('setup_workspace.instructions_ask', 'Anything every Agent here should follow?'), draft.instructions, (v) => { draft.instructions = v; },
         t('setup_workspace.instructions_placeholder', 'Optional. Such as: write in British English; never push to main.'), 3),
     ];
-    if (!has(LAB.name)) {
-      const lab = ask([{ fields: [{ key: 'lab', label: t('setup_workspace.also_lab', 'Also add Ronin Lab, a place for ideas and notes beside it'), switch: [t('forms.on', 'On'), t('forms.off', 'Off')] }] }],
-        { value: { lab: draft.lab }, density: 'tight', onChange: (now) => { draft.lab = !!now.lab; } });
-      tail.push(lab.el);
-    }
     return { head, tail };
   };
 
@@ -227,23 +235,17 @@ export function createWorkspaceKickoff({ workspacesRead, environment, intro = fa
       answer = await request(`/api/workspaces/${encodeURIComponent(name)}/repos`, { method: 'POST', json: body });
     }
     const failed = answer.ok ? '' : answer.message;
-    let lab = false;
-    if (wsMade && draft.lab && !has(LAB.name)) {
-      word.textContent = t('setup_workspace.making_lab', 'Making Ronin Lab…');
-      lab = (await makeLab()).ok;
-    }
     create.setDisabled(false);
     word.textContent = t('workspaces.create', 'Create');
     if (!wsMade) return fail(failed);
     // Made, it is shown made, whatever came after; a clone that failed is said under it.
     tellHer(name, failed);
-    if (lab) tellHer(LAB.name);
     const made = { title: draft.title.trim(), name };
     door = ''; draft = blank();
     await workspacesRead.read();
     paint();
     if (onMade) return onMade(name);
-    showMade(made, lab);
+    showMade(made);
     if (failed) done.append(el('p', 'setup-workspace-bad', failed));
   } });
 
@@ -251,8 +253,8 @@ export function createWorkspaceKickoff({ workspacesRead, environment, intro = fa
     const seed = await request(STARTERS);
     return put(LAB.name, { title: LAB.title, objective: String(seed.data?.[LAB.name]?.objective || ''), kind: 'open' });
   };
-  const showMade = (made, lab = false) => {
-    const line = el('p', 'setup-workspace-made', `${t('setup_workspace.made', 'Made {title}, in ~/ronin/{name}.', made)}${lab ? ` ${t('setup_workspace.made_lab', 'Ronin Lab too.')}` : ''} `);
+  const showMade = (made) => {
+    const line = el('p', 'setup-workspace-made', `${t('setup_workspace.made', 'Made {title}, in ~/ronin/{name}.', made)} `);
     const open = el('button', 'setup-workspace-link', t('setup_workspace.open', 'Open it')); open.type = 'button';
     open.addEventListener('click', () => openWorkspaceTab('workspace', made.name));
     line.append(open);
@@ -267,14 +269,28 @@ export function createWorkspaceKickoff({ workspacesRead, environment, intro = fa
     if (!door && !intro) return;
     if (!door) {
       // The owner's words (25 Nov).
+      const title = t('setup_workspace.about_title', 'What is a Workspace?');
       const about = el('div', 'setup-workspace-about');
-      about.append(
-        el('h3', 'setup-workspace-about-title', t('setup_workspace.about_title', 'What is a Workspace?')),
+      const words = [
         el('p', null, t('setup_workspace.about_1', 'A Workspace is where you and your AI agents work together on a project.')),
         el('p', null, t('setup_workspace.about_2', 'It brings together your project’s files, repositories, plans, and instructions in one place. Every agent you launch in that Workspace knows what the project is about, where to find things, and what you’re trying to accomplish.')),
         el('p', null, t('setup_workspace.about_3', 'You can create multiple Workspaces, each with its own project and context. Your agents can work independently, collaborate within the same Workspace and coordinate across Workspaces.')),
-      );
-      blanks.append(about, workspaceDiagram());
+      ];
+      // ONCE THERE IS ONE (walkthrough 28 Nov, KAN-1001): the explainer folds to its one line, the Team's fold,
+      // and opens when pressed; open while there is none.
+      if (!workspacesRead.list().some((w) => !w.archived)) {
+        about.append(el('h3', 'setup-workspace-about-title', title), ...words);
+        blanks.append(about, workspaceDiagram());
+        return;
+      }
+      const fold = el('details', 'team-fold setup-workspace-fold');
+      fold.open = aboutOpen;
+      fold.addEventListener('toggle', () => { aboutOpen = fold.open; });
+      const body = el('div', 'team-fold-body');
+      about.append(...words);
+      body.append(about, workspaceDiagram());
+      fold.append(el('summary', 'team-fold-line', title), body);
+      blanks.append(fold);
       return;
     }
     if (door === 'lab') {
@@ -290,15 +306,34 @@ export function createWorkspaceKickoff({ workspacesRead, environment, intro = fa
       return;
     }
     const { head, tail } = define();
-    blanks.append(...head);
+    // GITHUB FIRST (owner, 25 Nov; walkthrough 28 Nov, KAN-996): signed in, nothing to say; not (almost always,
+    // on a new office), Connect at the top of door 1, before the kind, the name and the rest.
+    // WAITING ON GITHUB (walkthrough 28 Nov, KAN-998): Connect and its sign-in window are the only live things;
+    // the rest of door 1 is shown, greyed and unpressable (inert), until GitHub is connected.
+    let into = blanks;
+    if (door === 'git' && !github.authenticated) {
+      blanks.append(...githubPart(t('setup_workspace.github_private', 'GitHub is not signed in on this machine. Connect it first: the sign-in link and code appear here, and the Helpful Assistant walks you through it in her chat beside this page. Then your repositories are listed here to pick.')));
+      into = el('div', 'setup-workspace-waiting');
+      into.inert = true;
+      blanks.append(into);
+    }
+    into.append(...head);
     if (door === 'git') {
-      // GITHUB FIRST (owner, 25 Nov): signed in, nothing to say; not (almost always, on a new office),
-      // Connect before anything else.
-      if (!github.authenticated) blanks.append(connectStone(t('setup_workspace.github_private', 'GitHub is not signed in on this machine. The Helpful Assistant signs you in, in her chat; then your repositories are listed here to pick. A public one can be pasted without it.')));
-      if (github.authenticated && mine?.length) blanks.append(question('picked', t('setup_workspace.which_repos', 'Which repositories?'),
-        mine.map((repo) => ({ v: repo.url, l: repo.name, ...(repo.private ? { word: t('workspaces.private', 'private') } : {}) })), draft.picked,
-        (v) => { draft.picked = v || []; }, { many: true }));
-      blanks.append(textBox(github.authenticated ? t('setup_workspace.or_paste', 'Or paste Git URLs, one per line') : t('setup_workspace.paste', 'Git URLs, one per line'), draft.pasted,
+      // Grouped by owner, the account first, then each organization (KAN-999): a stone is the repository's own
+      // name, its owner the group's heading. Each group's picks are its own; together they are draft.picked.
+      if (github.authenticated && mine?.length) {
+        into.append(el('p', 'setup-workspace-ask', t('setup_workspace.which_repos', 'Which repositories?')));
+        for (const owner of [...new Set(mine.map((repo) => repo.owner || repo.name.split('/')[0]))]) {
+          const repos = mine.filter((repo) => (repo.owner || repo.name.split('/')[0]) === owner);
+          const urls = new Set(repos.map((repo) => repo.url));
+          const heading = cut.includes(owner) ? t('setup_workspace.repos_cut', '{owner}: the newest 100; paste any other below', { owner }) : owner;
+          into.append(question(`picked-${owner}`, heading,
+            repos.map((repo) => ({ v: repo.url, l: repo.short || repo.name, ...(repo.private ? { word: t('workspaces.private', 'private') } : {}) })),
+            draft.picked.filter((url) => urls.has(url)),
+            (v) => { draft.picked = [...draft.picked.filter((url) => !urls.has(url)), ...(v || [])]; }, { many: true }));
+        }
+      }
+      into.append(textBox(github.authenticated ? t('setup_workspace.or_paste', 'Or paste Git URLs, one per line') : t('setup_workspace.paste', 'Git URLs, one per line'), draft.pasted,
         (v) => { draft.pasted = v; }, t('workspace_add.repository_placeholder', 'https://… or git@… ; owner/repo for GitHub'), 2));
     }
     if (door === 'existing') blanks.append(question('sources', t('setup_workspace.sources_ask', 'Where is it coming from?'),
@@ -312,13 +347,13 @@ export function createWorkspaceKickoff({ workspacesRead, environment, intro = fa
       ], draft.github, (v) => { draft.github = v; }));
     }
     // DESKS OR DIRECT (owner, 25 Nov): wherever a repository is added; Desks unless they say.
-    if (door === 'git' || door === 'scratch') blanks.append(question('mode', t('workspaces.repo_mode_ask', 'How do Agents work in it?'), repoModeRows(), draft.mode, (v) => { draft.mode = v; }));
-    blanks.append(...tail);
+    if (door === 'git' || door === 'scratch') into.append(question('mode', t('workspaces.repo_mode_ask', 'How do Agents work in it?'), repoModeRows(), draft.mode, (v) => { draft.mode = v; }));
+    into.append(...tail);
     // GITHUB, OPTIONAL (owner, 25 Nov), at the foot of doors 2 and 3 while it is not signed in.
-    if ((door === 'existing' || door === 'scratch') && !github.authenticated) blanks.append(connectStone(t('setup_workspace.github_optional', 'Optional. So Agents can use GitHub for this project: pull requests, issues, a repository on GitHub. The Helpful Assistant signs you in, in her chat.')));
+    if ((door === 'existing' || door === 'scratch') && !github.authenticated) blanks.append(...githubPart(t('setup_workspace.github_optional', 'Optional. So Agents can use GitHub for this project: pull requests, issues, a repository on GitHub. The Helpful Assistant signs you in, in her chat.')));
     const line = el('div', 'setup-workspace-create');
     line.append(create.el);
-    blanks.append(line);
+    into.append(line);
   };
 
   function paint() {
@@ -335,12 +370,12 @@ export function createWorkspaceKickoff({ workspacesRead, environment, intro = fa
     }));
     paintBlanks();
     const n = workspacesRead.list().filter((w) => !w.archived).length;
+    // YOURS, AS STONES (walkthrough 28 Nov, KAN-1001): the Workspaces workbench's own stones, a pressed one
+    // opening in place of them as it does there; made once and kept, so an open one stays open.
     foot.replaceChildren();
     if (n && intro) {
-      const link = el('button', 'setup-workspace-link', n === 1 ? t('setup_workspace.yours_one', 'You have 1 Workspace.') : t('setup_workspace.yours_n', 'You have {n} Workspaces.', { n })); link.type = 'button';
-      link.addEventListener('click', () => openWorkspaceTab('workspaces'));
-      foot.append(el('p', 'setup-workspace-yours', ''));
-      foot.lastChild.append(link);
+      stoneList ??= createWorkspaceStoneList({ workspacesRead });
+      foot.append(el('p', 'setup-workspace-yours', n === 1 ? t('setup_workspace.yours_one', 'You have 1 Workspace.') : t('setup_workspace.yours_n', 'You have {n} Workspaces.', { n })), stoneList.el);
     }
   }
 
@@ -355,5 +390,6 @@ export function createWorkspaceKickoff({ workspacesRead, environment, intro = fa
   });
   paint();
   void readGithub();
-  return { el: root, destroy: () => { stopRead(); stopProgress(); stopHome(); } };
+  const stopSignIn = listenSignIn(() => paintBlanks());
+  return { el: root, destroy: () => { stopRead(); stopProgress(); stopHome(); stopSignIn(); stoneList?.destroy(); } };
 }

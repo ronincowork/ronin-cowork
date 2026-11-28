@@ -75,11 +75,13 @@ is good for (tier, "use it for", price) is a judgement no vendor publishes, so i
 only written: that is HQ's standing work, and anything HQ must keep current reaches an office through
 Ronin Services, never through a file someone edits on the machine. Nobody opens a file to make a
 mainstream model appear: the CLI lists it after its update, and it is offered at once, Unrated until
-HQ rates it. When a model is missing, the usual cause is an old CLI, which is why the Harness page
-shows the installed version beside the newest release and offers Update.
+HQ rates it. When a model is missing, the usual cause is an old CLI; HQ moves the CLIs.
 
-The catalog never grants a model: a model is offered because its CLI lists it, and a catalog
-row the CLI doesn't list is not offered.
+A model is offered because its CLI lists it, and a catalog row the CLI doesn't list is not
+offered. The one exception (owner, 2026-11-28; KAN-993): while a signed-in harness's CLI has no
+list yet (Claude Code writes its list only once it has run), HQ's rows for that harness are its
+list, in tier order, until the CLI's own list is read. With neither, the entries say the models
+are on their way from Ronin HQ.
 
 **Two names per listed model, and no more (owner, 2026-09-25).** `model` is the id every
 new picker choice uses. The name shown beside it is the CLI's own display name,
@@ -191,14 +193,22 @@ What this machine *has* is measured, not derived on every read. The Campaign rec
 | `off` | installed CLI ids the owner turned off; the sign-in is kept |
 | `activated_count` | the size of `operational` — a provider with nothing to launch does not count |
 | `versions` | what each operational/activated CLI said to the registry's `operations.version` argv, per CLI id; an installed but unactivated CLI is not run |
-| `models` | per CLI id, its own model list as the last refresh read it: `{ read_at, by, rows: [{ id, name }] }` in the CLI's order, `by` the CLI version installed at the read; or `{ read_at, by, rows: [], unavailable }` saying why there is none. Never guessed, never inferred from the catalog |
+| `models` | per CLI id whose list only a command prints (Grok, OpenCode), its last answer as the refresh read it; a list the CLI keeps in a file (Claude Code, Codex) or Ronin's own store (Hermes) is not kept here but read at every ask, `GET /api/harness-catalog`, a launch and `GET /api/setup/runtime`'s `model_list` (KAN-995). Each list: `{ read_at, by, rows: [{ id, name }] }` in the CLI's order, `by` the CLI version installed at the read; or `{ read_at, by, rows: [], unavailable }` saying why there is none. Never guessed, never inferred from the catalog |
 
 `src/harness-summary.ts` has two writers and one record:
 
 - `measureAndRecordHarnesses` — the machine facts; the recorded lists and `refreshed_at`
   ride along unchanged. At every Ronin start, after **Cancel** on a sign-in (a sign-in closed
   without Done may still have left a credential file), and after Turn off / on.
-- `refreshHarnesses` — the same facts, then every activated CLI's own list read again and
+- **After a sign-in** (Done, or a sign-in run that ends signed in; KAN-995): Claude Code and Codex write their
+  list file only once they have run, so each signed-in one with no file yet is started once, Native, no prompt,
+  as a hidden child under a pseudo-terminal (`src/model-list-fetch.ts`), never in tmux. One watch on the folder
+  the file lands in; when it lands, or after 45 s, its own process group is stopped and the page is told to read
+  again. Measured: Claude 1.1 s, Codex 6.2 s. Claude's first-run onboarding, a theme and the folder's trust are
+  seeded first (`claudeAhead`, src/launch-ahead.ts), as every Claude launch does. Codex's own app-server helper,
+  which it detaches, keeps running. Until a list is there, HQ's rows stand in, and with none the entries say the
+  models are on their way.
+- `refreshHarnesses` — the same facts, then every activated CLI's command-printed list read again and
   the Ronin Gateway's list. **HQ drives it** (owner, 2026-11-27; KAN-972): HQ moves the CLIs on
   a hosted office, and the park then calls `POST /api/setup/harnesses/refresh` over the unit's
   socket (`ronin_cloud` office_kohai); the park reports `GET /api/setup/runtime`'s
@@ -338,6 +348,19 @@ the fix is fewer modules, not another. The client gets one model and one panel.
 **What the panel is for.** An installed harness runs; what it needs is access to models. So the
 panel's main section is **Model services**, never "authentication" or "sign-in" (owner, 27 Nov).
 Signing in is only what some services need on the way.
+
+**How it reads (owner, 28 Nov; KAN-990).** One text size, one ink: the harness's name is the one
+larger line (`--text-heading`); the section headings (Model services, Model entries) and a
+service's name over its table are strong body text, never capitals; every line, note, link, code,
+table cell and press is body text in `--fg`. Presses that are words (the sign-in link, Hide, Add or
+change) read as words and underline on hover, never link blue. Only a status keeps a colour: a
+fault (kaki), a hidden row (muted), the service it is on (the kaki fill). Each service under Model
+entries is its own block: its name a band (inset ground, kaki edge, as All Hands' groups), its table
+under it, a section's space before the next service. After the tables, Add or change is a small
+outlined control, and Turn off is a footer ruled off from the panel, its sentence and button on one
+line. The rules sit under `.harness-panel` in `style.css`. Opened from the stones, the panel starts
+with a small **← Back** box above the harness's name (owner, 28 Nov: a new person may not read the
+kit's − as the way back); it does what the − does, which stays.
 
 ### The state word
 

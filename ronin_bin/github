@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# github — sign this office in to GitHub in one call (owner, 28 Nov; KAN-997): gh's own device login on the
+# harness sign-in run (src/harness-sign-in.ts), shown on Setup's page; once approved, gh auth setup-git.
+# Over /api/setup/github/sign-in and its cancel; the state is /api/setup/sign-in, as the harnesses'.
+. "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/tool-count.sh" github "$@"
+set -u -o pipefail
+. "$(dirname "$(readlink "${BASH_SOURCE[0]}" 2>/dev/null || printf '%s' "${BASH_SOURCE[0]}")")/tool-path.sh"
+TOOL_DIR=$(dirname "$SELF")
+usage() { cat <<'EOF_USAGE'
+Usage:
+  github sign-in    start GitHub's sign-in; prints the link and the code to enter there
+  github cancel     stop it
+The page shows the same link and code with Copy and Cancel. How it ends comes to you as a House notice.
+EOF_USAGE
+}
+cmd=${1:-}; [ "$#" -gt 0 ] && shift
+case "$cmd" in
+  -h|--help|'') usage; [ -n "$cmd" ]; exit $? ;;
+  sign-in|cancel) [ "$#" -eq 0 ] || { usage >&2; exit 2; } ;;
+  *) echo "github: unknown command $cmd (github --help)" >&2; exit 2 ;;
+esac
+
+. "$TOOL_DIR/ronin-http.sh"
+ronin_connect || exit $?
+RONIN_BASE="$url" CMD="$cmd" python3 - "${RONIN_CURL[@]+"${RONIN_CURL[@]}"}" <<'EOF_PY'
+import json, os, subprocess, sys, time
+curl_opts = sys.argv[1:]
+base, cmd = os.environ['RONIN_BASE'], os.environ['CMD']
+def call(method, route, body=None):
+    line = ['curl', '-sS', '-m', '60', *curl_opts, '-w', '\n%{http_code}', '-X', method, base + route]
+    if body is not None: line += ['-H', 'Content-Type: application/json', '--data-binary', json.dumps(body)]
+    out = subprocess.run(line, capture_output=True, text=True)
+    text, _, status = out.stdout.rpartition('\n')
+    data = json.loads(text) if text.strip().startswith(('{', '[')) else {}
+    if not status.startswith('2'): sys.exit(f"github: {data.get('error') or text.strip() or out.stderr.strip() or status}")
+    return data
+if cmd == 'sign-in':
+    run = call('POST', '/api/setup/github/sign-in', {'tell': 'irasshai'}).get('run') or {}
+    for _ in range(20):  # gh prints its code and link within a second or two
+        if run.get('code') and run.get('link'): break
+        time.sleep(0.5)
+        run = next((r for r in call('GET', '/api/setup/sign-in').get('runs', []) if r.get('provider') == 'github'), run)
+    if run.get('code'): print(f"GitHub: open {run.get('link') or 'https://github.com/login/device'} and enter the code {run['code']}. The page shows it too, with Copy.")
+    else: print('GitHub sign-in started; the code is not printed yet: it shows on the page.')
+else:
+    call('POST', '/api/setup/github/sign-in/cancel', {})
+    print('GitHub sign-in cancelled.')
+EOF_PY

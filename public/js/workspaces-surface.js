@@ -523,6 +523,23 @@ export function createWorkspaceStones({ workspacesRead, workbench, recordType = 
   const out = createSurface({ label: t('workspaces.title', 'Workspaces'), className: 'setup-surface workspaces-records' });
   const messages = status();
   const say = sayInto(messages);
+  const list = createWorkspaceStoneList({ workspacesRead, workbench, recordType, withNew, configOnly,
+    said: (answer) => {
+      if (answer && !answer.ok) { say(answer.message, true); return false; }
+      if (answer) say(workspacesRead.list().length ? '' : t('workspaces.none', 'No Workspaces yet. Place New Workspace from the selector.'));
+      return true;
+    } });
+  list.stones.mount(out.content, { before: [messages] });
+  return {
+    el: out.el,
+    show: () => { void workspacesRead.read(); onShow(); },
+    destroy: () => list.destroy(),
+  };
+}
+
+/** The same stones, not yet mounted: the Workspaces workbench mounts them on its surface; Setup's Workspace
+ *  step puts them under its doors (KAN-1001). A pressed one opens in place of the stones, as here. */
+export function createWorkspaceStoneList({ workspacesRead, workbench = null, recordType = '', withNew = false, configOnly = false, said = () => true }) {
   // One set of marks per Workspace, kept: phalanx counts a Node by its identity (KAN-413).
   const marks = new Map();
   const marksOf = (key) => {
@@ -548,10 +565,8 @@ export function createWorkspaceStones({ workspacesRead, workbench, recordType = 
       return () => one.destroy();
     },
   });
-  stones.mount(out.content, { before: [messages] });
   const paint = (answer) => {
-    if (answer && !answer.ok) { say(answer.message, true); return; }
-    if (answer) say(workspacesRead.list().length ? '' : t('workspaces.none', 'No Workspaces yet. Place New Workspace from the selector.'));
+    if (!said(answer)) return;
     // The Epic and Team stones' grammar (owner, 2026-11-23; KAN-801): the name, the shared marks over
     // what its Teams and their Agents hold, but the small number bottom right is how many Teams work in
     // it, a Workspace's size (owner, 2026-11-23); no line of words under the name, Archived aside.
@@ -574,11 +589,8 @@ export function createWorkspaceStones({ workspacesRead, workbench, recordType = 
   };
   const stop = workspacesRead.subscribe(paint);
   const stopTeams = subscribeTeams(() => paint());
-  return {
-    el: out.el,
-    show: () => { void workspacesRead.read(); onShow(); },
-    destroy: () => { stop(); stopTeams?.(); stones.destroy(); },
-  };
+  paint();
+  return { stones, el: stones.el, destroy: () => { stop(); stopTeams?.(); stones.destroy(); } };
 }
 
 /** One Workspace whole in a tilespace: the same surface, Work or Config, with Launch to its own page. */

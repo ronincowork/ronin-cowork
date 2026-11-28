@@ -59,7 +59,7 @@ Preserve unrelated owner settings.
 At every launch and restore, `src/launch-ahead.ts`:
 
 - marks the Agent's folder trusted in `~/.claude.json`
-  (`projects["<dir>"].hasTrustDialogAccepted`), so *Do you trust this folder?* never shows;
+  (`projects["<dir>"].hasTrustDialogAccepted`), so *Do you trust this folder?* never shows, and first-run onboarding is marked done with a theme (`hasCompletedOnboarding`, `theme`; KAN-995), so the theme picker never shows;
 - adds `--settings hostside/claude-asking.json` after `claude`. That file runs `ronin-asking`
   on SessionStart, UserPromptSubmit, PreToolUse, PermissionRequest, PermissionDenied,
   PostToolUse, PostToolUseFailure, Notification, Elicitation, ElicitationResult, Stop and

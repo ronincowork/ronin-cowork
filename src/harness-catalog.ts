@@ -268,7 +268,8 @@ async function grammarOf(cli: string): Promise<AgentLaunches | null> {
 /**
  * A CLI's listed models, each with its catalog row (or none), grouped by the catalog's tier:
  * Frontier, Standard, Light in the catalog's order, then Unrated in the CLI's order. A catalog
- * row the CLI doesn't list is not offered.
+ * row the CLI doesn't list is not offered, except while the CLI has no list at all: then HQ's rows
+ * for the harness are the list (KAN-993).
  */
 function rated(listed: readonly ModelRow[], cli: string, catalog: ModelCatalog): Array<{ row: ModelRow; tier: typeof GROUPS[number]; at?: CatalogModel; order: number }> {
   const own = catalog.harness_models.filter((m) => m.harness === cli);
@@ -290,7 +291,9 @@ const factsOf = (m: CatalogModel): ModelFacts | undefined => {
  * by tier. Providers this machine can launch come first; the registry's order holds within
  * each group. A provider whose CLI has no Agent page has no rows at all.
  */
-export async function harnessRows(summary: HarnessSummary | null, catalog?: ModelCatalog): Promise<HarnessRows[]> {
+export async function harnessRows(recorded: HarnessSummary | null, catalog?: ModelCatalog): Promise<HarnessRows[]> {
+  // Each CLI's list as of this ask (KAN-995); a late import, since the measure imports this file.
+  const summary = await (await import('./harness-summary.js')).withCurrentModels(recorded);
   const models = catalog ?? await readModelCatalog();
   const operational = new Set(summary?.operational ?? []);
   const turnedOff = new Set(summary?.off ?? []);
@@ -320,7 +323,11 @@ export async function harnessRows(summary: HarnessSummary | null, catalog?: Mode
         ...(launch.nativeDangerousCmd ? { dangerousCmd: launch.nativeDangerousCmd } : {}),
         tier: '', default: true,
       });
-      const listed = (summary?.models?.[entry.cli]?.rows ?? []).filter((row) => SAFE_MODEL_ID.test(row.id));
+      // The CLI's own list, once it has one; until then, signed in, HQ's rows for this harness (owner, 28 Nov;
+      // KAN-993): Claude Code writes its list only once it has run, so a fresh sign-in would offer Native alone.
+      const ownList = summary?.models?.[entry.cli]?.rows ?? [];
+      const fromHq = on && !ownList.length ? models.harness_models.filter((m) => m.harness === entry.cli).map((m) => ({ id: m.id, name: m.name || m.id })) : [];
+      const listed = (ownList.length ? ownList : fromHq).filter((row) => SAFE_MODEL_ID.test(row.id));
       for (const { row, tier, at } of rated(listed, entry.cli, models)) {
         const facts = at && factsOf(at);
         rows.push({

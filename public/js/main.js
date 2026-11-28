@@ -133,12 +133,13 @@ async function init() {
   // Workbenches from the office's custom/workbenches/ folder (KAN-954), each at #/<name>; known
   // before the first route is read, so a link to one opens it.
   await loadFolderWorkbenches(workspace).catch((e) => console.warn('folder workbenches', e));
-  // A bare address goes Home; a member shown a list of workbenches (KAN-955) lands on its first,
-  // from any address not on the list.
+  // A bare address goes Home, but a new office's first visit lands on Setup (KAN-986); a member
+  // shown a list of workbenches (KAN-955) lands on its first, from any address not on the list.
   const shown = shownWorkbenches();
   const asked = location.hash.replace(/^#\/?/, '').split('/')[0];
   if (shown && !shown.includes(asked)) history.replaceState(null, '', `${location.pathname}${location.search}#/${encodeURIComponent(shown[0])}`);
-  workspace.start(shown ? shown[0] : '');
+  const first = !shown && !asked && (await request('/api/campaigns/first-visit', { method: 'POST', json: {} }).catch(() => null))?.data?.first === true;
+  workspace.start(shown ? shown[0] : first ? 'setup' : '');
 
   // THE DESKTOP FIRST PAINT ends here: the route's real workspace is mounted and the
   // header now belongs to it. Session discovery, event wiring and home catalogs below

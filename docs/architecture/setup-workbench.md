@@ -9,8 +9,12 @@ For contributors: what each Setup surface shows and measures, in full. The user'
 **Ronin Home** has the doors **Teams**, **Epics** and **Workspaces**, and the smaller stones **Setup**
 and **Settings** (Help's stone is off Home until Mika is ready; its page stays; w1069), with **Business Lounge** on a hosted office (owner, 26 Nov; KAN-856, w1059).
 Teams, Epics and Workspaces wait for an Activated harness; the small stones are open from the start.
-The Setup stone is always there; Harnesses has no stone and is reached through Setup's Harness step.
+The Setup stone is always there; Harnesses has no stone and is reached through Setup's Harness step. Until all three steps are done, the Setup stone carries Setup's own 1-2-3 bar (`createSetupStepsBar`, from `GET /api/setup/progress`); once they are, the stone is quiet (KAN-987).
 Nothing decides that Setup is finished. Settings is Settings, with no toggle to Setup. A link that names a page still opens that page.
+**A new office's first visit lands on Setup** (owner, 28 Nov; KAN-986): the office's campaign record is made
+with `first_visit: true`; the first bare address any browser or person (not a member) opens asks
+`POST /api/campaigns/first-visit`, which answers true once and clears the mark, and that visit opens Setup.
+Every later bare address goes Home.
 
 ### The ticks
 
@@ -150,12 +154,15 @@ within seven days, and after that she starts fresh from the facts and `~/ronin/l
 ## Workspaces
 
 The Workspace step defines what a Workspace is, so any Agent that picks it up knows (owner, 25 Nov;
-KAN-809). It is not the Workspaces page: the Workspaces already made are one link at its foot ("You
-have 5 Workspaces."). One question, **How are you starting?**, four doors (`setup-workspace-kickoff.js`);
+KAN-809). It is not the Workspaces page, but the Workspaces already made sit at its foot ("You have 5
+Workspaces.") as the Workspaces workbench's own stones (`createWorkspaceStoneList`), a pressed one opening
+in place of them as it does there (KAN-1001). One question, **How are you starting?**, four doors (`setup-workspace-kickoff.js`);
 a door pressed opens only its questions under it, then Create. After Create the doors are there
 again: people have several Workspaces, and one Workspace can hold several repositories.
 
-1. **From a Git repository**: their GitHub repositories (once signed in) and pasted Git URLs, many;
+1. **From a Git repository**: every GitHub repository the sign-in reaches (once signed in), grouped by owner, the account
+   first and then each organization by name, a stone naming just the repository (newest 100 per owner; a group cut
+   short says so; KAN-999), and pasted Git URLs, many;
    each cloned into `repos/<repo>` (`POST /api/workspaces/<name>/repos`).
 2. **An existing project, not in Git**: where it comes from (Google Drive, WordPress, Shopify,
    Netlify, files from their computer), each an integration row with its folder `files/<source>`.
@@ -164,13 +171,20 @@ again: people have several Workspaces, and one Workspace can hold several reposi
 4. **Not sure yet**: Ronin Lab, what it is and its folder, then Create. Made, the door reads "Ronin
    Lab is ready", greyed.
 
-Doors 1–3 ask, in this order: what kind of project (open, business, personal, household, social,
+Door 1 with GitHub not signed in starts with **Connect** (the Helpful Assistant runs `github sign-in`, one
+call: gh's device login on the harness sign-in run, KAN-997; while it runs, the link and code with Copy and
+Cancel stand in Connect's place, and once approved Ronin runs `gh auth setup-git`), at
+the top. Until GitHub is connected, Connect and its sign-in window are the only live things: the rest of
+door 1 is shown greyed and unpressable (`inert`, the kit's greyed look; KAN-998), and comes alive once
+connected. Signed in, it goes straight to its questions. Doors 1–3 ask, in this order: what kind of project (open, business, personal, household, social,
 school; a Workspace's only, `WORKSPACE_KINDS`: Teams and Agents have none) · its name · what you are working on (the name
 follows it until one is typed) · the door's own question · for doors 1 and 3, how Agents work in the
 repositories (**Desks** unless they say **Direct**) · anything every Agent there should follow ·
-while there is no Ronin Lab, **Also add Ronin Lab** · Create. Doors 2 and 3 end with an optional GitHub
+Create. Doors 2 and 3 end with an optional GitHub
 Connect while GitHub is not signed in. With no door chosen, or the chosen one pressed again, the space
-under the doors says what a Workspace is, with an illustrative example. After Create, one line: "Made
+under the doors says what a Workspace is, with an illustrative example: open while there is no
+Workspace, and once there is one folded to its line, **What is a Workspace?**, opening when pressed
+(the Team's fold, `team-fold`). After Create, one line: "Made
 <title>, in ~/ronin/<name>." and **Open it**.
 
 The same doors, without that explanation and the foot link, are **New Workspace** everywhere else:

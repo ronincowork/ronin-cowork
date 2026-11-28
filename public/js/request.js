@@ -1,5 +1,26 @@
 /* part of the ronin-cowork client — see js/README.md */
 import { t } from './lexicon.js';
+/**
+ * SIGNED OUT ELSEWHERE (KAN-988; samurai_lab/ronin_cloud/SIGN_IN_MODEL.md): on a hosted office the sign-in guard
+ * answers a fetch with 401 (session ended) or 403 (removed) as an HTML page, never JSON. Cowork's own 401s and
+ * 403s are JSON. So a hosted 401/403 that is not JSON means the session ended: the page reloads, once, and the
+ * guard's navigation takes the person to sign-in. No retry, no screen of its own.
+ */
+let reloading = false;
+function sessionEnded(res) {
+  if (reloading || typeof document === 'undefined' || document.documentElement?.dataset?.hosted !== 'on') return;
+  if (res.status !== 401 && res.status !== 403) return;
+  if (/json/i.test(res.headers.get('content-type') || '')) return;
+  reloading = true;
+  location.reload();
+}
+
+/** After the live connection closed on a hosted office: one plain read, so a guard's refusal reloads the page. */
+export function checkSession() {
+  if (typeof document === 'undefined' || document.documentElement?.dataset?.hosted !== 'on') return;
+  void request('/api/workbenches', { cache: 'no-store' });
+}
+
 /** Pure: turn (status, ok, decoded-body-or-null) into the result contract above. */
 export function shapeResult(status, httpOk, body) {
   const data = body && typeof body === 'object' ? body : {};
@@ -72,6 +93,7 @@ export async function request(url, opts = {}) {
    * A failed status keeps its own shape: when the server said 500, the story is the 500,
    * not the shape of the page it sent with it.
    */
+  sessionEnded(res);
   let raw;
   try {
     raw = await res.text();

@@ -1,10 +1,12 @@
 import type express from 'express';
+import { person } from '../office-people.js';
 import {
   archiveCampaign,
   createCampaign,
   isValidCampaignId,
   listCampaigns,
   readCampaign,
+  takeFirstVisit,
   writeCampaign,
   type CampaignEdit,
   type CampaignState,
@@ -43,6 +45,11 @@ function editOf(body: unknown): CampaignEdit {
 }
 
 export function registerCampaigns(app: express.Express): void {
+  // A new office's first visit (KAN-986): true once, then false. A member never takes it.
+  app.post('/api/campaigns/first-visit', async (req, res) => {
+    try { res.json({ first: person(req)?.role === 'member' ? false : await takeFirstVisit() }); }
+    catch (e) { res.status(500).json({ error: errMsg(e) }); }
+  });
   app.get('/api/campaigns', async (req, res) => {
     try {
       const all = await listCampaigns();

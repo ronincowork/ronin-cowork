@@ -32,7 +32,9 @@ each one that is on.
 
 Subscription and API key on Claude Code and Codex sign the harness in without a terminal: the panel
 shows the link, the code, or a box for the code or key, with **Send** and **Cancel**. One at a time:
-signing in the other way replaces it. The one it is on is filled.
+signing in the other way replaces it. The one it is on is filled. If the maker's sign-in server fails while it waits
+(Codex stops on the first such answer), the panel says so, for example *OpenAI's sign-in timed out (504).
+Start again.*; press the same way again to start a fresh sign-in. Any other failure shows the harness's own line.
 
 An API key or OpenRouter with no key yet reads **No key in vault**: press it to add the key in Model services.
 One signed in is filled when New Agent offers it; press it to turn it off or on.
@@ -42,6 +44,10 @@ One signed in is filled when New Agent offers it; press it to turn it off or on.
 once it is on screen (a note says to click in the terminal to show it); **Go Back** takes the harness
 back a screen when it offers that. While it is open,
 **Done** and **Cancel** stand in the row where **Terminal** was.
+
+The first harness you sign in on its own (Subscription or API key, or its terminal) becomes the office's
+default: a new Agent starts on it, with its own default model. A signed-in harness shows **Set as default**
+under its sign-in, or *Default* on the one that is; Settings > Advanced > Agent defaults is the same setting.
 
 A harness already signed in warns first: signing in again signs out every Agent on it until you
 finish. A second press goes ahead.

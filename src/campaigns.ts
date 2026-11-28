@@ -44,6 +44,8 @@ export interface CampaignConfig {
   config: CampaignSettings;
   /** What this machine measured of its model providers, dated; null until Ronin has measured once. */
   providers: HarnessSummary | null;
+  /** A new office's first visit is still to come: it lands on Setup once, then this is false (KAN-986). */
+  first_visit: boolean;
 }
 
 export type CampaignState = 'active' | 'archived';
@@ -176,6 +178,7 @@ function parse(id: string, raw: string): CampaignConfig | null {
     created_at: typeof doc.created_at === 'string' && doc.created_at ? doc.created_at : '',
     config: settings(doc.config),
     providers: parseHarnessSummary(doc.providers),
+    first_visit: doc.first_visit === true,
   };
 }
 
@@ -239,6 +242,7 @@ export async function createCampaign(edit: CampaignEdit & { id?: string }): Prom
     state: edit.state === 'archived' ? 'archived' : 'active',
     created_at: new Date().toISOString(),
     providers: null,
+    first_visit: true,
     config: {
       ...settings(edit.config),
       defaults: await completeAgentDefaults(settings(edit.config).defaults),
@@ -293,6 +297,17 @@ export async function writeCampaignHarnesses(id: string, providers: HarnessSumma
 
 export const archiveCampaign = (id: string): Promise<CampaignConfig> =>
   writeCampaign(id, { state: 'archived' });
+
+/**
+ * THE FIRST VISIT (owner, 28 Nov 2026; KAN-986): a new office's first visit lands on Setup. True once,
+ * for whichever browser or person comes first; the mark is cleared as it is answered.
+ */
+export async function takeFirstVisit(): Promise<boolean> {
+  const campaign = await initialCampaign();
+  if (!campaign?.first_visit) return false;
+  await writeRecord({ ...campaign, first_visit: false });
+  return true;
+}
 
 export async function initialCampaign(): Promise<CampaignConfig | null> {
   const all = await listCampaigns();
