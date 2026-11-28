@@ -11,7 +11,7 @@
  * 3. From scratch: a new Git repository in repos/<name>; on GitHub too once signed in.
  * 4. Not sure yet: Ronin Lab, what it is and its folder, then Create (two presses).
  * Door 1 with GitHub not signed in asks Connect first, at the top, the rest greyed until it is connected. Doors 1–3 ask, in order: the kind, the name, what you are working on; the door's own question (doors 1
- * and 3 then how Agents work in the repositories, Desks or Direct); what every Agent in it should follow; while there is none, Also add Ronin Lab; then Create. Every answer is
+ * and 3 then how Agents work in the repositories, Desks or Direct); what every Agent in it should follow; then Create. Every answer is
  * on the Workspace record. With no door chosen, or the chosen one pressed again: on Setup's step, what
  * a Workspace is, and a link to yours. The same doors are New Workspace everywhere (owner, 26 Nov; KAN-900):
  * Settings' and the Workspaces workbench's, which open the made one (`onMade`).
@@ -51,7 +51,7 @@ const SOURCES = [
   { v: 'netlify', l: 'Netlify' }, { v: 'computer', l: t('setup_workspace.source_computer', 'Files from my computer') },
 ];
 const repoBase = (url) => url.trim().replace(/\.git$/, '').replace(/\/+$/, '').split(/[/:]/).pop() || '';
-const blank = () => ({ picked: [], pasted: '', sources: [], github: 'here', mode: 'reviewed', title: '', named: false, objective: '', kind: '', instructions: '', lab: false });
+const blank = () => ({ picked: [], pasted: '', sources: [], github: 'here', mode: 'reviewed', title: '', named: false, objective: '', kind: '', instructions: '' });
 
 /**
  * WHAT A WORKSPACE IS, DRAWN (owner, 25 Nov; KAN-845): an example, said so, never pressable. Your
@@ -172,7 +172,7 @@ export function createWorkspaceKickoff({ workspacesRead, environment, intro = fa
 
   // WHAT IT IS (doors 1–3), in the owner's order (25 Nov): the kind, the name, what they are working on
   // (the name made from it until one is typed); then the door's own question; then what every Agent in
-  // it should follow, and Also add Ronin Lab.
+  // it should follow.
   const define = () => {
     const name = textBox(t('workspaces.name', 'Name'), draft.title, (v) => { draft.title = v; draft.named = !!v.trim(); }, t('workspaces.name_placeholder', 'Such as Website or Accounts'));
     const nameInput = name.querySelector('input');
@@ -189,11 +189,6 @@ export function createWorkspaceKickoff({ workspacesRead, environment, intro = fa
       textBox(t('setup_workspace.instructions_ask', 'Anything every Agent here should follow?'), draft.instructions, (v) => { draft.instructions = v; },
         t('setup_workspace.instructions_placeholder', 'Optional. Such as: write in British English; never push to main.'), 3),
     ];
-    if (!has(LAB.name)) {
-      const lab = ask([{ fields: [{ key: 'lab', label: t('setup_workspace.also_lab', 'Also add Ronin Lab, a place for ideas and notes beside it'), switch: [t('forms.on', 'On'), t('forms.off', 'Off')] }] }],
-        { value: { lab: draft.lab }, density: 'tight', onChange: (now) => { draft.lab = !!now.lab; } });
-      tail.push(lab.el);
-    }
     return { head, tail };
   };
 
@@ -238,23 +233,17 @@ export function createWorkspaceKickoff({ workspacesRead, environment, intro = fa
       answer = await request(`/api/workspaces/${encodeURIComponent(name)}/repos`, { method: 'POST', json: body });
     }
     const failed = answer.ok ? '' : answer.message;
-    let lab = false;
-    if (wsMade && draft.lab && !has(LAB.name)) {
-      word.textContent = t('setup_workspace.making_lab', 'Making Ronin Lab…');
-      lab = (await makeLab()).ok;
-    }
     create.setDisabled(false);
     word.textContent = t('workspaces.create', 'Create');
     if (!wsMade) return fail(failed);
     // Made, it is shown made, whatever came after; a clone that failed is said under it.
     tellHer(name, failed);
-    if (lab) tellHer(LAB.name);
     const made = { title: draft.title.trim(), name };
     door = ''; draft = blank();
     await workspacesRead.read();
     paint();
     if (onMade) return onMade(name);
-    showMade(made, lab);
+    showMade(made);
     if (failed) done.append(el('p', 'setup-workspace-bad', failed));
   } });
 
@@ -262,8 +251,8 @@ export function createWorkspaceKickoff({ workspacesRead, environment, intro = fa
     const seed = await request(STARTERS);
     return put(LAB.name, { title: LAB.title, objective: String(seed.data?.[LAB.name]?.objective || ''), kind: 'open' });
   };
-  const showMade = (made, lab = false) => {
-    const line = el('p', 'setup-workspace-made', `${t('setup_workspace.made', 'Made {title}, in ~/ronin/{name}.', made)}${lab ? ` ${t('setup_workspace.made_lab', 'Ronin Lab too.')}` : ''} `);
+  const showMade = (made) => {
+    const line = el('p', 'setup-workspace-made', `${t('setup_workspace.made', 'Made {title}, in ~/ronin/{name}.', made)} `);
     const open = el('button', 'setup-workspace-link', t('setup_workspace.open', 'Open it')); open.type = 'button';
     open.addEventListener('click', () => openWorkspaceTab('workspace', made.name));
     line.append(open);

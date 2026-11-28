@@ -179,7 +179,7 @@ connected. Signed in, it goes straight to its questions. Doors 1–3 ask, in thi
 school; a Workspace's only, `WORKSPACE_KINDS`: Teams and Agents have none) · its name · what you are working on (the name
 follows it until one is typed) · the door's own question · for doors 1 and 3, how Agents work in the
 repositories (**Desks** unless they say **Direct**) · anything every Agent there should follow ·
-while there is no Ronin Lab, **Also add Ronin Lab** · Create. Doors 2 and 3 end with an optional GitHub
+Create. Doors 2 and 3 end with an optional GitHub
 Connect while GitHub is not signed in. With no door chosen, or the chosen one pressed again, the space
 under the doors says what a Workspace is, with an illustrative example. After Create, one line: "Made
 <title>, in ~/ronin/<name>." and **Open it**.
