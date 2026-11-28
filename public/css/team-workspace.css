@@ -209,7 +209,7 @@
   [data-workbench-profile='allhands'] .wk-workbench-selector-cards .wk-selector-group-after { margin-top: 0; }
   [data-workbench-profile='allhands'] .wk-workbench-selector-cards :is([data-workbench-offer-type='team.find-item'], [data-workbench-offer-type='session.new-agent']) { margin-top: var(--space-paragraph); }
   [data-workbench-profile='allhands'] .wk-workbench-selector-cards [data-workbench-offer-type='allhands.roster'] {
-    border-color: color-mix(in srgb, var(--ok-2) 30%, var(--line-2));
-    background: linear-gradient(90deg, color-mix(in srgb, var(--ok-2) 14%, var(--surface)), color-mix(in srgb, var(--ok-2) 4%, var(--surface)) 70%);
+    border-color: var(--recommend-edge);
+    background: linear-gradient(90deg, var(--recommend-wash), var(--recommend-fade) 70%); /* the recommended way in */
   }
 }

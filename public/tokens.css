@@ -66,6 +66,13 @@
   --kaki-lift: #e08163;
   /* the one interaction fill: the row, stone or card you are on, have chosen, or are dropping onto */
   --selected: color-mix(in srgb, var(--kaki) 9%, var(--surface));
+  /* THE RECOMMENDED WAY IN (owner, 28 Nov): a hint, like a favourite, that this is the one to
+     open: All Hands' Home slab and its card in the selector. Teams' green, fading left to right
+     from the wash to the fade, with its edge. Both shells: it follows --ok-2 and --surface. */
+  --recommend: var(--ok-2);
+  --recommend-wash: color-mix(in srgb, var(--recommend) 14%, var(--surface));
+  --recommend-fade: color-mix(in srgb, var(--recommend) 4%, var(--surface));
+  --recommend-edge: color-mix(in srgb, var(--recommend) 30%, var(--line-2));
   --aiiro: #274a78;
   --link: #8fb0dc; /* aiiro, lifted to read on the dark shell */
 

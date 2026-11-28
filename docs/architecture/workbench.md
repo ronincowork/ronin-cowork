@@ -165,8 +165,9 @@ selector, in three groups, offers the roster (coloured, the priority), Teams (`c
 item; and the catalog's own New Agent, New Team and Archived Agents; each given an environment over no Team. The groups'
 gaps and the roster card's colour key on `[data-workbench-profile='allhands']` and the offer type (team-workspace.css). Its look (KAN-978) is shape and fill on the office's tokens, no new
 colour: a group is an `--inset` band with a kaki edge, a chevron that turns open and its count in a chip; a row takes
-`--selected` and a kaki edge on hover; the shared `roster-row` mark is untouched. On Home the slab wears its green
-(`--ok-2`, Teams') as a wash, a glyph tile, a broader edge and a hover arrow (`team-workspace.css`, `campaign-home.css`).
+`--selected` and a kaki edge on hover; the shared `roster-row` mark is untouched. On Home the slab, and its card in the
+selector, wear the recommended way in (`--recommend*` in `tokens.css`, Teams' green): a wash fading left to right and its
+edge; the slab adds a glyph tile, a broader edge and a hover arrow (`team-workspace.css`, `campaign-home.css`).
 Settings' harness cards come from the same file's `harnessKit`: the
 stones of harnesses (`models.stones`; a stone pressed opens its page in place of the stones, a stone dragged or a harness's
 selector card places it whole, `models.provider`; `models-surface.js`, drawn with `harnesses-surface.js`).

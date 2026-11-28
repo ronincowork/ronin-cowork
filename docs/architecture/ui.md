@@ -192,7 +192,10 @@ The named role pairs keep readable contrast in both themes. The roles, defined i
   headers (where you are), kaki fills (the action, or what needs you), status (ok, warn,
   bad), the scrim, and `--selected`, the one interaction fill: the row, stone or card you
   are on, have chosen, or are dropping onto (a kaki wash over `--surface`; hover, focus,
-  pressed, current and drop targets all read it). One you cannot explain goes to
+  pressed, current and drop targets all read it), and the recommended way in
+  (`--recommend`, Teams' green, as `--recommend-wash` fading to `--recommend-fade` with
+  `--recommend-edge`: All Hands' Home slab and its selector card, a hint like a favourite,
+  never dominant). One you cannot explain goes to
   `--surface` or transparent.
 - edges: `--line` · `--line-2` · `--line-3` (three weights, hairline → emphasized)
 - text: `--fg-strong` · `--fg` · `--muted` (one grey: `--muted-2` and `--dim` merged into it) · `--link` (aiiro, lifted on the dark shell)
