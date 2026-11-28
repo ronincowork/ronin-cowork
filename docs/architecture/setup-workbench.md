@@ -11,6 +11,10 @@ and **Settings** (Help's stone is off Home until Mika is ready; its page stays; 
 Teams, Epics and Workspaces wait for an Activated harness; the small stones are open from the start.
 The Setup stone is always there; Harnesses has no stone and is reached through Setup's Harness step.
 Nothing decides that Setup is finished. Settings is Settings, with no toggle to Setup. A link that names a page still opens that page.
+**A new office's first visit lands on Setup** (owner, 28 Nov; KAN-986): the office's campaign record is made
+with `first_visit: true`; the first bare address any browser or person (not a member) opens asks
+`POST /api/campaigns/first-visit`, which answers true once and clears the mark, and that visit opens Setup.
+Every later bare address goes Home.
 
 ### The ticks
 
