@@ -10,7 +10,7 @@ import { AGENT_COMPOSITION_TYPE } from './agent-composition.js';
 import { WORK_ITEMS_TYPE } from './work-items-surface.js';
 import { HELP_PAGE_TYPE } from './help-outline.js';
 
-export const WORKBENCH_PROFILES = Object.freeze({ launch: 'launch', cowork: 'cowork', team: 'team', agent: 'agent', workspaces: 'workspaces', epics: 'epics', help: 'help', settings2: 'settings2' });
+export const WORKBENCH_PROFILES = Object.freeze({ launch: 'launch', cowork: 'cowork', team: 'team', agent: 'agent', workspaces: 'workspaces', epics: 'epics', help: 'help', settings2: 'settings2', allHands: 'allhands' });
 export const WORKBENCH_TYPES = Object.freeze({
   document: 'document', terminal: 'session.terminal', behaviours: BEHAVIOUR_SURFACE_TYPE, feedback: FEEDBACK_TYPE, files: FILES_TYPE,
   launchTeam: 'launch.team', launchAgent: 'launch.agent', launchHelp: 'launch.help',
@@ -26,7 +26,7 @@ export const WORKBENCH_TYPES = Object.freeze({
   epicRecords: 'epics.records', epicRecord: 'epics.record',
   settings2ModelServices: 'settings2.model-services',
   settings2AgentDefaults: 'settings2.agent-defaults', settings2MembersSee: 'settings2.members-see', settings2BehaviorFiles: 'settings2.behavior-files', settings2Stats: 'settings2.stats',
-  canvas: 'team.canvas',
+  canvas: 'team.canvas', allHandsRoster: 'allhands.roster',
 });
 
 let registered = false;
@@ -49,8 +49,9 @@ export function registerWorkbenchCatalog() {
   // A CANVAS (KAN-329): one card per canvas of the Team's Workspace, beside its Agents; placed, it
   // reads the canvas now and paints it (canvas-view.js). Its own colour, not an Agent's khaki.
   add({ type: WORKBENCH_TYPES.canvas, header: 'surface', className: 'wk-selector-canvas', discover: (_t, e) => e.canvases?.() ?? [], create: ({ workspace, detail, environment }) => environment.canvas(workspace, detail) });
-  // FIND ITEM (owner, 2026-11-12, KAN-433): asks for an item number, loads that item here (team-find-item.js).
-  via(WORKBENCH_TYPES.teamFindItem, 'surface', 'teamFindItem', { className: 'wk-selector-utility', label: () => t('find_item.title', 'Find item') });
+  // FIND ITEM (owner, 2026-11-12, KAN-433): asks for an item number, loads that item here (team-find-item.js);
+  // any item, no Team asked (w1146: All Hands offers it too).
+  via(WORKBENCH_TYPES.teamFindItem, 'surface', 'findItem', { className: 'wk-selector-utility', label: () => t('find_item.title', 'Find item') });
   add({ type: WORKBENCH_TYPES.workItems, header: 'surface', className: 'wk-selector-utility', label: () => t('work_items.title', 'Work Items'), discover: (_t, e) => e.workItemOffers(), create: ({ environment }) => environment.workItems() });
   via(WORKBENCH_TYPES.roster, 'surface', 'roster', { className: 'wk-selector-utility', label: () => t('campaign.coworks', 'Teams') });
   via(WORKBENCH_TYPES.sessionRoster, 'surface', 'sessionRoster', { className: 'wk-selector-utility', label: () => t('league.team_roster', 'Team roster') });
@@ -113,6 +114,19 @@ export function registerWorkbenchCatalog() {
   // One help page whole in a workspace, placed by a dragged stone (help-outline.js); no selector cards.
   add({ type: WORKBENCH_TYPES.helpPage, header: 'surface', label: () => t('help_outline.title', 'Help'), discover: () => [], create: ({ detail, environment }) => environment.helpPage(detail) });
   profiles.define(WORKBENCH_PROFILES.help, [WORKBENCH_TYPES.helpOutline, WORKBENCH_TYPES.helpMika, WORKBENCH_TYPES.helpPage]);
+  // ALL HANDS (w1146): the phone's roster of every Agent and item as a card, so it goes in either
+  // surface; the selector is global (New Agent, New Team, Archived Agents, Teams, Epics, Find item,
+  // each over no Team); an Agent's tile, a Team and an Epic's record are placed by the roster and the
+  // stones (all-hands.js).
+  add({ type: WORKBENCH_TYPES.allHandsRoster, header: 'surface', className: 'wk-selector-utility', label: () => t('all_hands.roster', 'All Hands'), summary: () => t('all_hands.roster_summary', 'Every Agent and item, by Team, Epic or Workspace'), create: ({ workspace, environment }) => environment.allHandsRoster(workspace) });
+  // Its selector in three groups (owner, 28 Nov): All Hands, Teams, Epics, Workspaces; Find item;
+  // New Agent, New Team, Archived Agents (the gaps and the All Hands card's colour are team-workspace.css's, by offer type).
+  profiles.define(WORKBENCH_PROFILES.allHands, [
+    WORKBENCH_TYPES.allHandsRoster, WORKBENCH_TYPES.roster, WORKBENCH_TYPES.epicRecords, WORKBENCH_TYPES.workspaceRecords,
+    WORKBENCH_TYPES.teamFindItem,
+    WORKBENCH_TYPES.newAgent, WORKBENCH_TYPES.newTeamForm, WORKBENCH_TYPES.archives,
+    WORKBENCH_TYPES.terminal, WORKBENCH_TYPES.team, WORKBENCH_TYPES.epicRecord, WORKBENCH_TYPES.workspaceRecord, BEHAVIOUR_SURFACE_TYPE,
+  ]);
   // SETTINGS V2 (owner, 2026-11-25; KAN-862, KAN-867): built beside Settings to compare; the old one goes once v2 is right.
   // The five agreed sections (MACHINE_SETTINGS_V2.md). Its own card types where its words differ from the Harnesses
   // door's; the surfaces under them are today's, reused. A harness's own card is placed by its stone, not offered.

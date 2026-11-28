@@ -5,10 +5,10 @@
  * sent this document because the request came from one (src/index.ts), so the first frame the
  * browser paints is already the mobile bar.
  *
- * ONE LIST IS THE FRONT DOOR (plan ronin_cowork/phone-lists, KAN-818): three questions across
- * the top — Type (the grouping: Team, Epic, Workspace), Kind (each row: Agent, Lead, Item) and
- * Sort (By type: one card per Team, Epic or Workspace; By active: one card each for Flagged,
- * Active, Recently active, Everyone else). A card pressed opens in place to its rows; pressed
+ * ONE LIST IS THE FRONT DOOR (plan ronin_cowork/phone-lists, KAN-818): questions across
+ * the top (roster-lists.js) — Kind (each row: Agent, Lead, Item), Sort (By type: one card per
+ * Team, Epic or Workspace; By active: one card each for Flagged, Active, Recently active,
+ * Everyone else) and, only By type, Type (the grouping: Team, Epic, Workspace). A card pressed opens in place to its rows; pressed
  * again it closes; several stay open. An Agent's row opens its tile, an item's row its item
  * screen. Screens, one at a time: the list · a Team's Docs · an item · an Agent's tile ·
  * Feedback. On the tile the head is hidden and the bar carries the head's reading toggle and メ
@@ -18,10 +18,10 @@ import { trackAppHeight } from './appheight.js';
 import { request } from './request.js';
 import { guard, showFailure } from './errors.js';
 import { sayWhenUnreachable, sessionsHandlers } from './events.js';
-import { connect, get as held, subscribe as hear } from './store.js';
-import { membersOfTeam, subscribe, teamByName, teamsFromState, UNASSIGNED, unassignedSessions } from './team-controller.js';
-import { listedTeam } from './roster-groups.js';
-import { agentSituation, loadProjects, onAgeTick, projectData, situationTitle } from './home.js';
+import { connect, subscribe as hear } from './store.js';
+import { membersOfTeam, subscribe, teamByName, teamsFromState, UNASSIGNED } from './team-controller.js';
+import { agentLabel, cardsByName, lastWorked, readable, rosterGroups, rosterMark, rosterQuestions, rosterRowClass, rosterShown, situationOf, teamLabel, teamsOfItem } from './roster-lists.js';
+import { loadProjects, onAgeTick, projectData, situationTitle } from './home.js';
 import { buildDocs } from './docs.js';
 import { createTerminalTileHost } from './terminal-tile-host.js';
 import { closeMenu } from './menu.js';
@@ -39,15 +39,6 @@ const el = (tag, cls, text) => {
   if (text != null) out.textContent = String(text);
   return out;
 };
-const readable = (name) => String(name || '').split(/[_-]+/).filter(Boolean)
-  .map((part) => part[0]?.toUpperCase() + part.slice(1)).join(' ');
-function teamLabel(team) {
-  if (team.name === UNASSIGNED) return t('league.ronin', 'Ronin: no team');
-  return String(team.title ?? '').trim() || team.name;
-}
-function agentLabel(session) {
-  return session.title || readable(session.name);
-}
 
 /** #/ · #/d/<team> · #/s/<agent> · #/i/<item> · #/feedback — anything else is the list. */
 const routeFromHash = () => {
@@ -61,93 +52,6 @@ const routeFromHash = () => {
 const docsHash = (team) => '#/d/' + encodeURIComponent(team);
 const sessionHash = (session) => '#/s/' + encodeURIComponent(session);
 const itemHash = (id) => '#/i/' + encodeURIComponent(id);
-
-/* ---------- the list's reading: groups and rows, from the store alone ---------- */
-const NO_GROUP = ''; // the group id of "no Epic" / "no Workspace"
-const isOpenItem = (item) => item && item.status !== 'Done';
-const holderOf = (item) => {
-  const [kind, ...rest] = String(item?.holder || '').split(':');
-  const name = rest.join(':');
-  return (kind === 'agent' || kind === 'team') && name ? { kind, name } : null;
-};
-/** The Teams an Agent is on (Unassigned when none), by the roster the page reads. */
-const teamsOfAgent = (name, teams) => {
-  const on = teams.filter((team) => team.name !== UNASSIGNED && membersOfTeam(team.name).some((member) => member.name === name)).map((team) => team.name);
-  return on.length ? on : [UNASSIGNED];
-};
-/** The Teams that work an item: a Team holder is that Team; an Agent holder is its Teams. */
-const teamsOfItem = (item, teams) => {
-  const holder = holderOf(item);
-  if (!holder) return [UNASSIGNED];
-  return holder.kind === 'team' ? [holder.name] : teamsOfAgent(holder.name, teams);
-};
-const workspaceOfTeam = (name) => String(teamByName(name)?.workspace || '');
-
-/**
- * Every group of the list for one Type and Kind: [{ id, label, team?, rows }], a row
- * { key, kind: 'agent' | 'item', name | item }. An Agent may sit in several groups.
- */
-function readGroups(type, kind) {
-  const teams = teamsFromState().filter((team) => listedTeam(team) && (!team.holding || unassignedSessions().length));
-  const epics = (held('epics') || []).filter(isOpenItem);
-  const under = (held('epicItems') || []).filter(isOpenItem);
-  const items = [...epics, ...under];
-  const agents = (S.sessions || []).map((session) => session.name);
-  const leads = new Set(teams.flatMap((team) => membersOfTeam(team.name).filter((member) => member.team_lead).map((member) => member.name)));
-  const people = kind === 'lead' ? agents.filter((name) => leads.has(name)) : agents;
-  const groups = new Map();
-  const group = (id, label, extra = {}) => {
-    if (!groups.has(id)) groups.set(id, { id, label, rows: [], ...extra });
-    return groups.get(id);
-  };
-  const addAgent = (target, name) => { if (!target.rows.some((row) => row.name === name)) target.rows.push({ key: `a:${name}`, kind: 'agent', name }); };
-  const addItem = (target, item) => { if (!target.rows.some((row) => row.item?.id === item.id)) target.rows.push({ key: `i:${item.id}`, kind: 'item', item }); };
-
-  if (type === 'team') {
-    for (const team of teams) group(team.name, teamLabel(team), { team: team.name });
-    if (kind === 'item') {
-      for (const item of items) for (const name of teamsOfItem(item, teams)) addItem(group(name, teamLabel({ name }), { team: name }), item);
-    } else {
-      for (const team of teams) for (const member of membersOfTeam(team.name)) {
-        if (kind === 'lead' && !member.team_lead) continue;
-        addAgent(groups.get(team.name), member.name);
-      }
-    }
-  } else if (type === 'epic') {
-    const epicLabel = (epic) => splitItemTitle(epic.title || epic.id).shortTitle;
-    for (const epic of epics) group(epic.id, epicLabel(epic));
-    const noEpic = () => group(NO_GROUP, t('phone.no_epic', 'No Epic'));
-    if (kind === 'item') {
-      for (const epic of epics) addItem(groups.get(epic.id), epic);
-      for (const item of under) addItem(item.epic && groups.has(item.epic) ? groups.get(item.epic) : noEpic(), item);
-    } else {
-      // An Agent is under an Epic when it holds the Epic or any item under it.
-      for (const name of people) {
-        const holds = items.filter((item) => { const holder = holderOf(item); return holder?.kind === 'agent' && holder.name === name; });
-        const epicIds = new Set(holds.map((item) => (item.level === 1 ? item.id : item.epic)).filter((id) => id && groups.has(id)));
-        if (!epicIds.size) addAgent(noEpic(), name);
-        for (const id of epicIds) addAgent(groups.get(id), name);
-      }
-    }
-  } else {
-    const noWorkspace = t('phone.no_workspace', 'No Workspace');
-    const at = (name) => group(name || NO_GROUP, name || noWorkspace);
-    if (kind === 'item') {
-      // An item's Workspace is its Epic's holder's; an item under no Epic, its own holder's.
-      const epicById = new Map(epics.map((epic) => [epic.id, epic]));
-      for (const item of items) {
-        const owner = item.level === 1 ? item : epicById.get(item.epic) || item;
-        for (const team of teamsOfItem(owner, teams)) addItem(at(workspaceOfTeam(team)), item);
-      }
-    } else {
-      // An Agent's Workspace is its Team's.
-      for (const name of people) for (const team of teamsOfAgent(name, teams)) addAgent(at(workspaceOfTeam(team)), name);
-    }
-  }
-  const out = [...groups.values()];
-  // A Team stands even with nobody on it (its ＋ is how one is launched); other groups only with rows.
-  return type === 'team' ? out : out.filter((one) => one.rows.length);
-}
 
 export async function buildPhone() {
   // The visible height before anything is laid out in it — see js/appheight.js.
@@ -227,34 +131,22 @@ export async function buildPhone() {
   try { choice = { ...choice, ...(JSON.parse(localStorage.getItem(choiceKey) || '{}') || {}) }; } catch {}
   const openCards = new Set(Array.isArray(choice.open) ? choice.open : []);
   const remember = () => { try { localStorage.setItem(choiceKey, JSON.stringify({ ...choice, open: [...openCards] })); } catch {} };
-  const questions = ask([{ group: '', fields: [
-    { key: 'type', label: t('phone.type', 'Type'), options: [{ v: 'team', l: t('phone.type_team', 'Team') }, { v: 'epic', l: t('phone.type_epic', 'Epic') }, { v: 'workspace', l: t('phone.type_workspace', 'Workspace') }] },
-    { key: 'kind', label: t('phone.kind', 'Kind'), options: [{ v: 'agent', l: t('phone.kind_agent', 'Agent') }, { v: 'lead', l: t('phone.kind_lead', 'Lead') }, { v: 'item', l: t('phone.kind_item', 'Item') }] },
-    { key: 'sort', label: t('phone.sort', 'Sort'), options: [{ v: 'type', l: t('phone.sort_type', 'By type') }, { v: 'active', l: t('phone.sort_active', 'By active') }] },
-  ] }], {
+  const questions = ask([{ group: '', fields: rosterQuestions() }], {
     value: { type: choice.type, kind: choice.kind, sort: choice.sort },
     density: 'tight',
     className: 'ph-questions',
-    onChange: (next) => { choice = { ...choice, ...next }; remember(); paintList(); },
+    onChange: (next) => { choice = { ...choice, ...next }; remember(); questions.show(rosterShown(choice)); paintList(); },
   });
+  questions.show(rosterShown(choice));
   const listScreen = el('div', 'ph-list-screen');
   const list = el('div', 'ph-list');
   listScreen.append(questions.el, list);
   const rows = createKeyedList({ key: (row) => row.key, shows: (row) => row.shows, draw: (row) => row.draw() });
 
-  // The situation of a row: an Agent's off its card (KAN-665), as the desktop pill reads it; an
-  // item's is its holder's (a Team holder stands as its lead), flagged when the item is.
-  const situationOf = (row, cardOf) => {
-    if (row.kind === 'agent') return agentSituation(cardOf.get(row.name));
-    if (row.item.flagged) return 'flagged';
-    const holder = holderOf(row.item);
-    const name = holder?.kind === 'team' ? membersOfTeam(holder.name).find((member) => member.team_lead)?.name : holder?.name;
-    return name ? agentSituation(cardOf.get(name)) : '';
-  };
-  const agentRow = (name, situation) => {
+  const agentRow = (name, situation, age = '') => {
     const session = (S.sessions || []).find((one) => one.name === name) || { name };
     const lead = teamsFromState().some((team) => membersOfTeam(team.name).some((member) => member.name === name && member.team_lead));
-    const card = el('a', `ph-card ph-row${situation ? ` ${situation}` : ''}`);
+    const card = el('a', `ph-card ph-row ${rosterRowClass(situation)}`);
     card.href = sessionHash(name);
     card.title = situationTitle(agentLabel(session), situation);
     const line = el('div', 'ph-card-line');
@@ -265,26 +157,24 @@ export async function buildPhone() {
       mark.setAttribute('aria-label', t('league.team_lead', 'Team Lead'));
       identity.append(mark);
     }
-    identity.append(el('span', 'ph-card-name', agentLabel(session)));
-    line.append(identity);
-    // ⚑ on the right, where the working dot sits (owner, KAN-776).
-    if (situation === 'flagged') line.append(el('span', 'ph-row-flag', '⚑'));
+    identity.append(el('span', 'ph-card-name roster-name', agentLabel(session)));
+    // ⚑ or the working dot on the right, else when it last worked (owner, KAN-776, KAN-982; roster-lists.js).
+    line.append(identity, rosterMark(age));
     card.append(line);
-    return { card, shows: JSON.stringify([name, agentLabel(session), lead, situation]) };
+    return { card, shows: JSON.stringify([name, agentLabel(session), lead, situation, age]) };
   };
   const itemRow = (item, situation) => {
-    const card = el('a', `ph-card ph-row${situation ? ` ${situation}` : ''}`);
+    const card = el('a', `ph-card ph-row ${rosterRowClass(situation)}`);
     card.href = itemHash(item.id);
     const line = el('div', 'ph-card-line');
     const identity = el('span', 'ph-card-identity');
-    identity.append(el('span', 'ph-card-name', splitItemTitle(item.title || item.id).shortTitle));
-    line.append(identity);
-    if (situation === 'flagged') line.append(el('span', 'ph-row-flag', '⚑'));
+    identity.append(el('span', 'ph-card-name roster-name', splitItemTitle(item.title || item.id).shortTitle));
+    line.append(identity, rosterMark());
     card.append(line, el('div', 'ph-card-key', [item.id, item.kind, item.status].filter(Boolean).join(' · ')));
     return { card, shows: JSON.stringify([item.id, item.title, item.kind, item.status, situation]) };
   };
-  const drawRow = (row, situation, under = '') => {
-    const made = row.kind === 'agent' ? agentRow(row.name, situation) : itemRow(row.item, situation);
+  const drawRow = (row, situation, under = '', cardOf = new Map()) => {
+    const made = row.kind === 'agent' ? agentRow(row.name, situation, lastWorked(cardOf.get(row.name), situation)) : itemRow(row.item, situation);
     return { key: `${under}|${row.key}`, shows: made.shows, draw: () => made.card };
   };
 
@@ -390,28 +280,15 @@ export async function buildPhone() {
 
   const paintList = () => {
     listBar();
-    const cardOf = new Map((held('home') || []).map((card) => [card.name, card]));
-    let groups = readGroups(choice.type, choice.kind).map((group) => ({ ...group, cardId: `${choice.type}:${group.id}` }));
-    if (choice.sort === 'active') {
-      // The same cards, grouped by situation (owner, 24 Nov): Flagged, then Active (working
-      // now), then Recently active (finished under ten minutes ago), then everyone else; each
-      // row once, by name.
-      const seen = new Map();
-      for (const group of groups) for (const row of group.rows) if (!seen.has(row.key)) seen.set(row.key, row);
-      const label = (row) => (row.kind === 'agent' ? agentLabel((S.sessions || []).find((one) => one.name === row.name) || { name: row.name }) : row.item.title || row.item.id);
-      const sorted = [...seen.values()].sort((a, b) => label(a).localeCompare(label(b)));
-      const bands = [['flagged', t('phone.band_flagged', 'Flagged')], ['working', t('phone.band_active', 'Active')], ['ready', t('phone.band_recent', 'Recently active')], ['rest', t('phone.band_rest', 'Everyone else')]];
-      const bandOf = (row) => { const situation = situationOf(row, cardOf); return ['flagged', 'working', 'ready'].includes(situation) ? situation : 'rest'; };
-      groups = bands.map(([band, heading]) => ({ id: band, cardId: `active:${band}`, label: heading, rows: sorted.filter((row) => bandOf(row) === band) }))
-        .filter((group) => group.rows.length);
-    }
+    const cardOf = cardsByName();
+    const groups = rosterGroups(choice, cardOf);
     const out = [];
     for (const group of groups) {
       const open = openCards.has(group.cardId);
       out.push({ key: `g:${group.cardId}`, shows: JSON.stringify([group.label, open]), draw: () => groupCard(group, open) });
       if (!open) continue;
       if (!group.rows.length) out.push({ key: `e:${group.cardId}`, shows: '', draw: () => el('div', 'ph-empty', t('phone.no_rows', 'Nobody here yet.')) });
-      for (const row of group.rows) out.push(drawRow(row, situationOf(row, cardOf), group.cardId));
+      for (const row of group.rows) out.push(drawRow(row, situationOf(row, cardOf), group.cardId, cardOf));
       if (group.team) {
         out.push({ key: `act:${group.team}`, shows: '', draw: () => teamActions(group.team) });
         out.push({ key: `launch:${group.team}`, shows: '', draw: () => launchForm(group.team) });

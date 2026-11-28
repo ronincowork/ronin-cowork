@@ -44,6 +44,7 @@ not separate layout systems.
 | Teams collection | Teams, Agents, shared resources, and creation surfaces available in the selected Campaign context |
 | Team | that Team's Agents, Commons, Epics, New Agent, New Item (the Epics workbench's New form, started on Task) and Agent composition |
 | Agent | Self, Documents, Team membership, and Work Items: the work items the Agent holds across its Teams |
+| All Hands | All Hands (its roster), Teams, Epics, Workspaces; Find item; New Agent, New Team, Archived Agents; each over no Team |
 | Setup | Harness, Workspace, Team and Tour, with the Ask Ronin panel |
 
 Adding another tenant or profile adds no layout implementation. Adding another surface
@@ -226,14 +227,14 @@ or Chat. Notes and the full record stay on the desk.
 
 ## On a phone
 
-A phone opens on one list of every Agent or item in the office. Three buttons across the top
-choose what it shows:
+A phone opens on one list of every Agent or item in the office. Buttons across the top choose
+what it shows:
 
 | Button | What it does |
 |---|---|
-| **Type** | What the list is grouped by: **Team**, **Epic** or **Workspace** |
 | **Kind** | What each row is: **Agent**, **Lead** (Agents who lead a Team) or **Item** |
 | **Sort** | **By type**: one card per Team, Epic or Workspace. **By active**: one card each for **Flagged**, **Active** (working now), **Recently active** (finished in the last ten minutes) and **Everyone else**, in that order |
+| **Type** | Shown only with **By type**: what the list is grouped by, **Team**, **Epic** or **Workspace** |
 
 Press a card to open it in place, with its rows underneath; press it again to close it. More
 than one can be open. An open Team card also has **Docs** (the Team's documents) and **＋ Launch
@@ -241,12 +242,32 @@ New Agent** under its rows. The phone remembers the three choices and which card
 
 An Agent sits under an Epic when it holds the Epic or an item under it, so it can appear under
 more than one. An Agent's Workspace is its Team's; an item's is that of whoever holds its Epic.
-An item's row shows its holder's situation.
+An item's row shows its holder's situation. An Agent that is none of these (not flagged, working, just
+finished or stopped) says, in muted words where the mark sits, when it last worked: **just now**, or how long ago, as **3h ago** or **2d ago**.
 
 Press an Agent to open its tile; back returns to the list. Press an item to open it on its own
 screen: the same reading as on a desk, with its status to move, its Agents (each opens that
 Agent's tile), its Subtasks (each opens its own screen), comments and a box to add one, and its
 attachments (each opens in Docs). Back returns to where you came from.
+
+## All Hands
+
+**All Hands** (on Home the broad slab under Teams, Epics and Workspaces, the office-wide way in; `#/allhands`) is the phone's list on a desk, as a workbench with
+two tilespaces. Tilespace 1 opens on the same list, with the same **Kind**, **Sort** and (By type) **Type**;
+every group starts open and closes when pressed (it remembers the ones you closed); Tilespace 2
+starts empty. Each row carries the same mark as an Agent's card on a Team's selector: ⚑ when
+flagged, the working dot (hollow just finished), muted when stopped; an Agent with neither says
+when it last worked, as on the phone. Press an Agent and its tile
+opens in the selected tilespace; press an item and it opens there on **Find item**. When the
+list's own tilespace is selected, what you press opens in the first empty tilespace on screen (with
+two or four), else the one beside the list. Drag a row instead and it opens in the tilespace you
+drop it on, any of the four; under **Type: Epic**, an Epic's group drags as that Epic. The selector is for
+the whole office, in three groups. First **All Hands** (the list itself, coloured as the one to
+start from, so it can be put in any tilespace), **Teams** (every Team as a stone, as on the Teams
+workbench), **Epics** (every open Epic as a stone) and **Workspaces** (every Workspace as a stone,
+as on the Workspaces workbench); then **Find item**; then **New Agent**, **New Team** and
+**Archived Agents**. None of them is tied to a Team. Drag a stone, or under **Type** a Team's,
+Epic's or Workspace's group, and it opens where you drop it.
 
 ## Short vocabulary check
 

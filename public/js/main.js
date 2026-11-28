@@ -17,6 +17,7 @@ import { createCoworkView } from './cowork-view.js';
 import { createAgentView } from './agent-view.js';
 import { createCampaignHome } from './campaign-home.js';
 import { createEpicsView, createHelpView, createWorkspacesView } from './door-workbenches.js';
+import { createAllHandsView } from './all-hands.js';
 import { createWorkspaceRoute } from './workspaces-surface.js';
 import { createSettingsV2View } from './settings-v2-view.js';
 import { createSetupView } from './setup-view.js';
@@ -116,6 +117,8 @@ async function init() {
   // Home's Models and Workspaces doors, each a workbench of its own in the same tab (owner, 2026-10-19).
   guard('register the Workspaces destination', () => workspace.register('workspaces', createWorkspacesView()));
   guard('register the Epics destination', () => workspace.register('epics', createEpicsView()));
+  // All Hands (w1146): the phone's roster of every Agent and item, a two-surface workbench.
+  guard('register the All Hands destination', () => workspace.register('allhands', createAllHandsView()));
   // One Epic on its own page (w899): Layer 2, under the Epics appearance; not a tilespace workbench.
   // One Workspace on its own page (KAN-784): Layer 2, under the Workspaces appearance.
   guard('register the Workspace destination', () => workspace.register('workspace', { ...createWorkspaceRoute(), appearance: 'workspaces', header: { ram: true } }));

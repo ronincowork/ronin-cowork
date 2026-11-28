@@ -30,12 +30,14 @@ const el = (tag, cls, text) => {
   return out;
 };
 
-/** The office: the triangle, Teams at its apex. */
+/** The office: the triangle, Teams at its apex, and All Hands the broad slab under it (KAN-977):
+ *  the office-wide way in, every Agent and item in one roster (all-hands.js). */
 function OFFICE() {
   return [
     { key: 'teams', route: 'cowork', glyph: '人人', name: t('campaign_home.teams', 'Teams'), is: t('campaign_home.teams_is', 'Who does the work') },
     { key: 'epics', route: 'epics', glyph: '◇', name: t('campaign_home.epics', 'Epics'), is: t('campaign_home.epics_is', 'What the work is') },
     { key: 'workspaces', route: 'workspaces', glyph: '⌂', name: t('campaign_home.workspaces', 'Workspaces'), is: t('campaign_home.workspaces_is', 'Where the work is') },
+    { key: 'allhands', route: 'allhands', glyph: '≡', name: t('campaign_home.all_hands', 'All Hands'), is: t('campaign_home.all_hands_is', 'Every Agent and item') },
   ];
 }
 

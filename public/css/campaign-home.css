@@ -53,6 +53,36 @@
      Home's size, one even gap between them across and down. */
   .ch-doors { display: grid; grid-template-columns: repeat(2, var(--ch-door-w)); justify-content: center; gap: var(--ch-office-gap); }
   .ch-doors > .ch-door[data-door='teams'] { grid-column: 1 / -1; justify-self: center; width: var(--ch-door-w); }
+  /* ALL HANDS (KAN-977): the office-wide way in, a broad slab under the triangle, its whole width
+     and a side stone's height; glyph, name and what it is on one line. */
+  .ch-doors > .ch-door[data-door='allhands'] { grid-column: 1 / -1; min-height: var(--ch-side-h); flex-direction: row; align-items: center; gap: var(--space-inset); }
+  /* Its pop (KAN-978) is its own tone, Teams' green (it is the people too), worn more fully than a
+     stone's edge: a wash of it on the ground, the glyph in a tile of it, a broader edge, and an
+     arrow at the far end that steps forward on hover. No new colour. */
+  .ch-door[data-door='allhands'] {
+    --ch-tone: var(--recommend);
+    --ch-slab-tile: calc(var(--ch-glyph) + var(--space-inset) * 2);
+    padding-inline: var(--space-section);
+    border-color: var(--recommend-edge);
+    background: linear-gradient(90deg, var(--recommend-wash), var(--recommend-fade) 70%); /* the recommended way in */
+  }
+  .ch-door[data-door='allhands']::before { width: calc(var(--edge-2) * 2); }
+  .ch-door[data-door='allhands'] .ch-glyph {
+    display: grid; place-items: center; flex: none;
+    width: var(--ch-slab-tile); height: var(--ch-slab-tile);
+    border-radius: var(--radius-large);
+    background: var(--recommend-wash);
+    box-shadow: inset 0 0 0 var(--edge) var(--recommend-edge);
+  }
+  .ch-door[data-door='allhands'] :is(h2, .ch-gate) { margin: 0; }
+  .ch-door[data-door='allhands'] .ch-is { position: static; opacity: 1; transform: none; margin: 0; padding-top: 0; border-top: 0; color: var(--fg); }
+  .ch-door[data-door='allhands']::after {
+    content: '→'; margin-left: auto; padding-left: var(--space-inset);
+    font-size: var(--text-display); line-height: var(--leading-none); color: var(--ch-tone);
+    transition: transform var(--motion-quick) var(--ease);
+  }
+  .ch-door[data-door='allhands']:is(:hover, :focus-visible)::after { transform: translateX(var(--space-inline)); }
+  .ch-door[data-door='allhands']:hover { border-color: var(--ch-tone); }
 
   /* Model Providers, Help and Settings: smaller stones, one above the other, on the right. */
   .ch-side {
