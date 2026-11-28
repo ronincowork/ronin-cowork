@@ -223,6 +223,25 @@ export async function measureHarnesses(section: SetupSection, ops: MeasureOps = 
   };
 }
 
+/**
+ * READ ON ASK (owner, 28 Nov 2026; KAN-995): a list the CLI keeps in a file (Claude Code's and Codex's caches,
+ * which it rewrites while in use) or Ronin's own store is read at every ask, about 10 ms; nothing keeps a copy.
+ * A list only a command prints (Grok's `grok models`, OpenCode's `opencode models`, ~0.6 s) is the refresh's
+ * last answer, kept in the record.
+ */
+const READ_ON_ASK: ReadonlySet<ModelsSource['read']> = new Set(['claude-cache', 'codex-cache', 'model-entries']);
+export const readsOnAsk = (agent: Agent): boolean => READ_ON_ASK.has(agent.operations.models.read);
+
+/** The summary with every activated CLI's list as of now: read-on-ask ones read now, a command's last answer kept. */
+export async function withCurrentModels<T extends HarnessSummary | null>(summary: T): Promise<T> {
+  if (!summary) return summary;
+  const models = { ...summary.models };
+  await Promise.all(AGENTS.filter((agent) => summary.operational.includes(agent.id) && readsOnAsk(agent)).map(async (agent) => {
+    models[agent.id] = await readModels(agent, { file: summary.paths[agent.id] ?? '', version: summary.versions[agent.id] ?? '' });
+  }));
+  return { ...summary, models };
+}
+
 /** The summary the Campaign record holds, or null when Ronin has not measured yet. */
 export async function readHarnessSummary(): Promise<HarnessSummary | null> {
   return (await initialCampaign())?.providers ?? null;
@@ -271,7 +290,7 @@ export async function settleFirstDefault(previous: HarnessSummary | null, summar
 export async function measureAndRecordHarnesses(section?: SetupSection, ops: MeasureOps = {}): Promise<HarnessSummary> {
   const previous = await readHarnessSummary();
   const summary = await measureHarnesses(section ?? await readSetupSection(), ops);
-  for (const id of summary.installed) if (previous?.models?.[id]) summary.models[id] = previous.models[id];
+  for (const agent of AGENTS) if (summary.installed.includes(agent.id) && !readsOnAsk(agent) && previous?.models?.[agent.id]) summary.models[agent.id] = previous.models[agent.id];
   summary.refreshed_at = previous?.refreshed_at ?? '';
   await recordHarnessSummary(summary);
   return summary;
@@ -279,16 +298,16 @@ export async function measureAndRecordHarnesses(section?: SetupSection, ops: Mea
 
 /**
  * REFRESH — the park's call after HQ moves the CLIs, and a sign-in's Done. The same machine
- * facts, then every activated CLI's own model list read again through the reader its
- * registry entry names. A CLI not activated gets nothing spent on it; its old list, if any,
- * is dropped with it.
+ * facts, then the list of every activated CLI that prints it by a command, kept as its last answer;
+ * a list read from a file is read at every ask instead (KAN-995). A CLI not activated gets nothing
+ * spent on it; its old list, if any, is dropped with it.
  */
 export async function refreshHarnesses(section?: SetupSection, ops: MeasureOps = {}): Promise<HarnessSummary> {
   const now = ops.now ?? (() => new Date().toISOString());
   const read = ops.models ?? readModels;
   const summary = await measureHarnesses(section ?? await readSetupSection(), ops);
   await readGatewayModels().catch((e) => console.error('[providers] gateway list:', e));
-  const lists = await Promise.all(AGENTS.filter((agent) => summary.operational.includes(agent.id))
+  const lists = await Promise.all(AGENTS.filter((agent) => summary.operational.includes(agent.id) && !readsOnAsk(agent))
     .map(async (agent) => [agent.id, await read(agent, { file: summary.paths[agent.id] ?? '', version: summary.versions[agent.id] ?? '', now })] as const));
   for (const [id, list] of lists) summary.models[id] = list;
   summary.refreshed_at = now();
