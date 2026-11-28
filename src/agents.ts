@@ -12,7 +12,7 @@ export interface AgentScreen {
 
 /**
  * HOW A CLI PUBLISHES ITS MODEL LIST — declared here, read by `readModels` in
- * `src/harness-summary.ts` on Refresh all. `claude-cache` and `codex-cache` are the two
+ * `src/harness-summary.ts` on a refresh (HQ's, or a sign-in's Done). `claude-cache` and `codex-cache` are the two
  * cache files those CLIs keep; `command` runs the CLI with the argv and reads the list it
  * prints; `none` says plainly that Ronin has no way to read one, so Model: Native is the
  * only choice. A new way to read a list is a new key here, never an `if` on a CLI id.
@@ -27,8 +27,6 @@ export type ModelsSource =
 
 export interface AgentOperations {
   install: string;
-  update: { shell: string; argv: readonly string[] };
-  selfUpdates: boolean;
   version: readonly string[];
   models: ModelsSource;
   setup?: readonly string[];
@@ -76,9 +74,6 @@ export const AGENTS = [
     vendor: { provider: 'anthropic', label: 'Anthropic', transcript_source: 'Observed 2026-09-22: ~/.claude/projects/<cwd-slug>/<uuid>.jsonl; one record per completed message. Journal adapter exists; exact launch identity is required.' } as AgentVendor,
     operations: {
       install: 'npm install -g @anthropic-ai/claude-code',
-      // Native installs update in the background: https://code.claude.com/docs/en/getting-started#auto-updates
-      update: { shell: '', argv: ['update'] },
-      selfUpdates: true,
       version: ['--version'],
       models: { read: 'claude-cache' },
       session: { discovery: 'explicit-argv' },
@@ -106,9 +101,6 @@ export const AGENTS = [
     vendor: { provider: 'openai', label: 'OpenAI', transcript_source: 'Observed 2026-09-22: ~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl; ordinal-sequenced records with a session metadata header. Journal adapter exists; fresh Ronin launches isolate the journal home; the id comes from its header.' } as AgentVendor,
     operations: {
       install: 'npm install -g @openai/codex',
-      // OpenAI documents an explicit update, not automatic updates: https://developers.openai.com/codex/cli/
-      update: { shell: 'npm install -g @openai/codex@latest', argv: [] },
-      selfUpdates: false,
       version: ['--version'],
       models: { read: 'codex-cache' },
       session: { discovery: 'unsupported' },
@@ -134,9 +126,6 @@ export const AGENTS = [
     operations: {
       // Google's installer: a checksum-verified binary to ~/.local/bin, no npm package.
       install: 'curl -fsSL https://antigravity.google/cli/install.sh | bash',
-      // "automatically self-updates in the background during regular runs" (the installer); `agy update` on demand.
-      update: { shell: '', argv: ['update'] },
-      selfUpdates: true,
       version: ['--version'],
       models: { read: 'none' },
       session: { discovery: 'unsupported' },
@@ -148,8 +137,7 @@ export const AGENTS = [
     // Its choice menu, measured on 1.5.1's sign-in screen: "> 1. Google OAuth".
     screen: { busy: [], asking: ['(?:^|\\n)\\s*>\\s*\\d+\\.\\s'], ready: [] },
   },
-  // [cli] auto_update defaults true: https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/05-configuration.md
-  { id: 'grok', cmd: 'grok', label: 'Grok CLI', vendor: { provider: 'xai', label: 'xAI', transcript_source: 'No conversation journal found in the 2026-09-22 investigation (an empty FTS index, memory profiling and telemetry only). No transcript adapter available.' } as AgentVendor, operations: { install: 'npm install -g @xai-official/grok', update: { shell: 'npm install -g @xai-official/grok@latest', argv: [] }, selfUpdates: true, version: ['--version'], models: { read: 'command', argv: ['models'] }, session: { discovery: 'unsupported' } } as AgentOperations, parked: '', signIn: 'It shows a browser link and a code at once: open the link, check the browser shows the same code, and approve. The terminal finishes by itself.', credentials: ['.grok/auth.json'], carry: [], screen: { busy: [], asking: [], ready: [] } },
+  { id: 'grok', cmd: 'grok', label: 'Grok CLI', vendor: { provider: 'xai', label: 'xAI', transcript_source: 'No conversation journal found in the 2026-09-22 investigation (an empty FTS index, memory profiling and telemetry only). No transcript adapter available.' } as AgentVendor, operations: { install: 'npm install -g @xai-official/grok', version: ['--version'], models: { read: 'command', argv: ['models'] }, session: { discovery: 'unsupported' } } as AgentOperations, parked: '', signIn: 'It shows a browser link and a code at once: open the link, check the browser shows the same code, and approve. The terminal finishes by itself.', credentials: ['.grok/auth.json'], carry: [], screen: { busy: [], asking: [], ready: [] } },
   {
     id: 'hermes',
     cmd: 'hermes',
@@ -158,9 +146,6 @@ export const AGENTS = [
     operations: {
       install: '',
       setup: ['model'],
-      // Vendor docs require an explicit update: https://github.com/NousResearch/hermes-agent/blob/main/website/docs/getting-started/updating.md
-      update: { shell: '', argv: ['update'] },
-      selfUpdates: false,
       version: ['--version'],
       models: { read: 'model-entries' },
       session: { discovery: 'unsupported' },
@@ -178,10 +163,6 @@ export const AGENTS = [
     vendor: { provider: 'github', label: 'GitHub Copilot', transcript_source: 'From docs, not yet seen on a real run: $COPILOT_HOME/session-state/<session-id>/events.jsonl, one session event per line, the first session.start carrying data.sessionId. Adapter copilot-events; fresh Ronin launches isolate session-state.' } as AgentVendor,
     operations: {
       install: 'npm install -g @github/copilot',
-      // `copilot help config`, autoUpdate: "Installations run from npm/JavaScript only report that a
-      // newer version is available - installing it stays a manual `npm install`."
-      update: { shell: 'npm install -g @github/copilot@latest', argv: [] },
-      selfUpdates: false,
       version: ['--version'],
       models: { read: 'none' },
       session: { discovery: 'unsupported' },
@@ -201,9 +182,6 @@ export const AGENTS = [
     vendor: { provider: 'opencode', label: 'OpenCode', transcript_source: 'One SQLite store for every session, ~/.local/share/opencode/opencode.db; schema unpublished. No adapter; Chat shows the terminal.' } as AgentVendor,
     operations: {
       install: 'npm install -g opencode-ai',
-      // `autoupdate` defaults on (opencode.ai/docs/config); Update is npm's, as it was installed.
-      update: { shell: 'npm install -g opencode-ai@latest', argv: [] },
-      selfUpdates: true,
       version: ['--version'],
       // `opencode models` prints one provider/model id per line.
       models: { read: 'command-lines', argv: ['models'] },
@@ -225,8 +203,6 @@ export const AGENTS = [
       // Moonshot's npm package (Node 22.19+); its curl installer puts kimi in ~/.kimi-code/bin
       // and edits .bashrc, which a login shell does not reach.
       install: 'npm install -g @moonshot-ai/kimi-code',
-      update: { shell: 'npm install -g @moonshot-ai/kimi-code@latest', argv: [] },
-      selfUpdates: false,
       version: ['--version'],
       models: { read: 'none' },
       session: { discovery: 'unsupported' },

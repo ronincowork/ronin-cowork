@@ -77,12 +77,12 @@ export const mandateWord = (value) => mandateTitle(value);
  *
  * `GET /api/harness-catalog` answers the dates and every provider with its rows already
  * JOINED on the server (`src/harness-catalog.ts` `harnessRows`): Native first, then each
- * model the CLI listed on the last Refresh all, grouped by HQ's tier (Unrated last), with two
+ * model the CLI listed on the last refresh, grouped by HQ's tier (Unrated last), with two
  * names — `model`, the id every launch uses, and `name`, the CLI's own display name with the
  * version in it — its `use_for` line and facts, plus `operational`,
  * `off` and `selectable` for this machine. `GET /api/setup/runtime` answers the machine
  * facts a harness's page paints (installed, signed in, steps). Nothing here
- * probes; only Refresh all reads a model list. A surface calls
+ * probes; only a refresh (HQ's, or a sign-in's Done) reads a model list. A surface calls
  * `loadHarnessCatalog()` when it is shown and paints from `harnessCatalog()`; a picker
  * built before the first read paints again when it lands.
  */

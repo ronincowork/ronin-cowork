@@ -1,11 +1,10 @@
 import { mkdir, stat, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { updateCommand, updateLineOf } from './agent-install.js';
 import { AGENTS, discoverExecutable, launchArgv, listAgentAvailability } from './agents.js';
 import { updateSection } from './machine-state.js';
-import { listHarnesses, newerVersion, type ModelList, type HarnessSummary } from './harness-catalog.js';
-import { activatedAt, npmPackageOf, offAt, harnessSignedIn } from './harness-summary.js';
+import { listHarnesses, type ModelList, type HarnessSummary } from './harness-catalog.js';
+import { activatedAt, offAt, harnessSignedIn } from './harness-summary.js';
 import { rootDir } from './resources.js';
 import { runCommand } from './send.js';
 import { execFile as run, SpawnBrokerError } from './spawn-broker.js';
@@ -52,25 +51,10 @@ export interface SetupHarnessState {
   off_at: string | null;
   /** What the installed CLI said it is; null when not installed or it would not say. */
   version: string | null;
-  /** Its own model list as Refresh all last read it, with the date and the CLI version; null until read, or when not activated. */
+  /** Its own model list as the last refresh read it, with the date and the CLI version; null until read, or when not activated. */
   model_list: ModelList | null;
-  /** The newest release its package source listed at the last Refresh; null when never asked or unaskable. */
-  latest: string | null;
-  latest_checked_at: string | null;
-  /** Installed, and the registry knows how to update it — the Update control's condition. */
-  updatable: boolean;
-  /** The CLI's documented behavior: it normally updates itself without an owner action. */
-  self_updates: boolean;
-  /** The line Update runs, for the owner to read before pressing. */
-  update: string | null;
   /** Registry-owned native command Mika may run for this provider's authentication flow. */
   login_command: string;
-  /** Latest is known and newer than what is installed. */
-  update_available: boolean;
-  /** Whether Refresh has a package source to ask for this CLI's newest release (its install line names an npm package). */
-  askable: boolean;
-  /** An update is running in its temporary provider_setup session; `attachment` shows it. */
-  update_open: boolean;
   attachment: { type: 'session'; key: string; team: typeof PROVIDER_SETUP_TEAM; temporary: true } | null;
   state: 'absent' | 'installable' | 'installed' | 'login_open' | 'activated' | 'off';
 }
@@ -81,7 +65,7 @@ export interface SetupRuntimeAnswer {
   activated_band: 'zero' | 'one' | 'two_plus';
   /** When the machine facts were measured; a reader shows a stale date rather than guessing. */
   measured_at: string;
-  /** When Refresh all last read every activated CLI's model list; '' when never. */
+  /** When the last refresh read every activated CLI's model list; '' when never. */
   refreshed_at: string;
   services: { installed: boolean; active: boolean };
 }
@@ -89,15 +73,12 @@ export interface SetupRuntimeAnswer {
 export interface ProviderSessionOps {
   exists(name: string): Promise<boolean>;
   open(provider: string, name: string): Promise<void>;
-  /** A shell session running the registry's update line for the provider, tagged as the sign-in is. */
-  openUpdate?(provider: string, name: string): Promise<void>;
   close(name: string): Promise<void>;
 }
 
 type Availability = Awaited<ReturnType<typeof listAgentAvailability>>;
 
 const sessionName = (provider: string) => `provider_setup_${provider}`;
-const updateSessionName = (provider: string) => `provider_setup_${provider}_update`;
 const installSessionName = (provider: string) => `install_${provider}`;
 
 const defaultSessionOps: ProviderSessionOps = {
@@ -111,14 +92,6 @@ const defaultSessionOps: ProviderSessionOps = {
     await createSetupSession(name, spec.id, rootDir('user'), { agent: false, argv: [] });
     void collectBirthLines(name, true);
     await runCommand(name, [...launch.argv, ...(spec.operations.setup ?? [])].map((arg) => "'" + arg.replace(/'/g, "'\\''") + "'").join(' '));
-  },
-  async openUpdate(provider, name) {
-    const spec = AGENTS.find((agent) => agent.id === provider);
-    if (!spec) throw new Error(`Unknown provider "${provider}".`);
-    await mkdir(rootDir('user'), { recursive: true });
-    await createSetupSession(name, spec.id, rootDir('user'), { agent: false, argv: [] });
-    void collectBirthLines(name, true);
-    await runCommand(name, updateCommand(spec));
   },
   close: killSessionTree,
 };
@@ -139,9 +112,8 @@ export async function setupRuntimeAnswer(
   const providers = await Promise.all(AGENTS.map(async (agent): Promise<SetupHarnessState> => {
     const entry = entries.find((row) => row.cli === agent.id);
     const session = sessionName(agent.id);
-    const updateSession = updateSessionName(agent.id);
     const installSession = installSessionName(agent.id);
-    const [loginOpen, updateOpen, installOpen] = await Promise.all([ops.exists(session), ops.exists(updateSession), ops.exists(installSession)]);
+    const [loginOpen, installOpen] = await Promise.all([ops.exists(session), ops.exists(installSession)]);
     const completed = activatedAt(section, agent.id);
     const offSince = offAt(section, agent.id);
     const isInstalled = summary.installed.includes(agent.id);
@@ -151,8 +123,6 @@ export async function setupRuntimeAnswer(
     // Not activated: nothing was asked and nothing is offered — Installed, and stop. A
     // version from an earlier measurement is not printed as though it were current.
     const version = activated ? summary.versions?.[agent.id] ?? null : null;
-    const latest = activated ? summary.latest?.[agent.id] ?? null : null;
-    const updateLine = activated ? updateLineOf(agent) : '';
     return {
       id: agent.id,
       provider: entry?.provider ?? '',
@@ -175,20 +145,11 @@ export async function setupRuntimeAnswer(
       off_at: offSince,
       version,
       model_list: activated ? summary.models?.[agent.id] ?? null : null,
-      latest: latest?.version ?? null,
-      latest_checked_at: latest?.checked_at ?? null,
-      updatable: activated && Boolean(updateLine),
-      self_updates: agent.operations.selfUpdates,
-      update: activated && updateLine ? updateLine : null,
       login_command: [agent.cmd, ...(agent.operations.setup ?? [])].join(' '),
-      update_available: Boolean(version && latest && newerVersion(version, latest.version)),
-      askable: npmPackageOf(agent.operations.install) !== '',
-      update_open: updateOpen,
-      // One attachment per provider: sign-in, update, then install. The same Close
-      // ends all three; installation remains visible after the binary appears.
+      // One attachment per provider: sign-in, then install. The same Close ends both;
+      // installation remains visible after the binary appears.
       attachment: loginOpen ? setupAttachment(session)
-        : updateOpen ? setupAttachment(updateSession)
-          : installOpen ? setupAttachment(installSession) : null,
+        : installOpen ? setupAttachment(installSession) : null,
       state: offSince !== null && isInstalled ? 'off' : activated || (isInstalled && servedBy.includes(agent.id)) ? 'activated' : loginOpen ? 'login_open' : isInstalled ? 'installed' : agent.operations.install ? 'installable' : 'absent',
     };
   }));
@@ -223,41 +184,20 @@ export async function openHarnessLogin(
 }
 
 /**
- * Close ends whichever temporary session the provider has open — install, sign-in, update,
- * or any combination — through the one teardown. Nothing shown in the page outlives it.
+ * Close ends whichever temporary session the provider has open — install, sign-in, or
+ * both — through the one teardown. Nothing shown in the page outlives it.
  */
 export async function closeHarnessLogin(provider: string, ops: ProviderSessionOps = defaultSessionOps): Promise<{ session: string; closed: boolean }> {
   if (!AGENTS.some((agent) => agent.id === provider)) throw new Error(`Unknown provider "${provider}".`);
   let closed: string | null = null;
   // Keep the long-standing sign-in name as the receipt when several exist; install joins
   // the teardown without changing the close response callers already consume.
-  for (const session of [sessionName(provider), updateSessionName(provider), installSessionName(provider)]) {
+  for (const session of [sessionName(provider), installSessionName(provider)]) {
     if (!(await ops.exists(session))) continue;
     await ops.close(session);
     closed ??= session;
   }
   return { session: closed ?? sessionName(provider), closed: closed !== null };
-}
-
-/**
- * Update: the registry's update line in a temporary provider_setup session, shown in the
- * page like a sign-in and ended by the same Close. The owner's press, never Ronin's.
- */
-export async function openHarnessUpdate(
-  provider: string,
-  ops: ProviderSessionOps = defaultSessionOps,
-  availability?: Availability,
-): Promise<{ session: string; opened: boolean }> {
-  const spec = AGENTS.find((agent) => agent.id === provider);
-  if (!spec) throw new Error(`Unknown provider "${provider}".`);
-  if (!updateLineOf(spec)) throw new Error(`Nothing updates ${spec.label} from here yet.`);
-  const installed = (availability ?? await listAgentAvailability()).find((agent) => agent.id === provider)?.installed === true;
-  if (!installed) throw new Error(`${spec.label} is not installed on this machine; install it first.`);
-  if (!ops.openUpdate) throw new Error('This box cannot open an update session.');
-  const session = updateSessionName(provider);
-  if (await ops.exists(session)) return { session, opened: false };
-  await ops.openUpdate(provider, session);
-  return { session, opened: true };
 }
 
 export async function completeHarnessLogin(

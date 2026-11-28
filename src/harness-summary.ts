@@ -11,18 +11,16 @@ import { modelServiceConfigured, readModelServiceStore } from './model-service-s
  * `comingSoon` — an installed, signed-in CLI with nothing to launch is not counted.
  *
  * Two writers, one record (owner's ruling, 2026-09-25):
- * - `measureAndRecordHarnesses` — machine facts; the recorded model lists and the last
- *   npm answer ride along unchanged. A sign-in closing, a switch, a setup saved.
- * - `refreshHarnesses` — Refresh all: the same facts, then every activated CLI's own
- *   model list read again through the reader its registry entry names, the Ronin
- *   Gateway's list, then npm asked for the newest release. Ronin
- *   start (so after every Update, which restarts it), the park's call in a hosted office,
- *   and the member's press; never a timer (KAN-651, MODEL_MANAGEMENT.md §4).
+ * - `measureAndRecordHarnesses` — machine facts; the recorded model lists ride along
+ *   unchanged. Ronin's start, a sign-in closing, a switch, a setup saved.
+ * - `refreshHarnesses` — the same facts, then every activated CLI's own model list read
+ *   again through the reader its registry entry names, and the Ronin Gateway's list. HQ
+ *   drives it: the park calls it after HQ moves the CLIs (ronin_cloud office_kohai), and a
+ *   sign-in's Done calls it. Nothing else does; never a timer (KAN-651, KAN-972).
  */
 import { readFile, readdir, stat } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { appendEgress, type EgressLine } from './activation/egress.js';
 import { AGENTS, listAgentAvailability, type AgentAvailability, type ModelsSource } from './agents.js';
 import { execFile } from './spawn-broker.js';
 import { ensureInitialCampaign, initialCampaign, writeCampaignHarnesses } from './campaigns.js';
@@ -80,7 +78,7 @@ export interface MeasureOps {
   now?: () => string;
   /** What the installed CLI printed to the registry's version argv, given its path; '' when it would not say. The first dotted number in it is the version. */
   version?: (path: string, argv: readonly string[]) => Promise<string>;
-  /** The CLI's own model list, read on Refresh all only. */
+  /** The CLI's own model list, read on a refresh only. */
   models?: (agent: Agent, options: ReadModelsOptions) => Promise<ModelList>;
 }
 
@@ -222,59 +220,7 @@ export async function measureHarnesses(section: SetupSection, ops: MeasureOps = 
     paths,
     versions,
     models: {},
-    latest: {},
   };
-}
-
-/** The npm package an install line names: the release source even when updating uses the CLI's own command. */
-export function npmPackageOf(installShell: string): string {
-  return /^npm install -g (\S+?)(?:@latest)?$/.exec(installShell.trim())?.[1] ?? '';
-}
-
-export interface LatestOps {
-  /** The newest version the npm registry lists for a package; throws when the registry cannot be asked. */
-  npmView?: (pkg: string) => Promise<string>;
-  egress?: (line: EgressLine) => Promise<void>;
-  now?: () => string;
-}
-
-const NPM_REGISTRY = 'registry.npmjs.org';
-
-async function npmViewVersion(pkg: string): Promise<string> {
-  const { stdout } = await execFile('npm', ['view', pkg, 'version'], { timeout: 20_000 });
-  return versionIn(stdout);
-}
-
-/**
- * THE ONE OUTBOUND ASK: what is the newest release of each ACTIVATED CLI (the caller passes
- * the summary's `operational`; a provider not activated is not asked — the owner's rule).
- * Only for a CLI whose registry install line names an npm package — that is a source Ronin
- * can ask by name; a vendor page is not. Every ask is an egress line, answered or not. A
- * CLI with no such source is simply absent from the answer, and the surface says
- * *latest unknown*.
- */
-export async function latestVersions(activated: readonly string[], ops: LatestOps = {}): Promise<HarnessSummary['latest']> {
-  const view = ops.npmView ?? npmViewVersion;
-  const egress = ops.egress ?? appendEgress;
-  const now = ops.now ?? (() => new Date().toISOString());
-  const out: HarnessSummary['latest'] = {};
-  for (const agent of AGENTS) {
-    if (!activated.includes(agent.id)) continue;
-    const pkg = npmPackageOf(agent.operations.install);
-    if (!pkg) continue;
-    const started = Date.now();
-    let version = '';
-    let outcome = 'unreachable';
-    try {
-      version = await view(pkg);
-      outcome = version ? 'ok' : 'unreadable';
-    } catch {
-      outcome = 'unreachable';
-    }
-    await egress({ at: now(), host: NPM_REGISTRY, method: 'GET', path: `/${pkg}`, status: version ? 200 : 0, outcome, ms: Date.now() - started }).catch(() => { /* bookkeeping never fails the ask */ });
-    if (version) out[agent.id] = { version, checked_at: now() };
-  }
-  return out;
 }
 
 /** The summary the Campaign record holds, or null when Ronin has not measured yet. */
@@ -319,26 +265,25 @@ export async function settleFirstDefault(previous: HarnessSummary | null, summar
 
 /**
  * Machine facts, written: what is installed, signed in, activated, and what version each
- * activated CLI says. The recorded model lists, the last npm answer and the last Refresh
- * all date ride along unchanged — nothing is read again but by a refresh.
+ * activated CLI says. The recorded model lists and the last refresh's date ride along
+ * unchanged — nothing is read again but by a refresh.
  */
 export async function measureAndRecordHarnesses(section?: SetupSection, ops: MeasureOps = {}): Promise<HarnessSummary> {
   const previous = await readHarnessSummary();
   const summary = await measureHarnesses(section ?? await readSetupSection(), ops);
   for (const id of summary.installed) if (previous?.models?.[id]) summary.models[id] = previous.models[id];
-  summary.latest = previous?.latest ?? {};
   summary.refreshed_at = previous?.refreshed_at ?? '';
   await recordHarnessSummary(summary);
   return summary;
 }
 
 /**
- * REFRESH ALL — start-up, the park's call, the member's press. The same machine facts, then every activated CLI's own
- * model list read again through the reader its registry entry names, then npm asked for
- * each activated CLI's newest release (one outbound request each, on the egress record).
- * A CLI not activated gets nothing spent on it; its old list, if any, is dropped with it.
+ * REFRESH — the park's call after HQ moves the CLIs, and a sign-in's Done. The same machine
+ * facts, then every activated CLI's own model list read again through the reader its
+ * registry entry names. A CLI not activated gets nothing spent on it; its old list, if any,
+ * is dropped with it.
  */
-export async function refreshHarnesses(section?: SetupSection, ops: MeasureOps = {}, latest: LatestOps = {}): Promise<HarnessSummary> {
+export async function refreshHarnesses(section?: SetupSection, ops: MeasureOps = {}): Promise<HarnessSummary> {
   const now = ops.now ?? (() => new Date().toISOString());
   const read = ops.models ?? readModels;
   const summary = await measureHarnesses(section ?? await readSetupSection(), ops);
@@ -346,7 +291,6 @@ export async function refreshHarnesses(section?: SetupSection, ops: MeasureOps =
   const lists = await Promise.all(AGENTS.filter((agent) => summary.operational.includes(agent.id))
     .map(async (agent) => [agent.id, await read(agent, { file: summary.paths[agent.id] ?? '', version: summary.versions[agent.id] ?? '', now })] as const));
   for (const [id, list] of lists) summary.models[id] = list;
-  summary.latest = await latestVersions(summary.operational, latest);
   summary.refreshed_at = now();
   await recordHarnessSummary(summary);
   return summary;

@@ -1,7 +1,8 @@
 /* part of the ronin-cowork client — see js/README.md */
 /**
- * WHAT MEMBERS SEE (KAN-955): the office setting on Settings that lists the workbenches a member is
- * shown, the first where they land. It applies to everyone whose role is member; the owner always
+ * APPLIANCE ACCESS (KAN-955; named KAN-973): the office setting on Settings that lists the workbenches a
+ * member (on screen: a person invited from the Business Lounge) is shown, the first where they land. Settings
+ * offers it only when an appliance, a folder workbench, is set up. It applies to everyone whose role is member; the owner always
  * sees everything. None picked: members see everything. It decides what is shown, not a lock.
  * Saved to ~/ronin/config/members_see.json through PUT /api/workbenches/members-see
  * (src/routes/workbenches-api.ts); docs/architecture/workbench.md, Which workbenches members see.
@@ -25,7 +26,7 @@ function workbenches() {
 
 export function createMembersSeeSurface() {
   const { createSurface, createNotice } = WorkspaceKit.primitives;
-  const surface = createSurface({ label: t('settings2.members_see', 'What members see'), className: 'cv-surface' });
+  const surface = createSurface({ label: t('settings2.appliance_access', 'Appliance Access'), className: 'cv-surface' });
   const body = el('div', 'cv-body');
   surface.content.append(body);
   const paint = () => {
@@ -35,9 +36,9 @@ export function createMembersSeeSurface() {
     const form = el('form', 'cv-defaults-form');
     const field = el('div', 'cv-default-field');
     const options = workbenches();
-    const questions = ask([{ group: t('settings2.members', 'Members'), fields: [
-      { key: 'see', label: t('settings2.members_see_which', 'Members see'), many: true, options },
-      { key: 'land', label: t('settings2.members_land', 'Members land on'), options },
+    const questions = ask([{ group: t('settings2.appliance_invited', 'People invited from the Business Lounge'), fields: [
+      { key: 'see', label: t('settings2.appliance_see', 'They see'), many: true, options },
+      { key: 'land', label: t('settings2.appliance_land', 'They land on'), options },
     ] }], { value: picked, trayHost: field, onChange: (value) => { picked = value; } });
     field.append(questions.el);
     const actions = el('div', 'cv-default-actions');
@@ -46,7 +47,7 @@ export function createMembersSeeSurface() {
     actions.append(notice.el, save);
     form.append(field, actions);
     body.replaceChildren(
-      el('p', 'cv-note', t('settings2.members_see_help', 'The workbenches everyone whose role is member is shown, and the one they land on. You, the owner, always see everything. With none picked, members see everything too.')),
+      el('p', 'cv-note', t('settings2.appliance_access_help', 'People invited from the Business Lounge see only these workbenches and land on the first. You always see everything. With none picked, they see everything too.')),
       form,
     );
     form.addEventListener('submit', async (event) => {

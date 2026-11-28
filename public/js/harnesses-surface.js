@@ -3,17 +3,16 @@
  * THE ONE HARNESS PANEL (owner, 27 Nov 2026; docs/architecture/harness-catalog.md, "One harness panel"). Setup's
  * Harness step and Settings' harness surfaces mount this same code: the stones of harnesses
  * (`createHarnessesSurface`), each wearing one state word (`harnessState`), and for the one pressed its panel
- * (`mountHarnessPanel`): name and state; Install or Update; Model services, first the row of services the harness
+ * (`mountHarnessPanel`): name and state; Install; Model services, first the row of services the harness
  * can use (Subscription, API key, Ronin Gateway, OpenRouter, Terminal as Backup),
  * signing in where one needs it, then its model entries under it (harness-model-entries.js); Turn off or on.
  * The place decides only where the Helpful Assistant opens (`openAgent`): Setup's work surface, Settings' window.
- * Refresh all (`createRefreshAll`) is the one press that reads the CLIs' model lists.
  */
 import { t } from './lexicon.js';
 import { harnessModelEditor } from './harness-model-entries.js';
 import { request } from './request.js';
 import { WorkspaceKit } from './workspace-kit.js';
-import { dayTime, loadHarnessCatalog, harnessCatalog } from './form-steps.js';
+import { loadHarnessCatalog, harnessCatalog } from './form-steps.js';
 import { createStatusMarker } from './status-marker.js';
 import { createPhalanx } from './phalanx.js';
 import { S } from './state.js';
@@ -107,62 +106,6 @@ export function harnessStones(runtime) {
 }
 
 /**
- * ONE STEP, the shape Refresh's steps draw: a mark that says done, current, failed or its number; the label
- * with its state beside it; at most one short line; then its controls.
- */
-export function stepItem({ key, n, label, state = '', detail = '', status = '', done = false, current = false, failed = false }) {
-  const item = el('li', 'setup-provider-step');
-  item.dataset.step = key; item.dataset.status = status;
-  item.dataset.done = String(done === true); item.dataset.current = String(current === true); item.dataset.failed = String(failed === true);
-  const mark = el('span', 'setup-provider-mark', done ? '✓' : failed ? '!' : String(n));
-  mark.setAttribute('aria-hidden', 'true');
-  const copy = el('div', 'setup-provider-copy');
-  const title = el('div', 'setup-provider-title');
-  title.append(el('strong', 'setup-provider-label', label), el('span', 'setup-provider-state', state));
-  copy.append(title);
-  if (detail) copy.append(el('p', 'setup-provider-note', detail));
-  const controls = el('div', 'setup-provider-control');
-  item.append(mark, copy, controls);
-  return { item, copy, controls };
-}
-
-/**
- * REFRESH ALL, the one press that reads model lists (owner, 2026-09-25): every activated CLI's own list and its
- * newest release, then (`between`, KAN-236) each model service's list; never on a timer.
- */
-export function createRefreshAll(drawing, { onStep = () => {}, between = null } = {}) {
-  const bar = el('div', 'setup-provider-refresh');
-  const lastRan = el('p', 'setup-fine setup-provider-last-ran');
-  const made = WorkspaceKit.primitives.createAction({ label: t('setup_surface.refresh_all', 'Refresh all harnesses'), kind: '', action: async () => {
-    button.disabled = true;
-    button.textContent = t('setup_surface.refreshing_lists', 'Reading model lists…');
-    onStep('lists', 'running');
-    const ok = await drawing.measure(true);
-    onStep('lists', ok ? 'done' : 'failed');
-    if (ok && between) {
-      button.textContent = t('setup_surface.refreshing_accounts', 'Reading account lists…');
-      onStep('accounts', 'running');
-      const answered = await between().catch(() => false);
-      onStep('accounts', answered ? 'done' : 'failed');
-    }
-    button.disabled = false;
-    button.textContent = t('setup_surface.refresh_all', 'Refresh all harnesses');
-    paint();
-  } });
-  const button = made.el ?? made;
-  const paint = () => {
-    const when = String(drawing.runtime().refreshed_at || harnessCatalog().refreshed_at || '');
-    const words = when
-      ? t('setup_surface.last_ran', 'Last ran {date}', { date: dayTime(when) })
-      : t('setup_surface.never_ran', 'Never run — every harness offers Native only until it runs.');
-    if (lastRan.textContent !== words) lastRan.textContent = words; // an unchanged push touches nothing (KAN-414)
-  };
-  button.classList.add('setup-provider-refresh-all');
-  bar.append(button, lastRan);
-  return { el: bar, paint };
-}
-
-/**
  * THE FRAME every harness surface reads: the record, then any measure. `repaint()` is the host's: it paints from
  * `runtime()` and `stones()` whenever the frame moves; an open panel hears it too (`onFrame`).
  */
@@ -176,16 +119,16 @@ export function createHarnessDrawing(context, { repaint, say = () => {} }) {
     for (const fn of frames) fn();
   };
   const showRecord = async () => { await loadHarnessCatalog(); runtime = recordRuntime(); await paintFrom(); };
-  /** Refresh all is the owner's press; a plain measure reads the record the server holds. */
-  const measure = async (refresh = false) => {
-    const result = refresh ? await request('/api/setup/harnesses/refresh', { method: 'POST', json: {} }) : await request('/api/setup/runtime', { cache: 'no-store' });
+  /** A measure reads the record the server holds; HQ's refresh and a sign-in's Done write it. */
+  const measure = async () => {
+    const result = await request('/api/setup/runtime', { cache: 'no-store' });
     if (!result.ok) { say(result.message, true); return false; }
     runtime = result.data;
     await loadHarnessCatalog();
     await paintFrom();
     return true;
   };
-  const paint = async (refresh = false) => { await showRecord(); return measure(refresh); };
+  const paint = async () => { await showRecord(); return measure(); };
   // Back from a browser sign-in: coming back to this tab reads the runtime once while one is open (KAN-723). No timer.
   const onFocus = () => { if (runtime.harnesses?.some((row) => row.login_open)) void measure(); };
   window.addEventListener('focus', onFocus);
@@ -243,7 +186,7 @@ export function mountHarnessPanel(host, id, { drawing, context = {}, openAgent =
     editor?.onChange(() => { if (!disposed) paint(); });
   };
 
-  /** The one terminal on the panel: the sign-in, install or update session, kept across repaints. */
+  /** The one terminal on the panel: the sign-in or install session, kept across repaints. */
   const terminalFor = (provider) => {
     const key = provider.attachment?.key || '';
     if (mounted && mountedKey === key) return terminalHost;
@@ -338,18 +281,17 @@ export function mountHarnessPanel(host, id, { drawing, context = {}, openAgent =
   /** What ends a terminal: Done records the sign-in (it re-measures), Cancel ends it. */
   const doneStone = () => stone(t('setup_surface.done', 'Done'), async () => { const r = await press(`${base}/done`); if (r.ok) mounted?.park?.(); });
   const cancelStone = (provider) => stone(t('setup_surface.cancel', 'Cancel'), async () => { const r = await press(`${base}/close`); if (r.ok) tellHer(`${shortName(provider)} · Close sign-in`); });
-  const terminalWindow = (provider, { line = '', done = true, copy = false } = {}) => {
+  const terminalWindow = (provider, { line = '', copy = false } = {}) => {
     const box = el('div', 'setup-harness-window');
     if (line) box.append(el('p', 'setup-harness-line', line));
     box.append(terminalFor(provider));
     // One line under the terminal: what the screen offers (Copy code, Copy link, its key) at the start, and
     // what ends it (Done, Cancel) at the end.
     // A sign-in's Done and Cancel stand in the service row where Terminal was (owner, 27 Nov 2026); under the
-    // terminal, what its screen offers. An install or update keeps its ends here.
+    // terminal, what its screen offers. An install keeps its ends here.
     if (copy) { if (mounted) box.append(copyStones()); return box; }
     const row = el('div', 'ask setup-harness-row setup-harness-ways'); row.dataset.density = 'tight';
-    if (done) row.append(doneStone());
-    row.append(cancelStone(provider));
+    row.append(doneStone(), cancelStone(provider));
     box.append(row);
     return box;
   };
@@ -419,7 +361,7 @@ export function mountHarnessPanel(host, id, { drawing, context = {}, openAgent =
     return part;
   };
 
-  /** Install, or the installer open; then Update when a newer release is there, or the update open. */
+  /** Install, or the installer open. */
   const installPart = (provider) => {
     const part = el('section', 'harness-panel-part');
     if (provider.install_open) { part.append(terminalWindow(provider, { line: t('harness.install_open', 'Finish the installation in the terminal, then press Done.') })); return part; }
@@ -432,11 +374,6 @@ export function mountHarnessPanel(host, id, { drawing, context = {}, openAgent =
         const guide = id === 'hermes' ? 'https://github.com/NousResearch/hermes-agent/blob/main/website/docs/reference/cli-commands.md' : '';
         if (guide) { const link = el('a', 'wk-action harness-action', t('harness.install_guide', 'Install guide')); link.href = guide; link.target = '_blank'; link.rel = 'noopener noreferrer'; part.append(link); }
       }
-      return part;
-    }
-    if (provider.update_open) { part.append(terminalWindow(provider, { done: false, line: t('harness.update_open', 'Updating: when it has printed the new version, press Cancel. Tiles already running keep their version.') })); return part; }
-    if (provider.activated && provider.updatable && provider.update_available && provider.latest) {
-      part.append(action(t('setup_surface.update_to', 'Update to {latest}', { latest: provider.latest }), '', () => press(`${base}/update`)));
       return part;
     }
     return null;
@@ -473,7 +410,7 @@ export function mountHarnessPanel(host, id, { drawing, context = {}, openAgent =
       parts.push(part);
     }
     if (problem) parts.push(el('p', 'setup-harness-line bad', problem));
-    if (!provider.login_open && !provider.install_open && !provider.update_open && mounted) dropTerminal();
+    if (!provider.login_open && !provider.install_open && mounted) dropTerminal();
     card.replaceChildren(...parts);
     // The terminal was made before the panel was on the page: fit it to its box once it is, so the CLI draws
     // at the size it is shown, not at whatever it guessed.

@@ -50,7 +50,7 @@ import { registerServicesActivation } from './routes/services-activation-api.js'
 import { registerMachineSettings } from './routes/machine-settings-api.js';
 import { registerCampaigns } from './routes/campaigns-api.js';
 import { ensureInitialCampaign } from './campaigns.js';
-import { refreshHarnesses } from './harness-summary.js';
+import { measureAndRecordHarnesses } from './harness-summary.js';
 import { readGatewayModels } from './model-service-store.js';
 import { migrateCampaignScope, moveDeskModelDefault } from './campaign-scope.js';
 import { registerUpdate } from './routes/update-api.js';
@@ -331,13 +331,13 @@ registerServicesActivation(app); // /api/feedback — src/routes/services-activa
 
 // The Campaign's dated provider facts are measured once at start, after the record exists
 // and has migrated: the summary and the migration both read-modify-write the campaigns
-// section, and side by side one of them would lose its write on a fresh install. A refresh, not
-// a bare measure (KAN-651): every start, so after every Update too, reads the CLIs' model lists
-// again; nobody has to press Refresh all model providers.
+// section, and side by side one of them would lose its write on a fresh install. A measure,
+// not a refresh: the CLIs' model lists are read when HQ moves them (the park's
+// POST /api/setup/harnesses/refresh) and on a sign-in's Done (KAN-972).
 const campaignStart = ensureInitialCampaign()
   .then(() => migrateCampaignScope())
   .then(() => moveDeskModelDefault())
-  .then(() => (isEntryPoint ? refreshHarnesses() : undefined))
+  .then(() => (isEntryPoint ? measureAndRecordHarnesses() : undefined))
   .then(() => (isEntryPoint ? readGatewayModels() : undefined))
   .catch((error) => console.error(`[setup] campaign start: ${(error as Error).message}`));
 

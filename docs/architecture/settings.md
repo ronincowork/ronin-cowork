@@ -15,9 +15,9 @@ A heading over the first card of each, with a section's space between them.
 | Section | What someone came to do | Cards |
 |---|---|---|
 | Harnesses and models | sign in to a harness, connect a model service, choose the models a harness offers | **Harness** stones (install, sign in, ready; a harness's page has its Models section). **Model services**: one card, three tabs: Ronin Gateway (comes configured, its model list only), API key and OpenRouter (each a Configure section and a Model entries section). See [model_services_README.md](model_services_README.md) |
-| Office defaults | change what new Agents and Teams start with, and what members are shown | **Agent defaults**: the starting models (Agent, Team lead), then mandate, launch mode and included behaviors. **What members see**: the workbenches everyone whose role is member is shown, and the one they land on ([workbench.md](workbench.md#which-workbenches-members-see)) |
+| Appliance Access | only when an appliance (a folder workbench) is set up: choose what the people invited from the Business Lounge are shown | **Appliance Access**: the workbenches they see, the first where they land ([workbench.md](workbench.md#which-workbenches-members-see)) |
 | Workspaces and integrations | change where a project lives, or set up an outside service | **Workspaces**: the Workspace stones; each opens its Configuration, **+ New Workspace** opens the four ways. **Integrations**: every outside service, one record each, Jira among them ([integrations.md](integrations.md)) |
-| Advanced | edit the actual instructions, or read what is on this machine | **Behavior files** (read and edit behavior, fact and tool files), **Machine status** (the generated report), **Machine stats** (tool-call activity, with its collection period), **Explorer** (the home folder, where it runs) |
+| Advanced | edit the actual instructions or what new Agents start with, or read what is on this machine | **Behavior files** (read and edit behavior, fact and tool files), **Agent defaults** (what new Agents and Team leads start with: the starting models, then mandate, launch mode and included behaviors), **Machine status** (the generated report), **Machine stats** (tool-call activity, with its collection period), **Explorer** (the home folder, where it runs) |
 
 Feedback and a document reader (a behavior file's read glyph opens it beside) are on the selector
 as on every workbench. The forms follow the New Agent form pattern (`createStep`: numbered sections
@@ -25,7 +25,7 @@ that fold) and lists the table pattern (`data-table.js`).
 
 ## Defaults are inherited at birth
 
-A default saved in Office defaults reaches what is made next: a Workspace made tomorrow starts with
+A default saved in Agent defaults reaches what is made next: a Workspace made tomorrow starts with
 it; a Team made tomorrow inside an older Workspace starts with that Workspace's own saved default;
 an Agent with its Team's. Nothing that already exists changes ([brief.md](brief.md), inherit at
 birth). The card says this with that example. Choosing which behaviors new Agents receive (Agent
